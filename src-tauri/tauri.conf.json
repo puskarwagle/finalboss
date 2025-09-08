@@ -19,7 +19,38 @@
       
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "fs-capability",
+          "description": "Filesystem access",
+          "windows": ["main"],
+          "permissions": [
+            "fs:allow-read-text-file",
+            "fs:allow-write-text-file",
+            "fs:allow-read-file",
+            "fs:allow-write-file",
+            "fs:allow-create",
+            "fs:allow-exists"
+          ],
+          "allow": [
+            {
+              "path": "src/bots/user-bots-config.json"
+            },
+            {
+              "path": "src/bots"
+            },
+            {
+              "path": "**"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "plugins": {
+    "fs": {
+      "requireLiteralLeadingDot": false
     }
   },
   "bundle": {
