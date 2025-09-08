@@ -1,0 +1,14 @@
+{
+  "bots": [
+    {
+      "name": "seek_bot",
+      "description": "A bot for automatically applying to jobs on Seek.",
+      "image": "/seek_bot.png"
+    },
+    {
+      "name": "linkedin_bot",
+      "description": "A bot for automatically applying to jobs on LinkedIn.",
+      "image": "/linkedin_bot.png"
+    }
+  ]
+}
