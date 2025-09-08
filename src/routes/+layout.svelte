@@ -9,6 +9,7 @@
     <a href="/control-bar">Control Bar</a>
     <a href="/frontend-form">Configuration</a>
     <a href="/backend-analytics">Analytics</a>
+    <a href="/testfunctions">Test Functions</a>
   </div>
 </nav>
 

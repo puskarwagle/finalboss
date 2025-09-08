@@ -46,6 +46,8 @@
       });
     }, 500);
   });
+
+
 </script>
 
 <div class="container">
@@ -57,6 +59,7 @@
       Configure once, apply everywhere, track everything.
     </p>
   </div>
+
 
   <div class="stats-grid">
     <div class="stat-card">
