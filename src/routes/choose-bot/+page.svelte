@@ -152,11 +152,11 @@
   <div class="grid">
     {#each bots as bot}
       <div class="bot-card" role="button" tabindex="0">
-        <img src={bot.avatar} alt={bot.name} class="avatar" />
+        <img src={bot.image} alt={bot.name} class="avatar" />
         <h2 class="bot-name">{bot.name}</h2>
         <p class="bot-description">{bot.description}</p>
       </div>
     {/each}
   </div>
-  
+
 </main>
