@@ -6,6 +6,11 @@
 
     let output = $state<string[]>([]);
 
+    // File writing test variables
+    let filename = $state("");
+    let fileContent = $state("");
+    let writeResult = $state("");
+
     async function greet(event: Event) {
         event.preventDefault();
         greetMsg = await invoke("greet", { name });
@@ -13,6 +18,18 @@
 
     async function readDirectory(path: string) {
         output = await invoke<string[]>("list_files", { path });
+    }
+
+    async function writeFile(event: Event) {
+        event.preventDefault();
+        try {
+            writeResult = await invoke<string>("write_file", { 
+                filename: filename,
+                content: fileContent 
+            });
+        } catch (error) {
+            writeResult = `Error: ${error}`;
+        }
     }
 
 </script>
@@ -78,6 +95,13 @@
         align-items: stretch;
     }
 
+    .form-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
     input {
         flex: 1;
         padding: 0.75rem;
@@ -89,12 +113,27 @@
         font-size: 0.9rem;
     }
 
-    input::placeholder {
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        background: #001100;
+        border: 1px solid #00ff00;
+        border-radius: 6px;
+        color: #00ff00;
+        font-family: 'Orbitron', monospace;
+        font-size: 0.9rem;
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
         color: #00cc00;
         opacity: 0.7;
     }
 
-    input:focus {
+    input:focus,
+    textarea:focus {
         outline: none;
         border-color: #00ffff;
         box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
@@ -154,11 +193,6 @@
     .file-item:hover {
         background: #001100;
         border-color: #00ffff;
-    }
-
-    .directory-input {
-        width: 100%;
-        margin-bottom: 1rem;
     }
 
     .empty-state {
@@ -226,11 +260,23 @@
             </div>
         </div>
 
-        <!-- Placeholder for more tests -->
+        <!-- File Writer Test -->
         <div class="test-card">
-            <h2 class="card-title">⚡ Future Test</h2>
+            <h2 class="card-title">📝 File Writer</h2>
+            <form class="form-column" onsubmit={writeFile}>
+                <input
+                    type="text"
+                    placeholder="Enter filename (e.g., test.txt)"
+                    bind:value={filename}
+                />
+                <textarea
+                    placeholder="Enter file content..."
+                    bind:value={fileContent}
+                ></textarea>
+                <button type="submit">Write File</button>
+            </form>
             <div class="result-box">
-                <div class="empty-state">Ready for more test functions...</div>
+                {writeResult || "No file written yet..."}
             </div>
         </div>
 

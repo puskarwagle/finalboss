@@ -1,23 +1,10 @@
-<script>
+<script lang="ts">
   import { goto } from '$app/navigation';
 
-  function navigateTo(path) {
+  function navigateTo(path: string): void {
     goto(path);
   }
 </script>
-
-<main>
-  <h1>Quest Bot</h1>
-  <p>Welcome to your automation platform</p>
-  
-  <div class="actions">
-    <button on:click={() => navigateTo('/choose-bot')}>Choose Bot</button>
-    <button on:click={() => navigateTo('/welcome')}>Login</button>
-    <button on:click={() => navigateTo('/control-bar')}>Control Bar</button>
-    <button on:click={() => navigateTo('/frontend-form')}>Configuration</button>
-    <button on:click={() => navigateTo('/backend-analytics')}>Analytics</button>
-  </div>
-</main>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
@@ -77,3 +64,17 @@
     border-color: #00ffff;
   }
 </style>
+
+
+<main>
+  <h1>Quest Bot</h1>
+  <p>Welcome to your automation platform</p>
+  
+  <div class="actions">
+    <button on:click={() => navigateTo('/choose-bot')}>Choose Bot</button>
+    <button on:click={() => navigateTo('/welcome')}>Login</button>
+    <button on:click={() => navigateTo('/control-bar')}>Control Bar</button>
+    <button on:click={() => navigateTo('/frontend-form')}>Configuration</button>
+    <button on:click={() => navigateTo('/backend-analytics')}>Analytics</button>
+  </div>
+</main>
