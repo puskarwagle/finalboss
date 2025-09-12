@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-
   function navigateTo(path: string): void {
-    goto(path);
+    window.location.href = path;
   }
 </script>
 

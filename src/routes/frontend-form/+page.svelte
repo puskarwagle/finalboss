@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+  import { invoke } from "@tauri-apps/api/core"
   
   let formData = {
     keywords: '',
@@ -96,6 +96,13 @@
     showDeepSeek = !showDeepSeek;
   }
 
+  function handleToggleKeydown(event, toggleFunction) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleFunction();
+    }
+  }
+
   function handleResumeUpload(event) {
     const file = event.target.files[0];
     if (file) {
@@ -134,6 +141,8 @@
   async function handleSubmit(event) {
     event.preventDefault();
     
+    console.log('Form data at submit:', formData);
+    
     if (!formData.keywords.trim()) {
       alert('Keywords are required');
       return;
@@ -147,9 +156,10 @@
     isSubmitting = true;
     
     try {
+      console.log('Saving form data:', formData);
       const saved = await saveConfig();
       if (saved) {
-        console.log('Form submitted:', formData);
+        console.log('Form submitted successfully:', formData);
         alert('Configuration saved successfully!');
       } else {
         throw new Error('Failed to save configuration');
@@ -172,7 +182,9 @@
   async function loadConfig() {
     try {
       console.log('Loading config from project bots directory');
-      const configContent = await readTextFile('src/bots/user-bots-config.json');
+      const configContent = await invoke<string>("read_file_async", { 
+        filename: "src/bots/user-bots-config.json" 
+      });
       const config = JSON.parse(configContent);
       if (config.formData) {
         formData = { ...formData, ...config.formData };
@@ -186,9 +198,17 @@
   async function saveConfig() {
     try {
       console.log('Saving config to project bots directory');
+      
+      // First create the directory if it doesn't exist
+      await invoke<string>("create_directory_async", { 
+        dirname: "src/bots" 
+      }).catch(() => {}); // Ignore error if directory already exists
+      
       let config;
       try {
-        const configContent = await readTextFile('src/bots/user-bots-config.json');
+        const configContent = await invoke<string>("read_file_async", { 
+          filename: "src/bots/user-bots-config.json" 
+        });
         config = JSON.parse(configContent);
       } catch {
         config = { formData: {}, industries: [], workRightOptions: [] };
@@ -196,7 +216,10 @@
 
       config.formData = formData;
       
-      await writeTextFile('src/bots/user-bots-config.json', JSON.stringify(config, null, 2));
+      await invoke<string>("write_file_async", { 
+        filename: "src/bots/user-bots-config.json",
+        content: JSON.stringify(config, null, 2)
+      });
       console.log('Config saved to project file');
       return true;
     } catch (error) {
@@ -227,117 +250,117 @@
               <label class="form-label">
                 <span class="label-text">Keywords (comma separated)</span>
                 <span class="required-indicator">Required</span>
+                <input 
+                  type="text" 
+                  placeholder="python, backend, api, django" 
+                  bind:value={formData.keywords}
+                  class="form-input"
+                  required 
+                />
               </label>
-              <input 
-                type="text" 
-                placeholder="python, backend, api, django" 
-                bind:value={formData.keywords}
-                class="form-input"
-                required 
-              />
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Locations (comma separated)</span>
+                <input 
+                  type="text" 
+                  placeholder="Sydney, Melbourne, Remote" 
+                  bind:value={formData.locations}
+                  class="form-input"
+                />
               </label>
-              <input 
-                type="text" 
-                placeholder="Sydney, Melbourne, Remote" 
-                bind:value={formData.locations}
-                class="form-input"
-              />
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Minimum Salary (AUD)</span>
+                <input 
+                  type="number" 
+                  placeholder="80000" 
+                  min="0"
+                  bind:value={formData.minSalary}
+                  class="form-input"
+                />
               </label>
-              <input 
-                type="number" 
-                placeholder="80000" 
-                min="0"
-                bind:value={formData.minSalary}
-                class="form-input"
-              />
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Maximum Salary (AUD)</span>
+                <input 
+                  type="number" 
+                  placeholder="150000" 
+                  min="0"
+                  bind:value={formData.maxSalary}
+                  class="form-input"
+                />
               </label>
-              <input 
-                type="number" 
-                placeholder="150000" 
-                min="0"
-                bind:value={formData.maxSalary}
-                class="form-input"
-              />
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Job Types</span>
+                <select bind:value={formData.jobType} class="form-select">
+                  <option value="any">Any</option>
+                  <option value="full-time">Full time</option>
+                  <option value="part-time">Part time</option>
+                  <option value="contract">Contract/Temp</option>
+                  <option value="casual">Casual/Vacation</option>
+                </select>
               </label>
-              <select bind:value={formData.jobType} class="form-select">
-                <option value="any">Any</option>
-                <option value="full-time">Full time</option>
-                <option value="part-time">Part time</option>
-                <option value="contract">Contract/Temp</option>
-                <option value="casual">Casual/Vacation</option>
-              </select>
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Experience Levels</span>
+                <select bind:value={formData.experienceLevel} class="form-select">
+                  <option value="any">Any</option>
+                  <option value="entry">Entry Level</option>
+                  <option value="mid">Mid Level</option>
+                  <option value="senior">Senior</option>
+                  <option value="lead">Lead</option>
+                  <option value="executive">Executive</option>
+                </select>
               </label>
-              <select bind:value={formData.experienceLevel} class="form-select">
-                <option value="any">Any</option>
-                <option value="entry">Entry Level</option>
-                <option value="mid">Mid Level</option>
-                <option value="senior">Senior</option>
-                <option value="lead">Lead</option>
-                <option value="executive">Executive</option>
-              </select>
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Industries</span>
+                <select bind:value={formData.industry} class="form-select">
+                  {#each industries as industry}
+                    <option value={industry.value} disabled={industry.value === ''}>{industry.label}</option>
+                  {/each}
+                </select>
               </label>
-              <select bind:value={formData.industry} class="form-select">
-                {#each industries as industry}
-                  <option value={industry.value} disabled={industry.value === ''}>{industry.label}</option>
-                {/each}
-              </select>
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Job Listed On</span>
+                <select bind:value={formData.listedDate} class="form-select">
+                  <option value="" disabled selected>Select listing date range</option>
+                  <option value="any">Any time</option>
+                  <option value="today">Today</option>
+                  <option value="last_3_days">Last 3 days</option>
+                  <option value="last_7_days">Last 7 days</option>
+                  <option value="last_14_days">Last 14 days</option>
+                  <option value="last_30_days">Last 30 days</option>
+                </select>
               </label>
-              <select bind:value={formData.listedDate} class="form-select">
-                <option value="" disabled selected>Select listing date range</option>
-                <option value="any">Any time</option>
-                <option value="today">Today</option>
-                <option value="last_3_days">Last 3 days</option>
-                <option value="last_7_days">Last 7 days</option>
-                <option value="last_14_days">Last 14 days</option>
-                <option value="last_30_days">Last 30 days</option>
-              </select>
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Remote Preference</span>
+                <select bind:value={formData.remotePreference} class="form-select">
+                  <option value="any">Any</option>
+                  <option value="remote">Remote</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="on-site">On-site</option>
+                </select>
               </label>
-              <select bind:value={formData.remotePreference} class="form-select">
-                <option value="any">Any</option>
-                <option value="remote">Remote</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="on-site">On-site</option>
-              </select>
             </div>
           </div>
         </div>
@@ -379,24 +402,24 @@
               <label class="form-label">
                 <span class="label-text">Resume Upload</span>
                 <span class="helper-text">PDF format recommended</span>
+                <div class="file-upload-wrapper">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.doc,.docx" 
+                    id="resume-upload" 
+                    class="file-input"
+                    onchange={handleResumeUpload}
+                  />
+                  <label for="resume-upload" class="file-upload-label">
+                    Choose File
+                  </label>
+                  {#if resumeUploaded}
+                    <div class="file-upload-status">
+                      <span class="upload-success">✓ Uploaded: {resumeFile?.name || 'filename.pdf'}</span>
+                    </div>
+                  {/if}
+                </div>
               </label>
-              <div class="file-upload-wrapper">
-                <input 
-                  type="file" 
-                  accept=".pdf,.doc,.docx" 
-                  id="resume-upload" 
-                  class="file-input"
-                  onchange={handleResumeUpload}
-                />
-                <label for="resume-upload" class="file-upload-label">
-                  Choose File
-                </label>
-                {#if resumeUploaded}
-                  <div class="file-upload-status">
-                    <span class="upload-success">✓ Uploaded: {resumeFile?.name || 'filename.pdf'}</span>
-                  </div>
-                {/if}
-              </div>
             </div>
           </div>
         </div>
@@ -410,25 +433,25 @@
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Excluded Companies (comma separated)</span>
+                <input 
+                  type="text" 
+                  placeholder="wipro, infosys, tcs" 
+                  bind:value={formData.excludedCompanies}
+                  class="form-input"
+                />
               </label>
-              <input 
-                type="text" 
-                placeholder="wipro, infosys, tcs" 
-                bind:value={formData.excludedCompanies}
-                class="form-input"
-              />
             </div>
 
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Excluded Keywords</span>
+                <input 
+                  type="text" 
+                  placeholder="junior, intern, php" 
+                  bind:value={formData.excludedKeywords}
+                  class="form-input"
+                />
               </label>
-              <input 
-                type="text" 
-                placeholder="junior, intern, php" 
-                bind:value={formData.excludedKeywords}
-                class="form-input"
-              />
             </div>
           </div>
         </div>
@@ -437,7 +460,13 @@
       <!-- Smart Matching (Advanced) -->
       {#if isAdvancedMode}
         <div class="form-section collapsible">
-          <div class="section-header-collapsible" onclick={toggleSmartMatching}>
+          <div 
+            class="section-header-collapsible" 
+            role="button" 
+            tabindex="0"
+            onclick={toggleSmartMatching}
+            onkeydown={(event) => handleToggleKeydown(event, toggleSmartMatching)}
+          >
             <input type="checkbox" checked={showSmartMatching} readonly />
             <span class="section-title">🧠 Smart Matching Weights</span>
           </div>
@@ -448,68 +477,68 @@
                   <label class="form-label">
                     <span class="label-text">Skill Weight</span>
                     <span class="helper-text">0.0 - 1.0</span>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="1" 
+                      step="0.1" 
+                      placeholder="0.4" 
+                      bind:value={formData.skillWeight}
+                      onblur={validateWeight}
+                      class="form-input"
+                    />
                   </label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="1" 
-                    step="0.1" 
-                    placeholder="0.4" 
-                    bind:value={formData.skillWeight}
-                    onblur={validateWeight}
-                    class="form-input"
-                  />
                 </div>
 
                 <div class="form-group">
                   <label class="form-label">
                     <span class="label-text">Location Weight</span>
                     <span class="helper-text">0.0 - 1.0</span>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="1" 
+                      step="0.1" 
+                      placeholder="0.2" 
+                      bind:value={formData.locationWeight}
+                      onblur={validateWeight}
+                      class="form-input"
+                    />
                   </label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="1" 
-                    step="0.1" 
-                    placeholder="0.2" 
-                    bind:value={formData.locationWeight}
-                    onblur={validateWeight}
-                    class="form-input"
-                  />
                 </div>
 
                 <div class="form-group">
                   <label class="form-label">
                     <span class="label-text">Salary Weight</span>
                     <span class="helper-text">0.0 - 1.0</span>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="1" 
+                      step="0.1" 
+                      placeholder="0.3" 
+                      bind:value={formData.salaryWeight}
+                      onblur={validateWeight}
+                      class="form-input"
+                    />
                   </label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="1" 
-                    step="0.1" 
-                    placeholder="0.3" 
-                    bind:value={formData.salaryWeight}
-                    onblur={validateWeight}
-                    class="form-input"
-                  />
                 </div>
 
                 <div class="form-group">
                   <label class="form-label">
                     <span class="label-text">Company Weight</span>
                     <span class="helper-text">0.0 - 1.0</span>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="1" 
+                      step="0.1" 
+                      placeholder="0.1" 
+                      bind:value={formData.companyWeight}
+                      onblur={validateWeight}
+                      class="form-input"
+                    />
                   </label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="1" 
-                    step="0.1" 
-                    placeholder="0.1" 
-                    bind:value={formData.companyWeight}
-                    onblur={validateWeight}
-                    class="form-input"
-                  />
                 </div>
               </div>
             </div>
@@ -518,7 +547,13 @@
 
         <!-- DeepSeek API (Advanced) -->
         <div class="form-section collapsible">
-          <div class="section-header-collapsible" onclick={toggleDeepSeek}>
+          <div 
+            class="section-header-collapsible" 
+            role="button" 
+            tabindex="0"
+            onclick={toggleDeepSeek}
+            onkeydown={(event) => handleToggleKeydown(event, toggleDeepSeek)}
+          >
             <input type="checkbox" checked={showDeepSeek} readonly />
             <span class="section-title">🤖 DeepSeek AI Integration</span>
           </div>
@@ -536,13 +571,13 @@
                 <div class="form-group">
                   <label class="form-label">
                     <span class="label-text">API Key</span>
+                    <input 
+                      type="password" 
+                      placeholder="sk-..." 
+                      bind:value={formData.deepSeekApiKey}
+                      class="form-input"
+                    />
                   </label>
-                  <input 
-                    type="password" 
-                    placeholder="sk-..." 
-                    bind:value={formData.deepSeekApiKey}
-                    class="form-input"
-                  />
                 </div>
               </div>
             </div>
