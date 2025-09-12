@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import FrontendFormPage from './+page.svelte';
+import FrontendFormPage from '../routes/frontend-form/+page.svelte';
 
 describe('Frontend Form Page', () => {
   let mockInvoke: any;
@@ -467,6 +467,16 @@ describe('Frontend Form Page', () => {
       expect(screen.getByText('Engineering')).toBeInTheDocument();
     });
 
+    it('allows industry selection', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      const industrySelect = screen.getByDisplayValue('Select an industry');
+      await user.selectOptions(industrySelect, '18_information');
+
+      expect(industrySelect).toHaveValue('18_information');
+    });
+
     it('renders all work rights options', async () => {
       render(FrontendFormPage);
 
@@ -474,6 +484,288 @@ describe('Frontend Form Page', () => {
       expect(screen.getByText("I'm an Australian citizen")).toBeInTheDocument();
       expect(screen.getByText("I'm a permanent resident and/or NZ citizen")).toBeInTheDocument();
       expect(screen.getByText('I require sponsorship to work for a new employer (e.g. 482, 457)')).toBeInTheDocument();
+    });
+
+    it('allows work rights selection', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      const workRightsSelect = screen.getByDisplayValue("I'm an Australian citizen");
+      await user.selectOptions(workRightsSelect, 'permanent_resident');
+
+      expect(workRightsSelect).toHaveValue('permanent_resident');
+    });
+  });
+
+  describe('Complete Form Input Testing', () => {
+    it('tests all text inputs can be filled and maintain values', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      const testData = {
+        keywords: 'python, javascript, react, node',
+        locations: 'Sydney, Melbourne, Brisbane',
+        minSalary: '85000',
+        maxSalary: '130000',
+        excludedCompanies: 'company1, company2, company3',
+        excludedKeywords: 'junior, intern, graduate'
+      };
+
+      // Test all text inputs
+      const keywordsInput = screen.getByPlaceholderText('python, backend, api, django');
+      const locationsInput = screen.getByPlaceholderText('Sydney, Melbourne, Remote');
+      const minSalaryInput = screen.getByPlaceholderText('80000');
+      const maxSalaryInput = screen.getByPlaceholderText('150000');
+      const excludedCompaniesInput = screen.getByPlaceholderText('wipro, infosys, tcs');
+      const excludedKeywordsInput = screen.getByPlaceholderText('junior, intern, php');
+
+      await user.type(keywordsInput, testData.keywords);
+      await user.type(locationsInput, testData.locations);
+      await user.type(minSalaryInput, testData.minSalary);
+      await user.type(maxSalaryInput, testData.maxSalary);
+      await user.type(excludedCompaniesInput, testData.excludedCompanies);
+      await user.type(excludedKeywordsInput, testData.excludedKeywords);
+
+      expect(keywordsInput).toHaveValue(testData.keywords);
+      expect(locationsInput).toHaveValue(testData.locations);
+      expect(minSalaryInput).toHaveValue(85000);
+      expect(maxSalaryInput).toHaveValue(130000);
+      expect(excludedCompaniesInput).toHaveValue(testData.excludedCompanies);
+      expect(excludedKeywordsInput).toHaveValue(testData.excludedKeywords);
+    });
+
+    it('tests all select dropdown options', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      // Test job type dropdown
+      const jobTypeSelect = screen.getByDisplayValue('Any');
+      await user.selectOptions(jobTypeSelect, 'full-time');
+      expect(jobTypeSelect).toHaveValue('full-time');
+
+      await user.selectOptions(jobTypeSelect, 'part-time');
+      expect(jobTypeSelect).toHaveValue('part-time');
+
+      await user.selectOptions(jobTypeSelect, 'contract');
+      expect(jobTypeSelect).toHaveValue('contract');
+
+      // Test experience level dropdown
+      const expLevelSelects = screen.getAllByDisplayValue('Any');
+      const expLevelSelect = expLevelSelects.find(select => 
+        select.closest('label')?.textContent?.includes('Experience Levels')
+      );
+      
+      if (expLevelSelect) {
+        await user.selectOptions(expLevelSelect, 'senior');
+        expect(expLevelSelect).toHaveValue('senior');
+
+        await user.selectOptions(expLevelSelect, 'mid');
+        expect(expLevelSelect).toHaveValue('mid');
+      }
+
+      // Test remote preference dropdown
+      const remoteSelects = screen.getAllByDisplayValue('Any');
+      const remoteSelect = remoteSelects.find(select => 
+        select.closest('label')?.textContent?.includes('Remote Preference')
+      );
+      
+      if (remoteSelect) {
+        await user.selectOptions(remoteSelect, 'remote');
+        expect(remoteSelect).toHaveValue('remote');
+
+        await user.selectOptions(remoteSelect, 'hybrid');
+        expect(remoteSelect).toHaveValue('hybrid');
+      }
+    });
+
+    it('tests all advanced mode weight inputs', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      // Enable advanced mode
+      const advancedToggle = screen.getByRole('button', { name: /advanced/i });
+      await user.click(advancedToggle);
+
+      // Expand smart matching section
+      const smartMatchingHeader = screen.getByText('🧠 Smart Matching Weights');
+      await user.click(smartMatchingHeader);
+
+      await waitFor(async () => {
+        const skillWeightInput = screen.getByPlaceholderText('0.4');
+        const locationWeightInput = screen.getByPlaceholderText('0.2');
+        const salaryWeightInput = screen.getByPlaceholderText('0.3');
+        const companyWeightInput = screen.getByPlaceholderText('0.1');
+
+        // Clear and set new values
+        await user.clear(skillWeightInput);
+        await user.type(skillWeightInput, '0.5');
+        
+        await user.clear(locationWeightInput);
+        await user.type(locationWeightInput, '0.3');
+        
+        await user.clear(salaryWeightInput);
+        await user.type(salaryWeightInput, '0.15');
+        
+        await user.clear(companyWeightInput);
+        await user.type(companyWeightInput, '0.05');
+
+        expect(skillWeightInput).toHaveValue(0.5);
+        expect(locationWeightInput).toHaveValue(0.3);
+        expect(salaryWeightInput).toHaveValue(0.15);
+        expect(companyWeightInput).toHaveValue(0.05);
+      });
+    });
+
+    it('tests DeepSeek integration inputs', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      // Enable advanced mode
+      const advancedToggle = screen.getByRole('button', { name: /advanced/i });
+      await user.click(advancedToggle);
+
+      // Expand DeepSeek section
+      const deepSeekHeader = screen.getByText('🤖 DeepSeek AI Integration');
+      await user.click(deepSeekHeader);
+
+      await waitFor(async () => {
+        const enableDeepSeekCheckbox = screen.getByLabelText('Enable DeepSeek');
+        const apiKeyInput = screen.getByPlaceholderText('sk-...');
+
+        // Test checkbox
+        expect(enableDeepSeekCheckbox).not.toBeChecked();
+        await user.click(enableDeepSeekCheckbox);
+        expect(enableDeepSeekCheckbox).toBeChecked();
+
+        // Test API key input
+        await user.type(apiKeyInput, 'sk-test-api-key-12345');
+        expect(apiKeyInput).toHaveValue('sk-test-api-key-12345');
+      });
+    });
+
+    it('tests date range selection', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      const listedDateSelect = screen.getByDisplayValue('Select listing date range');
+      
+      await user.selectOptions(listedDateSelect, 'last_7_days');
+      expect(listedDateSelect).toHaveValue('last_7_days');
+
+      await user.selectOptions(listedDateSelect, 'today');
+      expect(listedDateSelect).toHaveValue('today');
+
+      await user.selectOptions(listedDateSelect, 'last_30_days');
+      expect(listedDateSelect).toHaveValue('last_30_days');
+    });
+
+    it('verifies form maintains state across all interactions', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      // Fill multiple fields
+      const keywordsInput = screen.getByPlaceholderText('python, backend, api, django');
+      const locationsInput = screen.getByPlaceholderText('Sydney, Melbourne, Remote');
+      const rewriteResumeCheckbox = screen.getByLabelText('Rewrite resume for each Job?');
+      const legalCheckbox = screen.getByLabelText('I understand and accept');
+
+      await user.type(keywordsInput, 'full stack developer');
+      await user.type(locationsInput, 'Remote, Sydney');
+      await user.click(rewriteResumeCheckbox);
+      await user.click(legalCheckbox);
+
+      // Toggle advanced mode on and off
+      const advancedToggle = screen.getByRole('button', { name: /advanced/i });
+      await user.click(advancedToggle);
+      await user.click(advancedToggle);
+
+      // Verify fields retained their values
+      expect(keywordsInput).toHaveValue('full stack developer');
+      expect(locationsInput).toHaveValue('Remote, Sydney');
+      expect(rewriteResumeCheckbox).toBeChecked();
+      expect(legalCheckbox).toBeChecked();
+    });
+
+    it('tests edge cases and boundary values', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      const minSalaryInput = screen.getByPlaceholderText('80000');
+      const maxSalaryInput = screen.getByPlaceholderText('150000');
+
+      // Test very large salary values
+      await user.type(minSalaryInput, '999999');
+      await user.type(maxSalaryInput, '1000000');
+
+      expect(minSalaryInput).toHaveValue(999999);
+      expect(maxSalaryInput).toHaveValue(1000000);
+
+      // Test zero values
+      await user.clear(minSalaryInput);
+      await user.type(minSalaryInput, '0');
+      expect(minSalaryInput).toHaveValue(0);
+    });
+  });
+
+  describe('Form Persistence and State Management', () => {
+    it('maintains form state after toggling collapsible sections', async () => {
+      const user = userEvent.setup();
+      render(FrontendFormPage);
+
+      // Enter advanced mode and set some values
+      const advancedToggle = screen.getByRole('button', { name: /advanced/i });
+      await user.click(advancedToggle);
+
+      const smartMatchingHeader = screen.getByText('🧠 Smart Matching Weights');
+      await user.click(smartMatchingHeader);
+
+      await waitFor(async () => {
+        const skillWeightInput = screen.getByPlaceholderText('0.4');
+        await user.clear(skillWeightInput);
+        await user.type(skillWeightInput, '0.7');
+      });
+
+      // Collapse and expand again
+      await user.click(smartMatchingHeader);
+      await user.click(smartMatchingHeader);
+
+      await waitFor(() => {
+        const skillWeightInput = screen.getByPlaceholderText('0.4');
+        expect(skillWeightInput).toHaveValue(0.7);
+      });
+    });
+
+    it('handles form submission with all fields populated', async () => {
+      const user = userEvent.setup();
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      render(FrontendFormPage);
+
+      // Fill all main fields
+      await user.type(screen.getByPlaceholderText('python, backend, api, django'), 'react, typescript, node');
+      await user.type(screen.getByPlaceholderText('Sydney, Melbourne, Remote'), 'Melbourne, Remote');
+      await user.type(screen.getByPlaceholderText('80000'), '90000');
+      await user.type(screen.getByPlaceholderText('150000'), '140000');
+      
+      const jobTypeSelect = screen.getByDisplayValue('Any');
+      await user.selectOptions(jobTypeSelect, 'full-time');
+
+      await user.click(screen.getByLabelText('Rewrite resume for each Job?'));
+      await user.click(screen.getByLabelText('I understand and accept'));
+
+      const submitButton = screen.getByRole('button', { name: /save configuration/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith('Configuration saved successfully!');
+      });
+
+      // Verify the saved data structure
+      expect(mockInvoke).toHaveBeenCalledWith('write_file_async', expect.objectContaining({
+        filename: 'src/bots/user-bots-config.json',
+        content: expect.stringContaining('react, typescript, node')
+      }));
+
+      alertSpy.mockRestore();
     });
   });
 });

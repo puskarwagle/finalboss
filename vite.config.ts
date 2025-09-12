@@ -6,6 +6,14 @@ export default defineConfig({
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],
     globals: true,
-    environment: 'jsdom'
+    environment: 'happy-dom',
+    setupFiles: ['src/test-setup.ts'],
+    alias: {
+      $app: '/mock/app',
+      $lib: '/src/lib'
+    }
+  },
+  resolve: {
+    conditions: ['browser']
   }
 });

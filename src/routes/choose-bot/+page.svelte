@@ -1,7 +1,54 @@
 <script>
-
   import { bots } from '../../bots/botsinit.json';
+  import { invoke } from '@tauri-apps/api/core';
 
+  let isRunning = false;
+  let runningBot = '';
+  let statusMessage = '';
+
+  async function handleBotClick(botName) {
+    if (isRunning) return; // Prevent multiple clicks while running
+    
+    if (botName === 'seek_bot') {
+      try {
+        isRunning = true;
+        runningBot = 'seek_bot';
+        statusMessage = 'Starting Seek bot... Please wait while we open your browser.';
+        console.log('Running seek bot...');
+        
+        // Execute the seek.py script
+        const result = await invoke('run_python_script', { 
+          scriptPath: 'src/bots/seek.py' 
+        });
+        
+        console.log('Seek bot result:', result);
+        statusMessage = 'Seek bot completed successfully! Check your browser.';
+        
+        // Clear status after 5 seconds
+        setTimeout(() => {
+          statusMessage = '';
+          isRunning = false;
+          runningBot = '';
+        }, 5000);
+        
+      } catch (error) {
+        console.error('Error running seek bot:', error);
+        statusMessage = `Error: ${error}`;
+        
+        // Clear error after 10 seconds
+        setTimeout(() => {
+          statusMessage = '';
+          isRunning = false;
+          runningBot = '';
+        }, 10000);
+      }
+    } else if (botName === 'linkedin_bot') {
+      statusMessage = 'LinkedIn bot is not implemented yet.';
+      setTimeout(() => {
+        statusMessage = '';
+      }, 3000);
+    }
+  }
 </script>
 
 
@@ -145,16 +192,70 @@
     .bot-card:hover .bot-description {
         color: #00dddd;
     }
+
+    .bot-card.running {
+        border-color: #ff6600;
+        box-shadow: 0 0 30px rgba(255, 102, 0, 0.6);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .status-message {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.9);
+        border: 2px solid #00ff00;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        color: #00ff00;
+        font-family: 'Orbitron', monospace;
+        font-weight: 700;
+        z-index: 1000;
+        text-align: center;
+        max-width: 90vw;
+        word-wrap: break-word;
+    }
+
+    .status-message.error {
+        border-color: #ff0000;
+        color: #ff0000;
+        background: rgba(20, 0, 0, 0.9);
+    }
 </style>
+
+{#if statusMessage}
+  <div class="status-message" class:error={statusMessage.includes('Error')}>
+    {statusMessage}
+  </div>
+{/if}
 
 <main class="container">
   <h1 class="title">Choose a Bot</h1>
   <div class="grid">
     {#each bots as bot}
-      <div class="bot-card" role="button" tabindex="0">
+      <div 
+        class="bot-card" 
+        class:running={runningBot === bot.name}
+        role="button" 
+        tabindex="0"
+        on:click={() => handleBotClick(bot.name)}
+        on:keydown={(e) => e.key === 'Enter' && handleBotClick(bot.name)}
+      >
         <img src={bot.image} alt={bot.name} class="avatar" />
         <h2 class="bot-name">{bot.name}</h2>
-        <p class="bot-description">{bot.description}</p>
+        <p class="bot-description">
+          {#if runningBot === bot.name}
+            🤖 Running... Please wait
+          {:else}
+            {bot.description}
+          {/if}
+        </p>
       </div>
     {/each}
   </div>

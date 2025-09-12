@@ -18,7 +18,8 @@
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-fs": "^2.4.2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "playwright": "^1.55.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",
@@ -28,6 +29,7 @@
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/svelte": "^5.2.8",
     "@testing-library/user-event": "^14.6.1",
+    "happy-dom": "^18.0.1",
     "jsdom": "^26.1.0",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",

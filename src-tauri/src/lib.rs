@@ -166,6 +166,53 @@ async fn get_file_metadata_async(filename: &str) -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+async fn run_python_script(script_path: &str) -> Result<String, String> {
+    use tokio::process::Command;
+    use std::env;
+    
+    // Get the current working directory and resolve relative paths
+    let path = if script_path.starts_with("/") || (cfg!(windows) && script_path.len() > 1 && script_path.chars().nth(1) == Some(':')) {
+        // Absolute path
+        std::path::PathBuf::from(script_path)
+    } else {
+        // Relative path - resolve from project root
+        let mut project_root = env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+        if project_root.ends_with("src-tauri") {
+            project_root.pop(); // Go up one level if we're in src-tauri
+        }
+        project_root.join(script_path)
+    };
+    
+    // Check if the script exists
+    if !path.exists() {
+        return Err(format!("Python script not found: {}", path.display()));
+    }
+    
+    // Run the Python script
+    let output = Command::new("python3")
+        .arg(path.to_str().unwrap())
+        .current_dir({
+            let mut dir = env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+            if dir.ends_with("src-tauri") {
+                dir.pop(); // Go up one level if we're in src-tauri
+            }
+            dir
+        })
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute python script: {}", e))?;
+    
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Ok(format!("Script executed successfully!\nOutput: {}\nErrors: {}", stdout, stderr))
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!("Script execution failed with exit code: {}\nError: {}", output.status.code().unwrap_or(-1), stderr))
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -182,7 +229,8 @@ pub fn run() {
             create_directory_async,
             remove_directory_async,
             file_exists_async,
-            get_file_metadata_async
+            get_file_metadata_async,
+            run_python_script
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
