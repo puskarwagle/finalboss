@@ -5,289 +5,232 @@
   let isRunning = false;
   let runningBot = '';
   let statusMessage = '';
+  let selectedBot = '';
+  let showBrowserSelection = false;
 
-  async function handleBotClick(botName) {
+  function handleBotClick(botName) {
     if (isRunning) return; // Prevent multiple clicks while running
     
-    if (botName === 'seek_bot') {
-      try {
-        isRunning = true;
-        runningBot = 'seek_bot';
-        statusMessage = 'Starting Seek bot... Please wait while we open your browser.';
-        console.log('Running seek bot...');
-        
-        // Execute the seek.js script with bun
-        const result = await invoke('run_javascript_script', { 
-          scriptPath: 'src/bots/seek.js' 
-        });
-        
-        console.log('Seek bot result:', result);
-        statusMessage = 'Seek bot completed successfully! Browser is ready to use.';
-        
-        // Clear status after 5 seconds
-        setTimeout(() => {
-          statusMessage = '';
-          isRunning = false;
-          runningBot = '';
-        }, 5000);
-        
-      } catch (error) {
-        console.error('Error running seek bot:', error);
-        statusMessage = `Error: ${error}`;
-        
-        // Clear error after 10 seconds
-        setTimeout(() => {
-          statusMessage = '';
-          isRunning = false;
-          runningBot = '';
-        }, 10000);
-      }
-    } else if (botName === 'linkedin_bot') {
-      try {
-        isRunning = true;
-        runningBot = 'linkedin_bot';
-        statusMessage = 'Starting LinkedIn bot... Please wait while we open your browser.';
-        console.log('Running linkedin bot...');
-        
-        // Execute the linkedin.js script with bun
-        const result = await invoke('run_javascript_script', { 
-          scriptPath: 'src/bots/linkedin.js' 
-        });
-        
-        console.log('LinkedIn bot result:', result);
-        statusMessage = 'LinkedIn bot completed successfully! Browser is ready to use.';
-        
-        // Clear status after 5 seconds
-        setTimeout(() => {
-          statusMessage = '';
-          isRunning = false;
-          runningBot = '';
-        }, 5000);
-        
-      } catch (error) {
-        console.error('Error running linkedin bot:', error);
-        statusMessage = `Error: ${error}`;
-        
-        // Clear error after 10 seconds
-        setTimeout(() => {
-          statusMessage = '';
-          isRunning = false;
-          runningBot = '';
-        }, 10000);
-      }
-    } else if (botName === 'indeed_bot') {
-      try {
-        isRunning = true;
-        runningBot = 'indeed_bot';
-        statusMessage = 'Starting Indeed bot... Please wait while we open your browser.';
-        console.log('Running indeed bot...');
-        
-        // Execute the indeed.js script with bun
-        const result = await invoke('run_javascript_script', { 
-          scriptPath: 'src/bots/indeed.js' 
-        });
-        
-        console.log('Indeed bot result:', result);
-        statusMessage = 'Indeed bot completed successfully! Browser is ready to use.';
-        
-        // Clear status after 5 seconds
-        setTimeout(() => {
-          statusMessage = '';
-          isRunning = false;
-          runningBot = '';
-        }, 5000);
-        
-      } catch (error) {
-        console.error('Error running indeed bot:', error);
-        statusMessage = `Error: ${error}`;
-        
-        // Clear error after 10 seconds
-        setTimeout(() => {
-          statusMessage = '';
-          isRunning = false;
-          runningBot = '';
-        }, 10000);
-      }
+    // Show browser selection for this bot
+    selectedBot = botName;
+    showBrowserSelection = true;
+  }
+
+  async function runBotWithBrowser(botName, browser) {
+    try {
+      isRunning = true;
+      runningBot = botName;
+      showBrowserSelection = false;
+      statusMessage = `Starting ${botName.replace('_', ' ')} with ${browser}... Please wait while we open your browser.`;
+      console.log(`Running ${botName} with ${browser}...`);
+      
+      // Execute the bot script with browser parameter
+      const result = await invoke('run_javascript_script', { 
+        scriptPath: `src/bots/${botName.replace('_bot', '.js')}`,
+        args: [browser]
+      });
+      
+      console.log(`${botName} result:`, result);
+      statusMessage = `${botName.replace('_', ' ')} completed successfully! Browser is ready to use.`;
+      
+      // Clear status after 5 seconds
+      setTimeout(() => {
+        statusMessage = '';
+        isRunning = false;
+        runningBot = '';
+        selectedBot = '';
+      }, 5000);
+      
+    } catch (error) {
+      console.error(`Error running ${botName}:`, error);
+      statusMessage = `Error: ${error}`;
+      
+      // Clear error after 10 seconds
+      setTimeout(() => {
+        statusMessage = '';
+        isRunning = false;
+        runningBot = '';
+        selectedBot = '';
+        showBrowserSelection = false;
+      }, 10000);
     }
+  }
+
+  function cancelBrowserSelection() {
+    selectedBot = '';
+    showBrowserSelection = false;
   }
 </script>
 
 
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+  .bot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-xl);
+    justify-items: center;
+  }
+  
+  .bot-card {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .bot-card.running {
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 30px rgba(255, 102, 0, 0.6);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  
+  .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto var(--space-lg);
+    border: 3px solid var(--color-primary);
+    transition: var(--transition-normal);
+    filter: brightness(0.8) contrast(1.2);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .bot-card:hover .avatar {
+    border-color: var(--color-primary-bright);
+    filter: brightness(1.2) contrast(1.4);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+  }
+  
+  .bot-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-md);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-normal);
+    color: var(--color-primary);
+    transition: var(--transition-normal);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .bot-card:hover .bot-name {
+    color: var(--color-primary-bright);
+    text-shadow: 0 0 10px var(--color-primary-bright);
+  }
+  
+  .bot-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-primary-dark);
+    line-height: 1.4;
+    font-weight: var(--font-weight-normal);
+    transition: var(--transition-normal);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .bot-card:hover .bot-description {
+    color: #00dddd;
+  }
+  
+  .status-message {
+    position: fixed;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-overlay);
+    border: 2px solid var(--color-primary);
+    padding: var(--space-md) var(--space-xl);
+    border-radius: var(--radius-md);
+    color: var(--color-primary);
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-bold);
+    z-index: var(--z-toast);
+    text-align: center;
+    max-width: 90vw;
+    word-wrap: break-word;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-normal);
+  }
+  
+  .status-message.error {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+    background: rgba(20, 0, 0, 0.9);
+  }
 
-    :global(body) {
-        background: #000;
-        font-family: 'Orbitron', monospace;
-        color: #00ff00;
-        overflow-x: hidden;
-        min-height: 100vh;
-    }
+  .browser-selection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-overlay);
+    border-radius: inherit;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    animation: fadeIn 0.3s ease-in-out;
+  }
 
-    .container {
-        padding: 2rem;
-        max-width: 1200px;
-        margin: 0 auto;
-        position: relative;
-        z-index: 1;
-    }
+  .browser-selection h3 {
+    color: var(--color-primary);
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--space-lg);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-normal);
+  }
 
-    .title {
-        text-align: center;
-        font-size: clamp(2rem, 5vw, 4rem);
-        font-weight: 900;
-        margin-bottom: 3rem;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        background: linear-gradient(45deg, #00ff00, #00ffff, #ff00ff);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 20px #00ff0050;
-        animation: glow 2s ease-in-out infinite alternate;
-    }
+  .browser-buttons {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
 
-    @keyframes glow {
-        from { filter: drop-shadow(0 0 5px #00ff00); }
-        to { filter: drop-shadow(0 0 20px #00ff00); }
-    }
+  .browser-btn {
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--color-primary);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-normal);
+    cursor: pointer;
+    transition: var(--transition-normal);
+  }
 
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 2rem;
-        justify-items: center;
-    }
+  .browser-btn:hover {
+    background: var(--color-primary-bright);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  }
 
-    .bot-card {
-        background: linear-gradient(135deg, #001100, #003300);
-        border: 2px solid #00ff00;
-        border-radius: 12px;
-        padding: 2rem;
-        width: 100%;
-        max-width: 320px;
-        text-align: center;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-    }
+  .cancel-btn {
+    padding: var(--space-xs) var(--space-md);
+    background: transparent;
+    color: var(--color-primary-dark);
+    border: 1px solid var(--color-primary-dark);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: var(--transition-normal);
+  }
 
-    .bot-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent, rgba(0, 255, 0, 0.1), transparent);
-        transform: rotate(45deg);
-        transition: all 0.5s ease;
-        opacity: 0;
-    }
+  .cancel-btn:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
 
-    .bot-card:hover {
-        transform: translateY(-8px);
-        border-color: #00ffff;
-        box-shadow: 0 10px 40px rgba(0, 255, 255, 0.4);
-        background: linear-gradient(135deg, #001122, #003344);
-    }
-
-    .bot-card:hover::before {
-        opacity: 1;
-        animation: scan 1.5s ease-in-out infinite;
-    }
-
-    @keyframes scan {
-        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-    }
-
-    .avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        margin: 0 auto 1.5rem;
-        border: 3px solid #00ff00;
-        transition: all 0.3s ease;
-        filter: brightness(0.8) contrast(1.2);
-        position: relative;
-        z-index: 2;
-    }
-
-    .bot-card:hover .avatar {
-        border-color: #00ffff;
-        filter: brightness(1.2) contrast(1.4);
-        box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
-    }
-
-    .bot-name {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #00ff00;
-        transition: color 0.3s ease;
-        position: relative;
-        z-index: 2;
-    }
-
-    .bot-card:hover .bot-name {
-        color: #00ffff;
-        text-shadow: 0 0 10px #00ffff;
-    }
-
-    .bot-description {
-        font-size: 0.9rem;
-        color: #00cc00;
-        line-height: 1.4;
-        font-weight: 400;
-        transition: color 0.3s ease;
-        position: relative;
-        z-index: 2;
-    }
-
-    .bot-card:hover .bot-description {
-        color: #00dddd;
-    }
-
-    .bot-card.running {
-        border-color: #ff6600;
-        box-shadow: 0 0 30px rgba(255, 102, 0, 0.6);
-        animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-    }
-
-    .status-message {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.9);
-        border: 2px solid #00ff00;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        color: #00ff00;
-        font-family: 'Orbitron', monospace;
-        font-weight: 700;
-        z-index: 1000;
-        text-align: center;
-        max-width: 90vw;
-        word-wrap: break-word;
-    }
-
-    .status-message.error {
-        border-color: #ff0000;
-        color: #ff0000;
-        background: rgba(20, 0, 0, 0.9);
-    }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 </style>
 
 {#if statusMessage}
@@ -296,29 +239,56 @@
   </div>
 {/if}
 
-<main class="container">
-  <h1 class="title">Choose a Bot</h1>
-  <div class="grid">
-    {#each bots as bot}
-      <div 
-        class="bot-card" 
-        class:running={runningBot === bot.name}
-        role="button" 
-        tabindex="0"
-        on:click={() => handleBotClick(bot.name)}
-        on:keydown={(e) => e.key === 'Enter' && handleBotClick(bot.name)}
-      >
-        <img src={bot.image} alt={bot.name} class="avatar" />
-        <h2 class="bot-name">{bot.name}</h2>
-        <p class="bot-description">
-          {#if runningBot === bot.name}
-            🤖 Running... Please wait
-          {:else}
-            {bot.description}
+<main class="page page--with-nav">
+  <div class="section__container">
+    <h1 class="section__title mb-2xl">Choose a Bot</h1>
+    <div class="bot-grid">
+      {#each bots as bot}
+        <div 
+          class="card bot-card" 
+          class:running={runningBot === bot.name}
+          role="button" 
+          tabindex="0"
+          on:click={() => handleBotClick(bot.name)}
+          on:keydown={(e) => e.key === 'Enter' && handleBotClick(bot.name)}
+        >
+          <img src={bot.image} alt={bot.name} class="avatar" />
+          <h2 class="bot-name">{bot.name}</h2>
+          <p class="bot-description">
+            {#if runningBot === bot.name}
+              🤖 Running... Please wait
+            {:else}
+              {bot.description}
+            {/if}
+          </p>
+          
+          {#if showBrowserSelection && selectedBot === bot.name}
+            <div class="browser-selection">
+              <h3>Choose Browser</h3>
+              <div class="browser-buttons">
+                <button 
+                  class="browser-btn"
+                  on:click|stopPropagation={() => runBotWithBrowser(bot.name, 'chrome')}
+                >
+                  Chrome
+                </button>
+                <button 
+                  class="browser-btn"
+                  on:click|stopPropagation={() => runBotWithBrowser(bot.name, 'firefox')}
+                >
+                  Firefox
+                </button>
+              </div>
+              <button 
+                class="cancel-btn"
+                on:click|stopPropagation={cancelBrowserSelection}
+              >
+                Cancel
+              </button>
+            </div>
           {/if}
-        </p>
-      </div>
-    {/each}
+        </div>
+      {/each}
+    </div>
   </div>
-
 </main>

@@ -1,22 +1,23 @@
 <script>
   import { onMount } from 'svelte';
   import { auth } from '$lib/auth.js';
+  import '../app.css';
   
   onMount(() => {
     auth.checkAuth();
   });
 </script>
 
-<nav>
-  <div class="logo">
+<nav class="nav">
+  <div class="nav__logo">
     <a href="/">Quest Bot</a>
   </div>
-  <div class="links">
+  <div class="nav__links">
     <a href="/">Home</a>
     <a href="/choose-bot">Choose Bot</a>
     {#if $auth.isLoggedIn}
-      <span class="user-info">Welcome, {$auth.user?.name || $auth.user?.email}</span>
-      <button class="logout-btn" on:click={() => auth.logout()}>Logout</button>
+      <span class="nav__user-info">Welcome, {$auth.user?.name || $auth.user?.email}</span>
+      <button class="btn btn--danger" on:click={() => auth.logout()}>Logout</button>
     {:else}
       <a href="/login">Login</a>
     {/if}
@@ -32,80 +33,32 @@
 </main>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-
-  nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 2rem;
-    background: transparent;
-    border-bottom: 1px solid rgba(0, 255, 0, 0.2);
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
-    font-family: 'Orbitron', monospace;
-  }
-
-  .logo a {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: #00ff00;
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    text-shadow: 0 0 10px #00ff0080;
-    transition: all 0.3s ease;
-  }
-
-  .logo a:hover {
-    color: #00ffff;
-    text-shadow: 0 0 20px #00ffff;
-  }
-
-  .links a {
-    color: #00ff00;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    margin: 0 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
-  }
-
-  .links a:hover {
-    color: #00ffff;
-    border-color: #00ffff;
-    box-shadow: 0 0 10px #00ffff80;
-  }
-
-  .user-info {
-    color: #00ff00;
-    padding: 0.5rem 1rem;
-    margin: 0 0.5rem;
-    font-size: 0.9rem;
+  .nav__user-info {
+    color: var(--color-primary);
+    padding: var(--space-sm) var(--space-md);
+    margin: 0 var(--space-sm);
+    font-size: var(--font-size-sm);
     opacity: 0.8;
-  }
-
-  .logout-btn {
-    background: transparent;
-    border: 1px solid #ff4444;
-    color: #ff4444;
-    padding: 0.5rem 1rem;
-    margin: 0 0.5rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-family: 'Orbitron', monospace;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    letter-spacing: var(--letter-spacing-normal);
   }
-
-  .logout-btn:hover {
-    background: #ff4444;
-    color: #000;
-    box-shadow: 0 0 10px #ff444480;
+  
+  .nav__links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+  
+  @media (max-width: 768px) {
+    .nav__links {
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    
+    .nav {
+      flex-direction: column;
+      padding: var(--space-md);
+    }
   }
 </style>

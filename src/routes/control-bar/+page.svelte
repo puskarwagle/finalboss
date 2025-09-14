@@ -121,15 +121,15 @@
           </div>
 
           <!-- Main Start/Stop Button -->
-          <button class="main-action-btn {getBotStatusClass()}" onclick={toggleBot} disabled={botStatus === 'loading'}>
-            <span class="btn-text">{getButtonText()}</span>
+          <button class="btn btn--primary btn--large main-action-btn {getBotStatusClass()}" onclick={toggleBot} disabled={botStatus === 'loading'}>
+            {getButtonText()}
           </button>
         </div>
       </div>
 
       <!-- Flip Toggle Button -->
       <div class="flip-section">
-        <button class="flip-btn" onclick={flipToJobsTracker}>
+        <button class="btn btn--outline flip-btn" onclick={flipToJobsTracker}>
           🔍 Jobs Tracker
         </button>
       </div>

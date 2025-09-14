@@ -232,9 +232,9 @@
 <div class="configuration-form">
   <div class="form-container">
     <div class="form-header">
-      <h2>⚙️ Configuration</h2>
+      <h2 class="section__title mb-0">⚙️ Configuration</h2>
       <div class="header-controls">
-        <button type="button" class="advanced-toggle" onclick={toggleAdvancedMode}>
+        <button type="button" class="btn btn--outline advanced-toggle" onclick={toggleAdvancedMode}>
           🔧 {isAdvancedMode ? 'Basic' : 'Advanced'}
         </button>
       </div>
@@ -242,14 +242,14 @@
 
     <form onsubmit={handleSubmit} class="config-form">
       <!-- Job Preferences -->
-      <div class="form-section">
+      <div class="card form-section">
         <div class="section-header">🎯 Job Preferences</div>
         <div class="section-content">
-          <div class="form-grid">
+          <div class="grid grid--2">
             <div class="form-group">
               <label class="form-label">
-                <span class="label-text">Keywords (comma separated)</span>
-                <span class="required-indicator">Required</span>
+                <span class="form-label__text">Keywords (comma separated)</span>
+                <span class="form-required">Required</span>
                 <input 
                   type="text" 
                   placeholder="python, backend, api, django" 
@@ -262,7 +262,7 @@
 
             <div class="form-group">
               <label class="form-label">
-                <span class="label-text">Locations (comma separated)</span>
+                <span class="form-label__text">Locations (comma separated)</span>
                 <input 
                   type="text" 
                   placeholder="Sydney, Melbourne, Remote" 
@@ -604,15 +604,15 @@
       </div>
 
       <!-- Submit Button -->
-      <div class="form-actions">
-        <button type="submit" class="submit-btn" disabled={isSubmitting}>
+      <div class="form-actions" style="display: flex; gap: var(--space-xl); justify-content: center; margin-top: var(--space-2xl); flex-wrap: wrap;">
+        <button type="submit" class="btn btn--primary btn--large" disabled={isSubmitting}>
           {#if isSubmitting}
-            <span class="btn-text">Saving...</span>
+            Saving...
           {:else}
-            <span class="btn-text">💾 Save Configuration</span>
+            💾 Save Configuration
           {/if}
         </button>
-        <button type="button" class="reset-btn" onclick={resetForm}>
+        <button type="button" class="btn btn--outline btn--large" onclick={resetForm}>
           🔄 Reset Form
         </button>
       </div>
@@ -621,94 +621,51 @@
 </div>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-
-  :global(body) {
-    background: #000;
-    font-family: 'Orbitron', monospace;
-    color: #00ff00;
-    margin: 0;
-    padding: 0;
-  }
-
   .configuration-form {
     min-height: 100vh;
-    padding: 2rem;
-    padding-top: 8rem;
+    padding-top: 120px;
   }
-
-  .form-container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
+  
   .form-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-2xl);
     flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .form-header h2 {
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #00ff00;
-    text-shadow: 0 0 20px #00ff0050;
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-  }
-
-  .advanced-toggle {
-    background: linear-gradient(135deg, #001100, #003300);
-    border: 1px solid #00ff00;
-    color: #00ff00;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    gap: var(--space-md);
   }
 
   .advanced-toggle:hover {
-    background: linear-gradient(45deg, #00ff00, #00ffff);
-    color: #000;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    background: var(--gradient-primary);
+    color: var(--color-black);
+    box-shadow: var(--shadow-md);
   }
 
   .config-form {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--space-xl);
   }
-
+  
   .form-section {
-    background: linear-gradient(135deg, #001100, #003300);
-    border: 1px solid #00ff00;
-    border-radius: 12px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
+    padding: var(--space-lg);
+    transition: var(--transition-normal);
   }
-
+  
   .form-section:hover {
-    box-shadow: 0 5px 20px rgba(0, 255, 0, 0.2);
+    box-shadow: var(--shadow-glow);
   }
-
+  
   .section-header {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #00ffff;
-    margin-bottom: 1.5rem;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-bright);
+    margin-bottom: var(--space-lg);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: var(--letter-spacing-normal);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-sm);
   }
 
   .section-header-collapsible {
