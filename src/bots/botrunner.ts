@@ -15,17 +15,32 @@ interface BotModule {
 type BotName = 'seek' | 'linkedin' | 'indeed';
 type BrowserType = 'chrome' | 'firefox';
 
-// Get bot name and browser type from command line arguments
-const botName = process.argv[2] as BotName;
-const browserType = process.argv[3] as BrowserType;
+// Parse command line arguments
+const args = process.argv.slice(2);
+const botName = args[0] as BotName;
+const browserType = args[1] as BrowserType;
+
+// Parse flags
+const useNewContext = args.includes('--new-context');
+const usePlaywright = args.includes('--playwright');
+const useFullscreen = args.includes('--fullscreen');
+const sizeArg = args.find(arg => arg.startsWith('--size='));
+
+let windowSize = { width: 1920, height: 1080 };
+if (sizeArg) {
+  const [width, height] = sizeArg.split('=')[1].split('x').map(Number);
+  if (width && height) {
+    windowSize = { width, height };
+  }
+}
 
 if (!botName || !['seek', 'linkedin', 'indeed'].includes(botName)) {
-  console.error('Usage: bun botrunner.ts <seek|linkedin|indeed> <chrome|firefox>');
+  console.error('Usage: bun botrunner.ts <seek|linkedin|indeed> <chrome|firefox> [flags]');
   process.exit(1);
 }
 
 if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
-  console.error('Usage: bun botrunner.ts <seek|linkedin|indeed> <chrome|firefox>');
+  console.error('Usage: bun botrunner.ts <seek|linkedin|indeed> <chrome|firefox> [flags]');
   process.exit(1);
 }
 
@@ -48,22 +63,65 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
     let context: BrowserContext;
     const sessionExists = fs.readdirSync(sessionDir).length > 0;
     
-    // Launch browser with persistent session
+    // Build browser launch arguments
+    let chromeArgs = [`--remote-debugging-port=${bot.port}`];
+    
+    if (useFullscreen) {
+      chromeArgs.push('--kiosk');
+      chromeArgs.push('--start-fullscreen');
+    } else {
+      // Force the exact window size
+      chromeArgs.push(`--window-size=${windowSize.width},${windowSize.height}`);
+      chromeArgs.push('--window-position=0,0');
+      // Remove start-maximized as it conflicts with explicit sizing
+    }
+
+    // Launch browser with persistent session and proper viewport
     if (browserType === 'chrome') {
       context = await chromium.launchPersistentContext(sessionDir, {
         headless: false,
-        args: [`--remote-debugging-port=${bot.port}`]
+        args: chromeArgs,
+        viewport: useFullscreen ? null : { width: windowSize.width, height: windowSize.height - 120 }, // Account for browser UI
+        screen: { width: windowSize.width, height: windowSize.height }
       });
     } else if (browserType === 'firefox') {
       context = await firefox.launchPersistentContext(sessionDir, {
-        headless: false
+        headless: false,
+        viewport: useFullscreen ? null : { width: windowSize.width, height: windowSize.height - 120 },
+        screen: { width: windowSize.width, height: windowSize.height }
       });
     } else {
       throw new Error(`Unsupported browser type: ${browserType}`);
     }
     
     const page = context.pages()[0] || await context.newPage();
-    await page.goto(bot.url);
+    
+    // Set viewport size to match window
+    if (!useFullscreen) {
+      await page.setViewportSize({ 
+        width: windowSize.width, 
+        height: windowSize.height - 120 // Account for browser chrome
+      });
+    }
+    
+    // Set up browser close detection
+    let browserClosed = false;
+    context.on('close', () => {
+      browserClosed = true;
+      console.log('🔴 Browser window was closed manually. Bot stopped.');
+      process.exit(0);
+    });
+    
+    // Navigate to the site
+    try {
+      await page.goto(bot.url);
+    } catch (error) {
+      if (browserClosed) {
+        console.log('🔴 Browser was closed during navigation. Bot stopped.');
+        process.exit(0);
+      }
+      throw error;
+    }
     
     // Check if user is logged in using bot-specific logic
     const isLoggedIn = await bot.checkLoginStatus(page, sessionExists);
@@ -74,9 +132,18 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
       
       // Wait for login completion using bot-specific logic
       try {
-        await bot.waitForLogin(page);
+        await Promise.race([
+          bot.waitForLogin(page),
+          new Promise((_, reject) => {
+            context.on('close', () => reject(new Error('Browser closed')));
+          })
+        ]);
         console.log('✅ Login detected! Session has been saved.');
       } catch (error) {
+        if (browserClosed || error.message === 'Browser closed') {
+          console.log('🔴 Browser was closed during login. Bot stopped.');
+          process.exit(0);
+        }
         console.log('⏰ Login timeout reached. Please try again.');
         await context.close();
         return;
@@ -90,10 +157,19 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
     
     // Run bot-specific automation logic
     if (bot.runAutomation) {
-      await bot.runAutomation(page);
+      try {
+        await bot.runAutomation(page);
+      } catch (error) {
+        if (browserClosed) {
+          console.log('🔴 Browser was closed during automation. Bot stopped.');
+          process.exit(0);
+        }
+        throw error;
+      }
     }
     
-    // Don't close the browser automatically - let user interact
+    // Keep the process alive until browser is closed
+    // The browser close event handler will terminate the process
   } catch (error) {
     console.error(`Error running ${botName} bot:`, error);
     process.exit(1);

@@ -15,6 +15,27 @@
   let useFullscreen = false;
   let customSize = '';
   let selectedBrowser = 'chrome';
+  
+  // Get screen dimensions
+  let screenWidth = 1920;
+  let screenHeight = 1080;
+  
+  // Detect screen size on mount
+  import { onMount } from 'svelte';
+  
+  onMount(() => {
+    if (typeof window !== 'undefined') {
+      screenWidth = window.screen.width;
+      screenHeight = window.screen.height;
+    }
+  });
+
+  function closeStatusMessage() {
+    statusMessage = '';
+    isRunning = false;
+    runningBot = '';
+    selectedBot = '';
+  }
 
   function handleBotClick(botName) {
     if (isRunning) return; // Prevent multiple clicks while running
@@ -32,7 +53,12 @@
     if (useNewContext) args.push('--new-context');
     if (usePlaywright) args.push('--playwright');
     if (useFullscreen) args.push('--fullscreen');
-    if (customSize && customSize.includes('x')) args.push(`--size=${customSize}`);
+    if (customSize && customSize.includes('x')) {
+      args.push(`--size=${customSize}`);
+    } else {
+      // Use detected screen size if no custom size specified
+      args.push(`--size=${screenWidth}x${screenHeight}`);
+    }
     
     return args;
   }
@@ -56,28 +82,35 @@
       });
       
       console.log(`${botName} result:`, result);
-      statusMessage = `${botName.replace('_', ' ')} completed successfully! Browser is ready to use.`;
       
-      // Clear status after 5 seconds
+      // Check if browser was closed manually
+      if (result.includes('Browser window was closed manually')) {
+        statusMessage = `${botName.replace('_', ' ')} stopped - Browser window was closed manually.`;
+      } else {
+        statusMessage = `${botName.replace('_', ' ')} completed successfully! Browser is ready to use.`;
+      }
+      
+      // Clear status after 8 seconds
       setTimeout(() => {
-        statusMessage = '';
-        isRunning = false;
-        runningBot = '';
-        selectedBot = '';
-      }, 5000);
+        closeStatusMessage();
+      }, 8000);
       
     } catch (error) {
       console.error(`Error running ${botName}:`, error);
-      statusMessage = `Error: ${error}`;
       
-      // Clear error after 10 seconds
+      // Check if this is a browser close event
+      if (error.toString().includes('Browser window was closed manually') || 
+          error.toString().includes('Browser was closed')) {
+        statusMessage = `${botName.replace('_', ' ')} stopped - Browser window was closed manually.`;
+      } else {
+        statusMessage = `Error: ${error}`;
+      }
+      
+      // Clear error after 12 seconds
       setTimeout(() => {
-        statusMessage = '';
-        isRunning = false;
-        runningBot = '';
-        selectedBot = '';
+        closeStatusMessage();
         showBrowserSelection = false;
-      }, 10000);
+      }, 12000);
     }
   }
 
@@ -169,31 +202,80 @@
   .bot-card:hover .bot-description {
     color: #00dddd;
   }
+
+  .status-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 99999;
+  }
   
   .status-message {
     position: fixed;
-    top: 120px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 20px;
+    right: 20px;
     background: var(--bg-overlay);
     border: 2px solid var(--color-primary);
-    padding: var(--space-md) var(--space-xl);
+    padding: var(--space-md);
     border-radius: var(--radius-md);
     color: var(--color-primary);
     font-family: var(--font-family);
     font-weight: var(--font-weight-bold);
-    z-index: var(--z-toast);
-    text-align: center;
-    max-width: 90vw;
+    z-index: 99999;
+    max-width: 320px;
+    min-width: 250px;
     word-wrap: break-word;
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-normal);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    animation: slideInFromRight 0.3s ease-out;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    pointer-events: auto;
+    /* Ensure it doesn't affect document flow */
+    width: auto;
+    height: auto;
+    transform: translateZ(0);
+    will-change: transform;
   }
   
   .status-message.error {
     border-color: var(--color-danger);
     color: var(--color-danger);
-    background: rgba(20, 0, 0, 0.9);
+    background: rgba(20, 0, 0, 0.95);
+  }
+
+  .status-content {
+    flex: 1;
+    padding-right: var(--space-xs);
+  }
+
+  .status-close {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: var(--font-size-lg);
+    line-height: 1;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    transition: var(--transition-normal);
+    flex-shrink: 0;
+    margin-top: -2px;
+  }
+
+  .status-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
   }
 
   .browser-selection {
@@ -452,13 +534,18 @@
       transform: translateY(0);
     }
   }
-</style>
 
-{#if statusMessage}
-  <div class="status-message" class:error={statusMessage.includes('Error')}>
-    {statusMessage}
-  </div>
-{/if}
+  @keyframes slideInFromRight {
+    from { 
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to { 
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+</style>
 
 <main class="page page--with-nav">
   <div class="section__container">
@@ -580,3 +667,17 @@
     </div>
   </div>
 </main>
+
+<!-- Status message overlay - completely outside document flow -->
+{#if statusMessage}
+  <div class="status-overlay">
+    <div class="status-message" class:error={statusMessage.includes('Error')}>
+      <div class="status-content">
+        {statusMessage}
+      </div>
+      <button class="status-close" on:click={closeStatusMessage} title="Close">
+        ✕
+      </button>
+    </div>
+  </div>
+{/if}
