@@ -214,7 +214,7 @@ async fn run_python_script(script_path: &str) -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn run_javascript_script(script_path: &str) -> Result<String, String> {
+async fn run_javascript_script(script_path: &str, args: Option<Vec<String>>) -> Result<String, String> {
     use tokio::process::Command;
     use std::env;
     
@@ -236,9 +236,18 @@ async fn run_javascript_script(script_path: &str) -> Result<String, String> {
         return Err(format!("JavaScript script not found: {}", path.display()));
     }
     
-    // Run the JavaScript script with bun
-    let output = Command::new("bun")
-        .arg(path.to_str().unwrap())
+    // Build command with arguments
+    let mut cmd = Command::new("bun");
+    cmd.arg(path.to_str().unwrap());
+    
+    // Add arguments if provided
+    if let Some(args) = args {
+        for arg in args {
+            cmd.arg(&arg);
+        }
+    }
+    
+    let output = cmd
         .current_dir({
             let mut dir = env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
             if dir.ends_with("src-tauri") {

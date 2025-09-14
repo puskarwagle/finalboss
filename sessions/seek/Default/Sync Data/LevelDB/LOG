@@ -1,2 +1,3 @@
-2025/09/14-23:53:00.099 8117 Creating DB /home/wagle/finalboss/sessions/seek/Default/Sync Data/LevelDB since it was missing.
-2025/09/14-23:53:07.248 8117 Reusing MANIFEST /home/wagle/finalboss/sessions/seek/Default/Sync Data/LevelDB/MANIFEST-000001
+2025/09/15-01:17:39.113 b61f Reusing MANIFEST /home/wagle/finalboss/sessions/seek/Default/Sync Data/LevelDB/MANIFEST-000001
+2025/09/15-01:17:39.125 b61f Recovering log #3
+2025/09/15-01:17:39.131 b61f Reusing old log /home/wagle/finalboss/sessions/seek/Default/Sync Data/LevelDB/000003.log 

@@ -1,2 +1,3 @@
-2025/09/14-23:53:03.056 8123 Creating DB /home/wagle/finalboss/sessions/seek/Default/Site Characteristics Database since it was missing.
-2025/09/14-23:53:07.248 8123 Reusing MANIFEST /home/wagle/finalboss/sessions/seek/Default/Site Characteristics Database/MANIFEST-000001
+2025/09/15-01:17:39.143 b615 Reusing MANIFEST /home/wagle/finalboss/sessions/seek/Default/Site Characteristics Database/MANIFEST-000001
+2025/09/15-01:17:39.144 b615 Recovering log #3
+2025/09/15-01:17:39.149 b615 Reusing old log /home/wagle/finalboss/sessions/seek/Default/Site Characteristics Database/000003.log 
