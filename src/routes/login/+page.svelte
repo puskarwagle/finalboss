@@ -1,3 +1,27 @@
+<script>
+  import { goto } from '$app/navigation';
+  import { auth } from '$lib/auth.js';
+  
+  let email = '';
+  let password = '';
+  let error = '';
+
+  $: loading = $auth.loading;
+
+  async function handleLogin(event) {
+    event.preventDefault();
+    error = '';
+
+    const result = await auth.login(email, password);
+    
+    if (result.success) {
+      goto('/choose-bot');
+    } else {
+      error = result.error;
+    }
+  }
+</script>
+
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
@@ -101,6 +125,7 @@
         font-family: 'Orbitron', monospace;
         font-size: 1rem;
         transition: all 0.3s ease;
+        box-sizing: border-box;
     }
 
     input:focus {
@@ -131,6 +156,12 @@
         transform: translateY(-3px);
         box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
     }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
     
     .get-started-link {
         display: inline-block;
@@ -151,22 +182,51 @@
         box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
     }
 
+    .error {
+        color: #ff4444;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
 </style>
 
 <main class="container">
   <h1 class="title">Welcome to Quest Bot</h1>
   
   <div class="login-card">
-    <form>
+    <form on:submit={handleLogin}>
+      {#if error}
+        <div class="error">{error}</div>
+      {/if}
+      
       <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" placeholder="Enter your username">
+        <label for="email">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          bind:value={email}
+          placeholder="Enter your email"
+          required
+          disabled={loading}
+        >
       </div>
+      
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Enter your password">
+        <input 
+          type="password" 
+          id="password" 
+          bind:value={password}
+          placeholder="Enter your password"
+          required
+          disabled={loading}
+        >
       </div>
-      <button type="submit" class="btn-primary">Login</button>
+      
+      <button type="submit" class="btn-primary" disabled={loading}>
+        {loading ? 'Logging in...' : 'Login'}
+      </button>
     </form>
   </div>
 

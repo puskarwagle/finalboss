@@ -1,3 +1,12 @@
+<script>
+  import { onMount } from 'svelte';
+  import { auth } from '$lib/auth.js';
+  
+  onMount(() => {
+    auth.checkAuth();
+  });
+</script>
+
 <nav>
   <div class="logo">
     <a href="/">Quest Bot</a>
@@ -5,7 +14,12 @@
   <div class="links">
     <a href="/">Home</a>
     <a href="/choose-bot">Choose Bot</a>
-    <a href="/welcome">Login</a>
+    {#if $auth.isLoggedIn}
+      <span class="user-info">Welcome, {$auth.user?.name || $auth.user?.email}</span>
+      <button class="logout-btn" on:click={() => auth.logout()}>Logout</button>
+    {:else}
+      <a href="/login">Login</a>
+    {/if}
     <a href="/control-bar">Control Bar</a>
     <a href="/frontend-form">Configuration</a>
     <a href="/backend-analytics">Analytics</a>
@@ -66,5 +80,32 @@
     color: #00ffff;
     border-color: #00ffff;
     box-shadow: 0 0 10px #00ffff80;
+  }
+
+  .user-info {
+    color: #00ff00;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+  }
+
+  .logout-btn {
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'Orbitron', monospace;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .logout-btn:hover {
+    background: #ff4444;
+    color: #000;
+    box-shadow: 0 0 10px #ff444480;
   }
 </style>

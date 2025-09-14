@@ -16,13 +16,13 @@
         statusMessage = 'Starting Seek bot... Please wait while we open your browser.';
         console.log('Running seek bot...');
         
-        // Execute the seek.py script
-        const result = await invoke('run_python_script', { 
-          scriptPath: 'src/bots/seek.py' 
+        // Execute the seek.js script with bun
+        const result = await invoke('run_javascript_script', { 
+          scriptPath: 'src/bots/seek.js' 
         });
         
         console.log('Seek bot result:', result);
-        statusMessage = 'Seek bot completed successfully! Check your browser.';
+        statusMessage = 'Seek bot completed successfully! Browser is ready to use.';
         
         // Clear status after 5 seconds
         setTimeout(() => {
@@ -43,10 +43,71 @@
         }, 10000);
       }
     } else if (botName === 'linkedin_bot') {
-      statusMessage = 'LinkedIn bot is not implemented yet.';
-      setTimeout(() => {
-        statusMessage = '';
-      }, 3000);
+      try {
+        isRunning = true;
+        runningBot = 'linkedin_bot';
+        statusMessage = 'Starting LinkedIn bot... Please wait while we open your browser.';
+        console.log('Running linkedin bot...');
+        
+        // Execute the linkedin.js script with bun
+        const result = await invoke('run_javascript_script', { 
+          scriptPath: 'src/bots/linkedin.js' 
+        });
+        
+        console.log('LinkedIn bot result:', result);
+        statusMessage = 'LinkedIn bot completed successfully! Browser is ready to use.';
+        
+        // Clear status after 5 seconds
+        setTimeout(() => {
+          statusMessage = '';
+          isRunning = false;
+          runningBot = '';
+        }, 5000);
+        
+      } catch (error) {
+        console.error('Error running linkedin bot:', error);
+        statusMessage = `Error: ${error}`;
+        
+        // Clear error after 10 seconds
+        setTimeout(() => {
+          statusMessage = '';
+          isRunning = false;
+          runningBot = '';
+        }, 10000);
+      }
+    } else if (botName === 'indeed_bot') {
+      try {
+        isRunning = true;
+        runningBot = 'indeed_bot';
+        statusMessage = 'Starting Indeed bot... Please wait while we open your browser.';
+        console.log('Running indeed bot...');
+        
+        // Execute the indeed.js script with bun
+        const result = await invoke('run_javascript_script', { 
+          scriptPath: 'src/bots/indeed.js' 
+        });
+        
+        console.log('Indeed bot result:', result);
+        statusMessage = 'Indeed bot completed successfully! Browser is ready to use.';
+        
+        // Clear status after 5 seconds
+        setTimeout(() => {
+          statusMessage = '';
+          isRunning = false;
+          runningBot = '';
+        }, 5000);
+        
+      } catch (error) {
+        console.error('Error running indeed bot:', error);
+        statusMessage = `Error: ${error}`;
+        
+        // Clear error after 10 seconds
+        setTimeout(() => {
+          statusMessage = '';
+          isRunning = false;
+          runningBot = '';
+        }, 10000);
+      }
     }
   }
 </script>
