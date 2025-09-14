@@ -135,41 +135,75 @@
 <style>
   .bot-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(322px, 1fr));
     gap: var(--space-xl);
     justify-items: center;
   }
   
   .bot-card {
     width: 100%;
-    max-width: 320px;
+    max-width: 368px;
+    min-height: 300px;
     text-align: center;
     cursor: pointer;
     position: relative;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 3px solid var(--color-primary);
+    box-shadow: 
+      0 0 20px rgba(0, 255, 255, 0.3),
+      inset 0 0 20px rgba(0, 255, 255, 0.1);
+    transition: var(--transition-normal);
   }
   
   .bot-card.running {
     border-color: var(--color-secondary);
-    box-shadow: 0 0 30px rgba(255, 102, 0, 0.6);
+    box-shadow: 
+      0 0 40px rgba(255, 102, 0, 0.8),
+      inset 0 0 30px rgba(255, 102, 0, 0.2);
     animation: pulse 2s ease-in-out infinite;
+  }
+
+  .bot-card:hover {
+    border-color: var(--color-primary-bright);
+    box-shadow: 
+      0 0 30px rgba(0, 255, 255, 0.6),
+      inset 0 0 30px rgba(0, 255, 255, 0.15);
+    transform: translateY(-5px);
+  }
+
+  .card-content {
+    position: relative;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    padding: var(--space-lg);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: inherit;
   }
   
   .avatar {
-    width: 80px;
-    height: 80px;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
     margin: 0 auto var(--space-lg);
     border: 3px solid var(--color-primary);
     transition: var(--transition-normal);
-    filter: brightness(0.8) contrast(1.2);
+    filter: brightness(0.9) contrast(1.3);
     position: relative;
-    z-index: 2;
+    z-index: 3;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
   }
   
   .bot-card:hover .avatar {
     border-color: var(--color-primary-bright);
-    filter: brightness(1.2) contrast(1.4);
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+    filter: brightness(1.3) contrast(1.5);
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
+    transform: scale(1.05);
   }
   
   .bot-name {
@@ -557,111 +591,115 @@
           class:running={runningBot === bot.name}
           role="button" 
           tabindex="0"
+          style="background-image: url({bot.image})"
           on:click={() => handleBotClick(bot.name)}
           on:keydown={(e) => e.key === 'Enter' && handleBotClick(bot.name)}
         >
-          <img src={bot.image} alt={bot.name} class="avatar" />
-          <h2 class="bot-name">{bot.name}</h2>
-          <p class="bot-description">
-            {#if runningBot === bot.name}
-              🤖 Running... Please wait
-            {:else}
-              {bot.description}
-            {/if}
-          </p>
+          <div class="card-content">
+            <img src={bot.image} alt={bot.name} class="avatar" />
+            <h2 class="bot-name">{bot.name}</h2>
+            <p class="bot-description">
+              {#if runningBot === bot.name}
+                🤖 Running... Please wait
+              {:else}
+                {bot.description}
+              {/if}
+            </p>
+          </div>
           
-          {#if showBrowserSelection && selectedBot === bot.name}
-            <div class="browser-selection">
-              <h3>Launch Configuration</h3>
-              
-              <!-- Browser Selection -->
-              <div class="browser-section">
-                <h4>Browser</h4>
-                <div class="browser-buttons">
-                  <button 
-                    class="browser-btn"
-                    class:active={selectedBrowser === 'chrome'}
-                    on:click|stopPropagation={() => selectedBrowser = 'chrome'}
-                  >
-                    Chrome
-                  </button>
-                  <button 
-                    class="browser-btn"
-                    class:active={selectedBrowser === 'firefox'}
-                    on:click|stopPropagation={() => selectedBrowser = 'firefox'}
-                  >
-                    Firefox
-                  </button>
-                </div>
-              </div>
-
-              <!-- Advanced Options Toggle -->
-              <button 
-                class="advanced-toggle"
-                on:click|stopPropagation={toggleAdvancedOptions}
-              >
-                ⚙️ Advanced Options {showAdvancedOptions ? '▼' : '▶'}
-              </button>
-
-              {#if showAdvancedOptions}
-                <div class="advanced-options">
-                  <!-- Session Options -->
-                  <div class="option-group">
-                    <label class="option-item">
-                      <input type="checkbox" bind:checked={useNewContext}>
-                      <span class="checkmark"></span>
-                      Force New Session
-                      <small>Start fresh (ignore saved login)</small>
-                    </label>
-                    
-                    <label class="option-item">
-                      <input type="checkbox" bind:checked={usePlaywright}>
-                      <span class="checkmark"></span>
-                      Playwright Mode  
-                      <small>No session persistence</small>
-                    </label>
+            {#if showBrowserSelection && selectedBot === bot.name}
+              <div class="browser-selection">
+                <h3>Launch Configuration</h3>
+                
+                <!-- Browser Selection -->
+                <div class="browser-section">
+                  <h4>Browser</h4>
+                  <div class="browser-buttons">
+                    <button 
+                      class="browser-btn"
+                      class:active={selectedBrowser === 'chrome'}
+                      on:click|stopPropagation={() => selectedBrowser = 'chrome'}
+                    >
+                      Chrome
+                    </button>
+                    <button 
+                      class="browser-btn"
+                      class:active={selectedBrowser === 'firefox'}
+                      on:click|stopPropagation={() => selectedBrowser = 'firefox'}
+                    >
+                      Firefox
+                    </button>
                   </div>
+                </div>
 
-                  <!-- Display Options -->
-                  <div class="option-group">
-                    <label class="option-item">
-                      <input type="checkbox" bind:checked={useFullscreen}>
-                      <span class="checkmark"></span>
-                      Fullscreen (Kiosk)
-                      <small>No browser UI, pure fullscreen</small>
-                    </label>
-                    
-                    <div class="size-option">
-                      <label>Custom Size:</label>
-                      <input 
-                        type="text" 
-                        placeholder="1920x1080"
-                        bind:value={customSize}
-                        class="size-input"
-                        disabled={useFullscreen}
-                      >
+                <!-- Advanced Options Toggle -->
+                <button 
+                  class="advanced-toggle"
+                  on:click|stopPropagation={toggleAdvancedOptions}
+                >
+                  ⚙️ Advanced Options {showAdvancedOptions ? '▼' : '▶'}
+                </button>
+
+                {#if showAdvancedOptions}
+                  <div class="advanced-options">
+                    <!-- Session Options -->
+                    <div class="option-group">
+                      <label class="option-item">
+                        <input type="checkbox" bind:checked={useNewContext}>
+                        <span class="checkmark"></span>
+                        Force New Session
+                        <small>Start fresh (ignore saved login)</small>
+                      </label>
+                      
+                      <label class="option-item">
+                        <input type="checkbox" bind:checked={usePlaywright}>
+                        <span class="checkmark"></span>
+                        Playwright Mode  
+                        <small>No session persistence</small>
+                      </label>
+                    </div>
+
+                    <!-- Display Options -->
+                    <div class="option-group">
+                      <label class="option-item">
+                        <input type="checkbox" bind:checked={useFullscreen}>
+                        <span class="checkmark"></span>
+                        Fullscreen (Kiosk)
+                        <small>No browser UI, pure fullscreen</small>
+                      </label>
+                      
+                      <div class="size-option">
+                        <label>Custom Size:</label>
+                        <input 
+                          type="text" 
+                          placeholder="1920x1080"
+                          bind:value={customSize}
+                          class="size-input"
+                          disabled={useFullscreen}
+                        >
+                      </div>
                     </div>
                   </div>
-                </div>
-              {/if}
+                {/if}
 
-              <!-- Action Buttons -->
-              <div class="action-buttons">
-                <button 
-                  class="launch-btn"
-                  on:click|stopPropagation={() => runBotWithBrowser(bot.name, selectedBrowser)}
-                >
-                  🚀 Launch Bot
-                </button>
-                <button 
-                  class="cancel-btn"
-                  on:click|stopPropagation={cancelBrowserSelection}
-                >
-                  Cancel
-                </button>
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                  <button 
+                    class="launch-btn"
+                    on:click|stopPropagation={() => runBotWithBrowser(bot.name, selectedBrowser)}
+                  >
+                    🚀 Launch Bot
+                  </button>
+                  <button 
+                    class="cancel-btn"
+                    on:click|stopPropagation={cancelBrowserSelection}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          {/if}
+            {/if}
+          </div>
         </div>
       {/each}
     </div>
