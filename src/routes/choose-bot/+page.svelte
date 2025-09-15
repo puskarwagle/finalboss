@@ -130,8 +130,6 @@
   }
 </script>
 
-
-
 <style>
   .bot-grid {
     display: grid;
@@ -699,7 +697,6 @@
                 </div>
               </div>
             {/if}
-          </div>
         </div>
       {/each}
     </div>
