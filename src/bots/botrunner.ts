@@ -1,7 +1,17 @@
 // botrunner.ts - Common browser runner for all bots
-import { chromium, firefox, Page, BrowserContext } from 'playwright';
+import { chromium, firefox } from 'playwright';
+import type { Page, BrowserContext } from 'playwright';
 import path from 'path';
 import fs from 'fs';
+
+interface ConfigData {
+  formData: {
+    keywords: string;
+    locations: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
 
 interface BotModule {
   name: string;
@@ -9,11 +19,23 @@ interface BotModule {
   port: number;
   checkLoginStatus(page: Page, sessionExists: boolean): Promise<boolean>;
   waitForLogin(page: Page): Promise<void>;
-  runAutomation?(page: Page): Promise<void>;
+  runAutomation?(page: Page, config: ConfigData): Promise<void>;
 }
 
 type BotName = 'seek' | 'linkedin' | 'indeed';
 type BrowserType = 'chrome' | 'firefox';
+
+
+async function loadConfig(): Promise<ConfigData> {
+  const configPath = path.resolve(process.cwd(), 'user-bots-config.json');
+
+  const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  console.log('✅ Config loaded:', {
+    keywords: configData.formData?.keywords,
+    locations: configData.formData?.locations
+  });
+  return configData;
+}
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -21,12 +43,11 @@ const botName = args[0] as BotName;
 const browserType = args[1] as BrowserType;
 
 // Parse flags
-const useNewContext = args.includes('--new-context');
 const usePlaywright = args.includes('--playwright');
 const useFullscreen = args.includes('--fullscreen');
 const sizeArg = args.find(arg => arg.startsWith('--size='));
 
-let windowSize = { width: 1920, height: 1080 };
+let windowSize = { width: 1900, height: 1080 };
 if (sizeArg) {
   const [width, height] = sizeArg.split('=')[1].split('x').map(Number);
   if (width && height) {
@@ -60,13 +81,13 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
       fs.mkdirSync(sessionDir, { recursive: true });
     }
 
-    let context: BrowserContext;
+    let context: BrowserContext | null = null;
     const sessionExists = fs.readdirSync(sessionDir).length > 0;
     
     if (usePlaywright) {
       // Use Playwright's bundled browser
       let chromeArgs = [`--remote-debugging-port=${bot.port}`];
-      
+
       if (useFullscreen) {
         chromeArgs.push('--kiosk');
         chromeArgs.push('--start-fullscreen');
@@ -92,76 +113,35 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
         throw new Error(`Unsupported browser type: ${browserType}`);
       }
     } else {
-      // Launch user's regular Chrome with debugging enabled
+      // Just launch Chrome and connect - simple and reliable
       if (browserType === 'chrome') {
         const { spawn } = await import('child_process');
-        
-        // Try to connect first
-        try {
-          console.log(`🔍 Trying to connect to existing Chrome on port ${bot.port}...`);
-          const browser = await chromium.connectOverCDP(`http://localhost:${bot.port}`);
-          context = browser.contexts()[0] || await browser.newContext();
-          console.log('✅ Connected to existing Chrome browser');
-        } catch (error) {
-          console.log(`❌ Failed to connect to existing Chrome: ${error.message}`);
-          console.log(`🚀 Starting your regular Chrome with debugging enabled...`);
-          
-          // Launch user's Chrome with debugging
-          const chromeProcess = spawn('google-chrome', [
-            `--remote-debugging-port=${bot.port}`,
-            '--no-first-run',
-            '--no-default-browser-check',
-            `--user-data-dir=${sessionDir}`
-          ], { 
-            detached: true,
-            stdio: 'ignore'
-          });
-          
-          chromeProcess.unref();
-          
-          // Wait and retry connection with backoff
-          let connected = false;
-          for (let attempt = 1; attempt <= 10; attempt++) {
-            console.log(`Waiting for Chrome to start... (attempt ${attempt}/10)`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            
-            try {
-              const browser = await chromium.connectOverCDP(`http://localhost:${bot.port}`);
-              context = browser.contexts()[0] || await browser.newContext();
-              console.log('✅ Connected to your regular Chrome browser');
-              console.log(`📊 Browser contexts: ${browser.contexts().length}`);
-              connected = true;
-              break;
-            } catch (retryError) {
-              console.log(`Attempt ${attempt} failed: ${retryError.message}`);
-            }
-          }
-          
-          if (!connected) {
-            console.log(`❌ Failed to connect to Chrome after 10 attempts.`);
-            console.log(`🔄 Falling back to Playwright mode...`);
-            
-            // Kill any existing Chrome process on this port
-            try {
-              const { exec } = await import('child_process');
-              await new Promise(resolve => exec(`pkill -f "remote-debugging-port=${bot.port}"`, resolve));
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            } catch (killError) {
-              console.log('Note: Could not kill existing Chrome processes');
-            }
-            
-            // Use Playwright's bundled Chrome instead
-            context = await chromium.launchPersistentContext(sessionDir, {
-              headless: false,
-              args: [`--remote-debugging-port=${bot.port + 1}`], // Use different port
-              viewport: useFullscreen ? null : { width: windowSize.width, height: windowSize.height - 120 },
-              screen: { width: windowSize.width, height: windowSize.height }
-            });
-            console.log('✅ Started with Playwright bundled Chrome');
-          }
-        }
+
+        console.log(`🚀 Launching Chrome on port ${bot.port} with ${bot.url}...`);
+
+        const chromeProcess = spawn('google-chrome', [
+          `--remote-debugging-port=${bot.port}`,
+          '--no-first-run',
+          '--no-default-browser-check',
+          `--user-data-dir=${sessionDir}`,
+          bot.url
+        ], {
+          detached: true,
+          stdio: 'ignore'
+        });
+
+        chromeProcess.unref();
+
+        // Give Chrome a moment to start
+        console.log('⏳ Waiting for Chrome to start...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        console.log('🔗 Connecting to Chrome...');
+        const browser = await chromium.connectOverCDP(`http://localhost:${bot.port}`);
+        context = browser.contexts()[0] || await browser.newContext();
+        console.log('✅ Connected to Chrome!');
       } else {
-        // For Firefox, still use Playwright's bundled version
+        // For Firefox, use Playwright's bundled version
         context = await firefox.launchPersistentContext(sessionDir, {
           headless: false,
           viewport: useFullscreen ? null : { width: windowSize.width, height: windowSize.height - 120 },
@@ -169,7 +149,11 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
         });
       }
     }
-    
+
+    if (!context) {
+      throw new Error('Failed to initialize browser context');
+    }
+
     console.log(`📄 Getting page from context (${context.pages().length} pages available)...`);
     const page = context.pages()[0] || await context.newPage();
     console.log(`✅ Got page: ${page.url()}`);
@@ -189,20 +173,33 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
       console.log('🔴 Browser window was closed manually. Bot stopped.');
       process.exit(0);
     });
+
+    // Don't close Chrome when script ends - let user continue using it
+    process.on('exit', () => {
+      console.log('🎯 Bot script finished. Chrome will remain open for you to use.');
+    });
     
-    // Navigate to the site
-    try {
+    // Check current URL and navigate if needed
+    console.log(`📍 Current page URL: ${page.url()}`);
+
+    if (!page.url().includes(new URL(bot.url).hostname)) {
       console.log(`🌐 Navigating to ${bot.url}...`);
-      await page.goto(bot.url);
-      console.log(`✅ Successfully navigated to ${bot.url}`);
-      console.log(`📍 Current page URL: ${page.url()}`);
-    } catch (error) {
-      if (browserClosed) {
-        console.log('🔴 Browser was closed during navigation. Bot stopped.');
-        process.exit(0);
+      try {
+        await page.goto(bot.url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000
+        });
+        console.log(`✅ Successfully navigated to ${bot.url}`);
+      } catch (error) {
+        if (browserClosed) {
+          console.log('🔴 Browser was closed during navigation. Bot stopped.');
+          process.exit(0);
+        }
+        console.error(`❌ Navigation failed: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
       }
-      console.error(`❌ Navigation failed: ${error.message}`);
-      throw error;
+    } else {
+      console.log(`✅ Already on ${bot.url}`);
     }
     
     // Check if user is logged in using bot-specific logic
@@ -222,12 +219,12 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
         ]);
         console.log('✅ Login detected! Session has been saved.');
       } catch (error) {
-        if (browserClosed || error.message === 'Browser closed') {
+        if (browserClosed || (error instanceof Error && error.message === 'Browser closed')) {
           console.log('🔴 Browser was closed during login. Bot stopped.');
           process.exit(0);
         }
         console.log('⏰ Login timeout reached. Please try again.');
-        await context.close();
+        await context?.close();
         return;
       }
     } else {
@@ -236,12 +233,15 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
     
     console.log(`🤖 ${bot.name} bot ready! Browser will remain open for you to use.`);
     console.log('Close the browser manually when done.');
-    
+
+    // Load configuration for automation
+    const config = await loadConfig();
+
     // Run bot-specific automation logic
     if (bot.runAutomation) {
       console.log(`🔄 Starting automation for ${bot.name}...`);
       try {
-        await bot.runAutomation(page);
+        await bot.runAutomation(page, config);
         console.log(`✅ Automation completed for ${bot.name}`);
       } catch (error) {
         if (browserClosed) {
@@ -254,9 +254,14 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
     } else {
       console.log(`⚠️ No automation function found for ${bot.name}`);
     }
-    
-    // Keep the process alive until browser is closed
-    // The browser close event handler will terminate the process
+
+    console.log('🎯 Automation completed! Chrome will remain open for you to continue using.');
+    console.log('🔴 PRESS CTRL+C TO CLOSE BROWSER AND EXIT');
+
+    // Keep script alive to prevent browser from closing
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', () => {}); // Minimal memory usage
   } catch (error) {
     console.error(`Error running ${botName} bot:`, error);
     process.exit(1);
