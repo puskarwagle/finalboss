@@ -86,10 +86,58 @@ const seekBot: BotModule = {
   async runAutomation(page: Page, config: ConfigData): Promise<void> {
     console.log('🔄 Running Seek automation...');
 
-    // Wait a bit for the page to fully load
-    console.log('⏳ Waiting for page to fully load...');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for page to be ready - check for search form or sign in button
+    console.log('⏳ Waiting for page to be ready...');
+    await page.waitForSelector('input[id="keywords-input"], a[data-automation="sign in"]');
+
+    // Check if user needs to login
+    const signInButton = await page.$('a[data-automation="sign in"][title="Sign in"]');
+    if (signInButton) {
+      // Inject login prompt overlay
+      await page.evaluate(() => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.8); z-index: 10000; display: flex;
+          justify-content: center; align-items: center;
+        `;
+
+        const card = document.createElement('div');
+        card.style.cssText = `
+          background: white; padding: 30px; border-radius: 10px;
+          text-align: center; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        `;
+
+        card.innerHTML = `
+          <h2 style="margin: 0 0 20px 0; color: #333;">Login Required</h2>
+          <p style="margin: 0 0 25px 0; color: #666;">Please log in to Seek manually, then click continue.</p>
+          <button id="continueBtn" style="
+            background: #e60278; color: white; border: none; padding: 12px 24px;
+            border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;
+          ">I'm Logged In - Continue</button>
+        `;
+
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        window.loginOverlay = overlay;
+      });
+
+      // Wait for user to click continue button
+      await page.waitForFunction(() => {
+        const btn = document.getElementById('continueBtn');
+        return new Promise(resolve => {
+          if (btn) {
+            btn.onclick = () => {
+              document.body.removeChild(window.loginOverlay);
+              resolve(true);
+            };
+          }
+        });
+      });
+
+      console.log('✅ User confirmed login, continuing...');
+    }
 
     console.log('🔍 Starting to fill keywords...');
     await fillKeywords(page, config.formData.keywords);

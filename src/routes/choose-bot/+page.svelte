@@ -11,7 +11,7 @@
   
   // Advanced options state
   let useNewContext = false;
-  let usePlaywright = false;
+  let usePlaywright = true; // Default to Playwright mode
   let useFullscreen = false;
   let customSize = '';
   let selectedBrowser = 'chrome';
@@ -120,7 +120,7 @@
     showAdvancedOptions = false;
     // Reset advanced options
     useNewContext = false;
-    usePlaywright = false;
+    usePlaywright = true; // Keep Playwright as default
     useFullscreen = false;
     customSize = '';
   }

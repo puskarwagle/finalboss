@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .steps_impl import (
+from ....bots.seek_impl import (
 	step0, open_homepage, refresh_page, wait_for_page_load, detect_page_state, show_sign_in_banner, collect_job_cards, click_job_card, 
 	wait_for_details_panel, extract_job_details_raw, detect_quick_apply, parse_job_details, 
 	click_quick_apply, wait_for_quick_apply_page, handle_resume_selection, handle_cover_letter,
