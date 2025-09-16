@@ -97,6 +97,10 @@ const seekBot: BotModule = {
     console.log('🔍 Starting to fill location...');
     await fillLocation(page, config.formData.locations);
 
+    console.log('🔍 Clicking search button...');
+    await page.click('#searchButton');
+    console.log('✅ Search button clicked!');
+
     console.log('✅ Seek automation completed!');
   }
 };
