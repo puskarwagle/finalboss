@@ -15,19 +15,19 @@ A powerful job search automation platform built with Tauri, SvelteKit, and TypeS
 
 ```
 src/bots/
-├── core/                    # Core infrastructure
-│   ├── registry.ts          # Bot discovery & validation
-│   ├── browser_manager.ts   # Chrome/browser setup
-│   ├── workflow_engine.ts   # YAML workflow execution
-│   ├── humanization.ts      # Human behavior simulation
-│   └── sessionManager.ts    # Session persistence
-├── seek/                    # Seek.com.au bot
-│   ├── seek_configuration.ts # Bot-specific config
-│   ├── seek_impl.ts         # Step function implementations
-│   ├── seek_steps.yaml      # Workflow definition
-│   └── seek_selectors.json  # CSS selectors
-├── bot_starter.ts           # Universal bot runner
-└── user-bots-config.json    # User configuration
+├── core/                      # Core infrastructure
+│   ├── registry.ts            # Bot discovery & validation
+│   ├── browser_manager.ts     # Chrome/browser setup
+│   ├── workflow_engine.ts     # YAML workflow execution
+│   ├── humanization.ts        # Human behavior simulation
+│   ├── sessionManager.ts      # Session persistence
+│   └── core_configurations.ts # Universal configuration system
+├── seek/                      # Seek.com.au bot
+│   ├── seek_impl.ts           # Step function implementations
+│   ├── seek_steps.yaml        # Workflow definition
+│   └── seek_selectors.json    # CSS selectors
+├── bot_starter.ts             # Universal bot runner
+└── user-bots-config.json      # User configuration
 ```
 
 ## 🛠️ Installation

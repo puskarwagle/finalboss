@@ -38,6 +38,19 @@ function slugify(text: string): string {
   return text.replace(/^-|-$/g, "");
 }
 
+// Build search URL from keywords and location
+function build_search_url(base_url: string, keywords: string, location: string): string {
+  const keyword_slug = slugify(keywords);
+  const location_slug = slugify(location);
+
+  let search_path = keyword_slug ? `/${keyword_slug}-jobs` : "/jobs";
+  if (location_slug) {
+    search_path += `/in-${location_slug}`;
+  }
+
+  return `${base_url}${search_path}`;
+}
+
 // Step 0: Initialize Context
 export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Initializing context...");
@@ -55,15 +68,8 @@ export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void,
   // Create search URL
   const keyword = config.formData.keywords || "";
   const location = config.formData.locations || "";
-  const kwSlug = slugify(keyword);
-  const locSlug = slugify(location);
 
-  let searchPath = kwSlug ? `/${kwSlug}-jobs` : "/jobs";
-  if (locSlug) {
-    searchPath += `/in-${locSlug}`;
-  }
-
-  ctx.seek_url = `${BASE_URL}${searchPath}`;
+  ctx.seek_url = build_search_url(BASE_URL, keyword, location);
 
   printLog(`Search URL: ${ctx.seek_url}`);
   yield "ctx_ready";
