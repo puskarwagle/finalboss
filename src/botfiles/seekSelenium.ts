@@ -1,5 +1,5 @@
 import { WebDriver, until, By } from 'selenium-webdriver';
-import { setupChromeDriver } from './runchrome';
+import { setupChromeDriver } from '../bots/runchrome';
 import * as path from 'path';
 import * as fs from 'fs';
 

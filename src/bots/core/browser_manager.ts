@@ -41,18 +41,24 @@ const printLog = (message: string) => {
   console.log(`[${new Date().toISOString()}] ${message}`);
 };
 
-export const setupChromeDriver = async (): Promise<{ driver: WebDriver; actions: any }> => {
+export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ driver: WebDriver; actions: any; sessionExists: boolean; sessionsDir: string }> => {
   try {
-    const configPath = path.join(__dirname, 'user-bots-config.json');
+    const configPath = path.join(__dirname, '../user-bots-config.json');
     const config: BotConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-    const sessionsDir = path.join(process.cwd(), 'sessions');
+    // Create session management like botrunner.ts
+    const sessionsDir = path.join(process.cwd(), 'sessions', botName);
     const screenshotsDir = path.join(sessionsDir, 'screenshots');
     const logsDir = path.join(sessionsDir, 'logs');
     const resumeDir = path.join(sessionsDir, 'resume');
     const tempDir = path.join(sessionsDir, 'temp');
 
     makeDirectories([sessionsDir, screenshotsDir, logsDir, resumeDir, tempDir]);
+
+    // Check if session exists (has saved data)
+    const sessionExists = fs.readdirSync(sessionsDir).filter(file =>
+      !['screenshots', 'logs', 'resume', 'temp'].includes(file)
+    ).length > 0;
 
     const options = new Options();
 
@@ -75,14 +81,12 @@ export const setupChromeDriver = async (): Promise<{ driver: WebDriver; actions:
     if (safeMode) {
       printLog('SAFE MODE: Will login with a guest profile, browsing history will not be saved in the browser!');
     } else {
-      const profileDir = findDefaultProfileDirectory();
-      if (profileDir) {
-        // Create a separate profile directory for Selenium to avoid conflicts
-        const seleniumProfileDir = path.join(profileDir, 'selenium-automation');
-        options.addArguments(`--user-data-dir=${seleniumProfileDir}`);
-        printLog(`Using Chrome profile: ${seleniumProfileDir}`);
+      // Use the session directory for Chrome profile (like botrunner.ts)
+      options.addArguments(`--user-data-dir=${sessionsDir}`);
+      if (sessionExists) {
+        printLog(`Using existing session: ${sessionsDir}`);
       } else {
-        printLog('Default profile directory not found. Logging in with a guest profile, Web history will not be saved!');
+        printLog(`Creating new session: ${sessionsDir}`);
       }
     }
 
@@ -96,7 +100,7 @@ export const setupChromeDriver = async (): Promise<{ driver: WebDriver; actions:
 
     const actions = driver.actions();
 
-    return { driver, actions };
+    return { driver, actions, sessionExists, sessionsDir };
 
   } catch (error) {
     const errorMessage = 'Seems like either... \n\n1. Chrome is already running. \nA. Close all Chrome windows and try again. \n\n2. Google Chrome or Chromedriver is out dated. \nA. Update browser and Chromedriver! \n\n3. Chrome not installed or not in PATH. \nA. Install Chrome and ensure chromedriver is in PATH. \n\nPlease check GitHub discussions/support for solutions';

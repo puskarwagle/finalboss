@@ -44,6 +44,7 @@ const browserType = args[1] as BrowserType;
 
 // Parse flags
 const usePlaywright = args.includes('--playwright');
+const useSelenium = args.includes('--selenium');
 const useFullscreen = args.includes('--fullscreen');
 const sizeArg = args.find(arg => arg.startsWith('--size='));
 
@@ -67,7 +68,23 @@ if (!browserType || !['chrome', 'firefox'].includes(browserType)) {
 
 (async (): Promise<void> => {
   try {
-    // Import the specific bot module
+    // Special handling for Selenium workflows
+    if (useSelenium && botName === 'seek') {
+      console.log('🔧 Running Selenium-based Seek workflow...');
+
+      try {
+        // Import and run the seekWorkflow
+        const { runSeekWorkflow } = await import('../bots/seekWorkflow.ts');
+        await runSeekWorkflow();
+        console.log('✅ Selenium workflow completed successfully!');
+        return;
+      } catch (error) {
+        console.error('❌ Selenium workflow error:', error);
+        throw error;
+      }
+    }
+
+    // For non-Selenium bots, use the original Playwright approach
     const botModule = await import(`./${botName}.ts`);
     const bot: BotModule = botModule.default;
 

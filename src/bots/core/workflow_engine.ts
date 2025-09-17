@@ -90,7 +90,7 @@ export class WorkflowEngine {
     console.log(`[Workflow] Starting workflow: ${this.config.workflow_meta.title}`);
 
     let currentStepName = this.currentStep;
-    const maxSteps = 50; // Prevent infinite loops
+    const maxSteps = 10; // Prevent infinite loops
     let stepCount = 0;
 
     while (currentStepName !== 'done' && stepCount < maxSteps) {

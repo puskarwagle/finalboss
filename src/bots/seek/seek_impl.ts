@@ -1,7 +1,8 @@
 import { WebDriver, By, until } from 'selenium-webdriver';
-import { setupChromeDriver } from './runchrome';
-import { WorkflowEngine, type WorkflowContext } from './workflowEngine';
-import { HumanBehavior, StealthFeatures, DEFAULT_HUMANIZATION } from './humanization';
+import { setupChromeDriver } from '../core/browser_manager';
+import { HumanBehavior, StealthFeatures, DEFAULT_HUMANIZATION } from '../core/humanization';
+import { UniversalSessionManager, SessionConfigs } from '../core/sessionManager';
+import type { WorkflowContext } from '../core/workflow_engine';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -38,7 +39,7 @@ function slugify(text: string): string {
 }
 
 // Step 0: Initialize Context
-async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Initializing context...");
 
   // Load selectors
@@ -47,7 +48,7 @@ async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void, unknow
   ctx.selectors = selectors;
 
   // Load config
-  const configPath = path.join(__dirname, 'user-bots-config.json');
+  const configPath = path.join(__dirname, '../user-bots-config.json');
   const config: BotConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   ctx.config = config;
 
@@ -69,13 +70,16 @@ async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void, unknow
 }
 
 // Step 1: Open Homepage
-async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+export async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Opening Seek homepage...");
 
   try {
-    const { driver } = await setupChromeDriver();
+    const { driver, sessionExists, sessionsDir } = await setupChromeDriver('seek');
     ctx.driver = driver;
+    ctx.sessionExists = sessionExists;
+    ctx.sessionsDir = sessionsDir;
     ctx.humanBehavior = new HumanBehavior(DEFAULT_HUMANIZATION);
+    ctx.sessionManager = new UniversalSessionManager(driver, SessionConfigs.seek);
 
     // Apply stealth features (after page loads)
     try {
@@ -100,7 +104,7 @@ async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string, void,
 }
 
 // Step 2: Wait For Page Load
-async function* waitForPageLoad(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+export async function* waitForPageLoad(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Waiting for page to load...");
 
   const driver: WebDriver = ctx.driver;
@@ -137,7 +141,7 @@ async function* waitForPageLoad(ctx: WorkflowContext): AsyncGenerator<string, vo
 }
 
 // Step 2.5: Refresh Page
-async function* refreshPage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+export async function* refreshPage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Refreshing page...");
 
   const driver: WebDriver = ctx.driver;
@@ -158,39 +162,35 @@ async function* refreshPage(ctx: WorkflowContext): AsyncGenerator<string, void, 
 }
 
 // Step 3: Detect Page State
-async function* detectPageState(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+export async function* detectPageState(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Detecting page state...");
 
   const driver: WebDriver = ctx.driver;
   const selectors: SeekSelectors = ctx.selectors;
+  const sessionManager: UniversalSessionManager = ctx.sessionManager;
 
-  if (!driver) {
+  if (!driver || !sessionManager) {
     yield "no_cards_found";
     return;
   }
 
   try {
-    // Check for job cards first
+    // First check login status using session manager
+    const isLoggedIn = await sessionManager.checkLoginStatus(ctx.sessionExists || false);
+
+    if (!isLoggedIn) {
+      printLog("Login required - redirecting to sign-in flow");
+      yield "sign_in_required";
+      return;
+    }
+
+    // If logged in, check for job cards
     for (const selector of selectors.job_cards || []) {
       try {
         const elements = await driver.findElements(By.css(selector));
         if (elements.length > 0) {
-          printLog(`Found ${elements.length} job cards`);
+          printLog(`Found ${elements.length} job cards - user is logged in`);
           yield "cards_present";
-          return;
-        }
-      } catch (error) {
-        // Continue to next selector
-      }
-    }
-
-    // Check for sign-in requirement
-    for (const selector of selectors.sign_in_link || []) {
-      try {
-        const element = await driver.findElement(By.css(selector));
-        if (element) {
-          printLog("Sign-in required");
-          yield "sign_in_required";
           return;
         }
       } catch (error) {
@@ -206,25 +206,36 @@ async function* detectPageState(ctx: WorkflowContext): AsyncGenerator<string, vo
   }
 }
 
-// Step 4: Show Sign In Banner
-async function* showSignInBanner(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("Sign-in required - please log in manually");
+// Step 4: Show Sign In Banner and Wait for Login
+export async function* showSignInBanner(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("Sign-in required - starting login process...");
 
-  // In a real implementation, you would show a banner or prompt
-  // For now, we'll just log and continue
-  console.log("=== MANUAL ACTION REQUIRED ===");
-  console.log("Please log in to Seek manually in the browser window");
-  console.log("Press Ctrl+C to stop or wait for timeout");
-  console.log("=============================");
+  const sessionManager: UniversalSessionManager = ctx.sessionManager;
+  if (!sessionManager) {
+    yield "signin_banner_retry";
+    return;
+  }
 
-  // Wait for user action (in real implementation, you'd check login status)
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  try {
+    // Show login banner
+    await sessionManager.showLoginBanner('Seek');
 
-  yield "signin_banner_shown";
+    // Wait for user to complete login
+    await sessionManager.waitForLogin();
+
+    // Remove banner after successful login
+    await sessionManager.removeLoginBanner();
+
+    printLog("Login completed successfully!");
+    yield "signin_banner_shown";
+  } catch (error) {
+    printLog(`Login error: ${error}`);
+    yield "signin_banner_retry";
+  }
 }
 
-// Basic search functionality (simplified version for testing)
-async function* performBasicSearch(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+// Basic search functionality
+export async function* performBasicSearch(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Performing basic search...");
 
   const driver: WebDriver = ctx.driver;
@@ -288,71 +299,13 @@ async function* performBasicSearch(ctx: WorkflowContext): AsyncGenerator<string,
   }
 }
 
-export async function runSeekWorkflow(): Promise<void> {
-  try {
-    // Create workflow engine
-    const workflowPath = path.join(__dirname, 'seek_steps.yaml');
-    const engine = new WorkflowEngine(workflowPath);
-
-    // Register step functions
-    engine.registerStepFunction('step0', step0);
-    engine.registerStepFunction('openHomepage', openHomepage);
-    engine.registerStepFunction('waitForPageLoad', waitForPageLoad);
-    engine.registerStepFunction('refreshPage', refreshPage);
-    engine.registerStepFunction('detectPageState', detectPageState);
-    engine.registerStepFunction('showSignInBanner', showSignInBanner);
-
-    // Run workflow
-    await engine.run();
-
-    // Cleanup
-    const ctx = engine.getContext();
-    if (ctx.driver) {
-      await ctx.driver.quit();
-    }
-
-  } catch (error) {
-    console.error('Workflow error:', error);
-  }
-}
-
-// Simple test runner for basic search
-export async function testBasicSearch(): Promise<void> {
-  try {
-    printLog("Starting basic search test...");
-
-    const ctx: WorkflowContext = {};
-
-    // Initialize context
-    const step0Gen = step0(ctx);
-    await step0Gen.next();
-
-    // Open homepage
-    const homepageGen = openHomepage(ctx);
-    await homepageGen.next();
-
-    // Wait for load
-    const loadGen = waitForPageLoad(ctx);
-    await loadGen.next();
-
-    // Perform search
-    const searchGen = performBasicSearch(ctx);
-    const result = await searchGen.next();
-
-    printLog(`Search test result: ${result.value}`);
-
-    // Cleanup
-    if (ctx.driver) {
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Keep browser open for 5 seconds
-      await ctx.driver.quit();
-    }
-
-  } catch (error) {
-    console.error('Basic search test error:', error);
-  }
-}
-
-if (require.main === module) {
-  // Run basic search test for now
-  testBasicSearch();
-}
+// Export all step functions for the workflow engine
+export const seekStepFunctions = {
+  step0,
+  openHomepage,
+  waitForPageLoad,
+  refreshPage,
+  detectPageState,
+  showSignInBanner,
+  performBasicSearch
+};

@@ -6,7 +6,7 @@ from typing import Any, Dict, AsyncGenerator, Optional
 import asyncio
 
 # from helpers.config_manager import load_settings, load_json_file
-from ..botfiles.workflows.seek.scripts.job_details import (
+from .workflows.seek.scripts.job_details import (
 	clean_unwanted_content,
 	split_title_and_details,
 	parse_job_title_with_svg_markers,
@@ -703,7 +703,7 @@ async def handle_cover_letter(ctx: Dict[str, Any]) -> AsyncGenerator[str, None]:
 		return
 	
 	try:
-		from ..botfiles.workflows.seek.quick_apply_utils import get_default_cover_letter
+		from .workflows.seek.quick_apply_utils import get_default_cover_letter
 		
 		# Check for cover letter radio button
 		radio_button = page.locator('input[data-testid="coverLetter-method-change"]')
@@ -966,7 +966,7 @@ async def submit_application(ctx: Dict[str, Any]) -> AsyncGenerator[str, None]:
 		return
 	
 	try:
-		from ..botfiles.workflows.seek.quick_apply_utils import is_application_complete, log_quick_apply_progress
+		from .workflows.seek.quick_apply_utils import is_application_complete, log_quick_apply_progress
 		
 		await log_quick_apply_progress(page, "SUBMIT")
 		

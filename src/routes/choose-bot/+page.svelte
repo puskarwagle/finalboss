@@ -49,9 +49,16 @@
     // Convert bot names: seek_bot -> seek, linkedin_bot -> linkedin, indeed_bot -> indeed
     const cleanBotName = botName.replace('_bot', '');
     const args = [cleanBotName, browser];
-    
+
+    // For seek_bot, use Selenium workflow instead of Playwright
+    if (cleanBotName === 'seek') {
+      args.push('--selenium');
+    } else {
+      // Other bots still use Playwright
+      if (usePlaywright) args.push('--playwright');
+    }
+
     if (useNewContext) args.push('--new-context');
-    if (usePlaywright) args.push('--playwright');
     if (useFullscreen) args.push('--fullscreen');
     if (customSize && customSize.includes('x')) {
       args.push(`--size=${customSize}`);
@@ -59,7 +66,7 @@
       // Use detected screen size if no custom size specified
       args.push(`--size=${screenWidth}x${screenHeight}`);
     }
-    
+
     return args;
   }
 
@@ -76,8 +83,8 @@
       console.log(`Built args:`, args);
       
       // Execute the botrunner.ts script
-      const result = await invoke('run_javascript_script', { 
-        scriptPath: 'src/bots/botrunner.ts',
+      const result = await invoke('run_javascript_script', {
+        scriptPath: 'src/botfiles/botrunner.ts',
         args: args
       });
       
