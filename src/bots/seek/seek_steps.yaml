@@ -44,11 +44,20 @@ steps_config:
     step: 3
     func: "detectPageState"
     transitions:
-      cards_present: "perform_search"
+      logged_in: "click_search"
       sign_in_required: "show_sign_in_banner"
       no_cards_found: "perform_search"
     timeout: 20
     on_timeout_event: "perform_search"
+
+  click_search:
+    step: 3.5
+    func: "clickSearchButton"
+    transitions:
+      search_clicked: "perform_search"
+      search_failed: "done"
+    timeout: 10
+    on_timeout_event: "search_failed"
 
   show_sign_in_banner:
     step: 4

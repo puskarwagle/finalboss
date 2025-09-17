@@ -1,7 +1,8 @@
-import { WebDriver, By, until } from 'selenium-webdriver';
+import { WebDriver, By } from 'selenium-webdriver';
 import { setupChromeDriver } from '../core/browser_manager';
 import { HumanBehavior, StealthFeatures, DEFAULT_HUMANIZATION } from '../core/humanization';
 import { UniversalSessionManager, SessionConfigs } from '../core/sessionManager';
+import { UniversalOverlay } from '../core/universal_overlay';
 import type { WorkflowContext } from '../core/workflow_engine';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -172,132 +173,148 @@ export async function* detectPageState(ctx: WorkflowContext): AsyncGenerator<str
   printLog("Detecting page state...");
 
   const driver: WebDriver = ctx.driver;
-  const selectors: SeekSelectors = ctx.selectors;
-  const sessionManager: UniversalSessionManager = ctx.sessionManager;
 
-  if (!driver || !sessionManager) {
-    yield "no_cards_found";
+  if (!driver) {
+    yield "sign_in_required";
     return;
   }
 
   try {
-    // First check login status using session manager
-    const isLoggedIn = await sessionManager.checkLoginStatus(ctx.sessionExists || false);
+    // Wait for page elements to load properly
+    await driver.sleep(3000);
 
-    if (!isLoggedIn) {
-      printLog("Login required - redirecting to sign-in flow");
+    // Debug: Check what's actually on the page
+    const currentUrl = await driver.getCurrentUrl();
+    printLog(`Current URL: ${currentUrl}`);
+
+    // Check if sign-in button is present (means not logged in)
+    const signInSelector = 'a[data-automation="sign in"][title="Sign in"]';
+    try {
+      const signInButton = await driver.findElement(By.css(signInSelector));
+      if (signInButton && await signInButton.isDisplayed()) {
+        printLog("🔴 LOGIN REQUIRED: Sign in button found");
+        yield "sign_in_required";
+        return;
+      }
+    } catch (e) {
+      printLog(`Sign-in button not found: ${e}`);
+    }
+
+    // Check page source for sign-in indicators
+    const pageSource = await driver.getPageSource();
+    if (pageSource.includes('data-automation="sign in"') || pageSource.includes('Sign in')) {
+      printLog("🔴 LOGIN REQUIRED: Sign in text found in page source");
       yield "sign_in_required";
       return;
     }
 
-    // If logged in, check for job cards
-    for (const selector of selectors.job_cards || []) {
-      try {
-        const elements = await driver.findElements(By.css(selector));
-        if (elements.length > 0) {
-          printLog(`Found ${elements.length} job cards - user is logged in`);
-          yield "cards_present";
-          return;
-        }
-      } catch (error) {
-        // Continue to next selector
-      }
-    }
-
-    printLog("No job cards found");
-    yield "no_cards_found";
+    // No sign-in button found, user is logged in
+    printLog("✅ LOGGED IN: No sign-in indicators found");
+    yield "logged_in";
   } catch (error) {
     printLog(`Error detecting page state: ${error}`);
-    yield "no_cards_found";
+    yield "sign_in_required";
   }
 }
 
-// Step 4: Show Sign In Banner and Wait for Login
-export async function* showSignInBanner(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("Sign-in required - starting login process...");
-
-  const sessionManager: UniversalSessionManager = ctx.sessionManager;
-  if (!sessionManager) {
-    yield "signin_banner_retry";
-    return;
-  }
-
-  try {
-    // Show login banner
-    await sessionManager.showLoginBanner('Seek');
-
-    // Wait for user to complete login
-    await sessionManager.waitForLogin();
-
-    // Remove banner after successful login
-    await sessionManager.removeLoginBanner();
-
-    printLog("Login completed successfully!");
-    yield "signin_banner_shown";
-  } catch (error) {
-    printLog(`Login error: ${error}`);
-    yield "signin_banner_retry";
-  }
-}
-
-// Basic search functionality
-export async function* performBasicSearch(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("Performing basic search...");
+// Step 3.5: Click Search Button
+export async function* clickSearchButton(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("🔍 Clicking search button...");
 
   const driver: WebDriver = ctx.driver;
-  const config: BotConfig = ctx.config;
-  const selectors: SeekSelectors = ctx.selectors;
-  const humanBehavior: HumanBehavior = ctx.humanBehavior;
-
-  if (!driver || !humanBehavior) {
+  if (!driver) {
     yield "search_failed";
     return;
   }
 
   try {
-    // Human-like pause before starting search
-    await humanBehavior.thinkingPause();
+    // Look for search button - common selectors
+    const searchSelectors = [
+      'button[data-automation="searchSubmit"]',
+      'button[type="submit"]',
+      'input[type="submit"]',
+      '.search-button',
+      '[data-testid="search-button"]'
+    ];
 
-    // Fill keywords with human-like behavior
-    const keywordSelectors = selectors.keywords || ["#keywords-input", "input[placeholder*='What']"];
-    for (const selector of keywordSelectors) {
+    for (const selector of searchSelectors) {
       try {
-        const keywordField = await driver.wait(until.elementLocated(By.css(selector)), 10000);
-        await humanBehavior.fillFormField(driver, keywordField, config.formData.keywords || "", "Keywords");
-        printLog(`Filled keywords: ${config.formData.keywords}`);
-        break;
-      } catch (error) {
-        continue;
+        const searchButton = await driver.findElement(By.css(selector));
+        if (searchButton && await searchButton.isDisplayed()) {
+          await searchButton.click();
+          printLog("✅ Search button clicked");
+          await driver.sleep(1000);
+          yield "search_clicked";
+          return;
+        }
+      } catch {
+        // Continue to next selector
       }
     }
 
-    // Small pause between fields
-    await humanBehavior.randomDelay(500, 1200);
+    printLog("⚠️ No search button found, continuing anyway");
+    yield "search_clicked";
+  } catch (error) {
+    printLog(`❌ Error clicking search button: ${error}`);
+    yield "search_failed";
+  }
+}
 
-    // Fill location with human-like behavior
-    const locationSelectors = selectors.location || ["input[name='where']", "input[placeholder*='Where']"];
-    for (const selector of locationSelectors) {
-      try {
-        const locationField = await driver.wait(until.elementLocated(By.css(selector)), 10000);
-        await humanBehavior.fillFormField(driver, locationField, config.formData.locations || "", "Location");
-        printLog(`Filled location: ${config.formData.locations}`);
-        break;
-      } catch (error) {
-        continue;
-      }
+// Step 4: Show Sign In Banner and Wait for Login
+export async function* showSignInBanner(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("🔐 Sign-in required - showing overlay...");
+
+  const driver: WebDriver = ctx.driver;
+  if (!driver) {
+    yield "signin_banner_retry";
+    return;
+  }
+
+  try {
+    // Use universal overlay for sign-in
+    const overlay = new UniversalOverlay(driver);
+    await overlay.showSignInOverlay();
+
+    // Navigate back to the search URL after login
+    const searchUrl = ctx.seek_url || 'https://www.seek.com.au';
+    printLog(`🔄 Navigating back to search URL: ${searchUrl}`);
+    await driver.get(searchUrl);
+
+    // Wait for page to load
+    await driver.sleep(2000);
+
+    printLog("✅ Sign-in completed and returned to search!");
+    yield "signin_banner_shown";
+  } catch (error) {
+    printLog(`❌ Sign-in error: ${error}`);
+    yield "signin_banner_retry";
+  }
+}
+
+// Basic search functionality - just click search since we already have URL with keywords/location
+export async function* performBasicSearch(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("🎯 Search completed - we already navigated to search URL");
+
+  const driver: WebDriver = ctx.driver;
+
+  if (!driver) {
+    yield "search_failed";
+    return;
+  }
+
+  try {
+    // Just wait for results to load since we already have the search URL
+    await driver.sleep(2000);
+
+    // Check if we're on a results page
+    const currentUrl = await driver.getCurrentUrl();
+    if (currentUrl.includes('jobs')) {
+      printLog("✅ On search results page");
+      yield "search_completed";
+    } else {
+      printLog("❌ Not on expected results page");
+      yield "search_failed";
     }
-
-    // Thinking pause before clicking search
-    await humanBehavior.thinkingPause();
-
-    // Click search button with human behavior
-    const searchButton = await driver.wait(until.elementLocated(By.css('button[type="submit"], button[data-automation="searchButton"]')), 10000);
-    await humanBehavior.humanClick(driver, searchButton);
-    printLog("Clicked search button");
-
-    // Random delay while results load
-    await humanBehavior.randomDelay(2000, 4000);
-    yield "search_completed";
 
   } catch (error) {
     printLog(`Search error: ${error}`);
@@ -312,6 +329,7 @@ export const seekStepFunctions = {
   waitForPageLoad,
   refreshPage,
   detectPageState,
+  clickSearchButton,
   showSignInBanner,
   performBasicSearch
 };

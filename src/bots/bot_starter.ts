@@ -137,17 +137,10 @@ export class BotStarter {
       if (context.sessionsDir) {
         print_log(`📂 Session saved to: ${context.sessionsDir}`);
       }
+      print_log('💡 Press Ctrl+C to exit (browser will stay open) or close browser manually');
 
-      // Keep script alive to prevent browser from closing
-      try {
-        if (process.stdin.setRawMode) {
-          process.stdin.setRawMode(true);
-        }
-        process.stdin.resume();
-        process.stdin.on('data', () => {}); // Minimal memory usage
-      } catch (error) {
-        print_log('Note: Browser will remain open');
-      }
+      // Keep monitoring browser - only exit when browser closes or Ctrl+C
+      // The browser monitoring will handle process exit
     } else if (context.driver) {
       print_log('Closing browser...');
       await context.driver.quit();

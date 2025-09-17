@@ -42,7 +42,7 @@ const printLog = (message: string) => {
 };
 
 // Monitor browser windows and detect manual closure
-export const monitorBrowserClose = (driver: WebDriver, onBrowserClosed?: () => void): void => {
+export const monitorBrowserClose = (driver: WebDriver, onBrowserClosed?: () => void): (() => void) => {
   const checkInterval = setInterval(async () => {
     try {
       const handles = await driver.getAllWindowHandles();
@@ -66,6 +66,11 @@ export const monitorBrowserClose = (driver: WebDriver, onBrowserClosed?: () => v
       }
     }
   }, 2000); // Check every 2 seconds
+
+  // Return function to stop monitoring
+  return () => {
+    clearInterval(checkInterval);
+  };
 };
 
 export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ driver: WebDriver; actions: any; sessionExists: boolean; sessionsDir: string }> => {
@@ -127,9 +132,9 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     const actions = driver.actions();
 
     // Start monitoring for manual browser closure
-    monitorBrowserClose(driver);
+    const stopMonitoring = monitorBrowserClose(driver);
 
-    return { driver, actions, sessionExists, sessionsDir };
+    return { driver, actions, sessionExists, sessionsDir, stopMonitoring };
 
   } catch (error) {
     const errorMessage = 'Seems like either... \n\n1. Chrome is already running. \nA. Close all Chrome windows and try again. \n\n2. Google Chrome or Chromedriver is out dated. \nA. Update browser and Chromedriver! \n\n3. Chrome not installed or not in PATH. \nA. Install Chrome and ensure chromedriver is in PATH. \n\nPlease check GitHub discussions/support for solutions';

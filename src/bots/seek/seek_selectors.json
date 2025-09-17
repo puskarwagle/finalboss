@@ -9,8 +9,8 @@
 		"article[data-testid=\"job-card\"]"
 	],
 	"job_details_panel": "[data-automation=\"jobDetailsPage\"]",
-	"sign_in_link": [
-		"a[data-automation=\"sign in\"]"
+	"sign_in__button": [
+		"a[data-automation=\"sign in\"][title=\"Sign in\"]"
 	],
 	"classification_dropdown": [
 		"[data-automation=\"classificationDropDownList\"]"

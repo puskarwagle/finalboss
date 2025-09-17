@@ -24,18 +24,6 @@ export class UniversalSessionManager {
         return false;
       }
 
-      // Look for sign-in button (indicates not logged in)
-      for (const selector of this.config.signInSelectors) {
-        try {
-          const signInButton = await this.driver.findElement(By.css(selector));
-          if (signInButton && await signInButton.isDisplayed()) {
-            console.log('🔴 LOGIN REQUIRED: SIGN IN BUTTON FOUND - PLEASE LOG IN MANUALLY');
-            return false;
-          }
-        } catch {
-          // Sign in button not found - continue checking
-        }
-      }
 
       // Look for user account indicators (profile menu, user name, etc.)
       for (const selector of this.config.userMenuSelectors) {
