@@ -27,7 +27,7 @@ export class BotRegistry {
       const entries = fs.readdirSync(this.bots_dir, { withFileTypes: true });
 
       for (const entry of entries) {
-        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'core') {
+        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'core' && entry.name !== 'sessions') {
           const bot_name = entry.name;
           const bot_path = path.join(this.bots_dir, bot_name);
 
@@ -100,12 +100,20 @@ export class BotRegistry {
     }
 
     try {
+      // Try bot-specific config first
       if (fs.existsSync(bot_info.config_path)) {
         const config_module = require(bot_info.config_path);
         return config_module.default || config_module;
       } else {
-        console.warn(`[Registry] Configuration file not found for '${bot_name}', using defaults`);
-        return {};
+        // Use core user config as fallback
+        const core_config_path = path.join(__dirname, 'user-bots-config.json');
+        if (fs.existsSync(core_config_path)) {
+          console.log(`[Registry] Using core configuration for '${bot_name}'`);
+          return JSON.parse(fs.readFileSync(core_config_path, 'utf8'));
+        } else {
+          console.warn(`[Registry] Configuration file not found for '${bot_name}', using defaults`);
+          return {};
+        }
       }
     } catch (error) {
       console.error(`[Registry] Error loading config for '${bot_name}': ${error}`);

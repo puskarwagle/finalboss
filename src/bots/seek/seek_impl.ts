@@ -27,7 +27,7 @@ interface SeekSelectors {
 const BASE_URL = "https://www.seek.com.au";
 
 const printLog = (message: string) => {
-  console.log(`[${new Date().toISOString()}] ${message}`);
+  console.log(message);
 };
 
 function slugify(text: string): string {
@@ -61,7 +61,7 @@ export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void,
   ctx.selectors = selectors;
 
   // Load config
-  const configPath = path.join(__dirname, '../user-bots-config.json');
+  const configPath = path.join(__dirname, '../core/user-bots-config.json');
   const config: BotConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   ctx.config = config;
 

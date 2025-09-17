@@ -38,12 +38,39 @@ const findDefaultProfileDirectory = (): string | null => {
 };
 
 const printLog = (message: string) => {
-  console.log(`[${new Date().toISOString()}] ${message}`);
+  console.log(message);
+};
+
+// Monitor browser windows and detect manual closure
+export const monitorBrowserClose = (driver: WebDriver, onBrowserClosed?: () => void): void => {
+  const checkInterval = setInterval(async () => {
+    try {
+      const handles = await driver.getAllWindowHandles();
+      if (handles.length === 0) {
+        printLog("Browser manually closed by user - shutting down bot");
+        clearInterval(checkInterval);
+        if (onBrowserClosed) {
+          onBrowserClosed();
+        } else {
+          process.exit(0);
+        }
+      }
+    } catch (error) {
+      // Browser is no longer accessible
+      printLog("Browser connection lost - shutting down bot");
+      clearInterval(checkInterval);
+      if (onBrowserClosed) {
+        onBrowserClosed();
+      } else {
+        process.exit(0);
+      }
+    }
+  }, 2000); // Check every 2 seconds
 };
 
 export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ driver: WebDriver; actions: any; sessionExists: boolean; sessionsDir: string }> => {
   try {
-    const configPath = path.join(__dirname, '../user-bots-config.json');
+    const configPath = path.join(__dirname, 'user-bots-config.json');
     const config: BotConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
     // Create session management like botrunner.ts
@@ -76,7 +103,6 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     options.addArguments('--disable-web-security');
     options.addArguments('--disable-features=VizDisplayCompositor');
 
-    printLog('IF YOU HAVE MORE THAN 10 TABS OPENED, PLEASE CLOSE OR BOOKMARK THEM! Or it\'s highly likely that application will just open browser and not do anything!');
 
     if (safeMode) {
       printLog('SAFE MODE: Will login with a guest profile, browsing history will not be saved in the browser!');
@@ -99,6 +125,9 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     await driver.manage().window().maximize();
 
     const actions = driver.actions();
+
+    // Start monitoring for manual browser closure
+    monitorBrowserClose(driver);
 
     return { driver, actions, sessionExists, sessionsDir };
 

@@ -3,7 +3,7 @@ import { WorkflowEngine, type WorkflowContext } from './core/workflow_engine';
 import * as path from 'path';
 
 const print_log = (message: string) => {
-  console.log(`[${new Date().toISOString()}] ${message}`);
+  console.log(message);
 };
 
 export interface BotRunOptions {
@@ -25,7 +25,7 @@ export class BotStarter {
     const { bot_name, config, headless = false, keep_open = true } = options;
 
     try {
-      print_log(`Starting bot runner for: ${bot_name}`);
+      print_log(`🚀 Starting bot runner for: ${bot_name}`);
 
       // 1. Discover and validate bot
       this.registry.discover_bots();
@@ -39,18 +39,18 @@ export class BotStarter {
         throw new Error(`Failed to load bot info for '${bot_name}'`);
       }
 
-      print_log(`Bot validated: ${bot_info.display_name}`);
+      print_log(`✅ Bot validated: ${bot_info.display_name}`);
 
       // 2. Load bot configuration and selectors
       const bot_config = this.registry.load_bot_config(bot_name);
       const bot_selectors = this.registry.load_bot_selectors(bot_name);
 
-      print_log(`Configuration and selectors loaded for ${bot_name}`);
+      print_log(`⚙️ Configuration and selectors loaded for ${bot_name}`);
 
       // 3. Load bot implementation
       const bot_impl = await this.load_bot_implementation(bot_info.impl_path);
 
-      print_log(`Implementation loaded for ${bot_name}`);
+      print_log(`🔧 Implementation loaded for ${bot_name}`);
 
       // 4. Create workflow engine with bot's YAML
       const workflow_engine = new WorkflowEngine(bot_info.yaml_path);
@@ -62,7 +62,7 @@ export class BotStarter {
       const initial_context = this.create_initial_context(bot_config, bot_selectors, config);
 
       // 7. Run the workflow
-      print_log(`Executing workflow for ${bot_name}...`);
+      print_log(`▶️ Executing workflow for ${bot_name}...`);
       workflow_engine.setContext('config', initial_context.config);
       workflow_engine.setContext('selectors', initial_context.selectors);
       workflow_engine.setContext('bot_name', bot_name);

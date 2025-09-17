@@ -60,8 +60,6 @@ export class WorkflowEngine {
       throw new Error(`Function '${stepConfig.func}' not registered`);
     }
 
-    console.log(`[Workflow] Executing step: ${stepName} (${stepConfig.func})`);
-
     try {
       const generator = stepFunction(this.context);
       const timeoutPromise = new Promise<string>((resolve) => {
@@ -73,7 +71,7 @@ export class WorkflowEngine {
         timeoutPromise
       ]);
 
-      console.log(`[Workflow] Step '${stepName}' yielded: ${result}`);
+      console.log(`Step ${stepConfig.step} [${stepConfig.func}] → ${result}`);
       return result;
     } catch (error) {
       console.error(`[Workflow] Error in step '${stepName}':`, error);
@@ -87,7 +85,7 @@ export class WorkflowEngine {
   }
 
   async run(): Promise<void> {
-    console.log(`[Workflow] Starting workflow: ${this.config.workflow_meta.title}`);
+    console.log(`🤖 ${this.config.workflow_meta.title}`);
 
     let currentStepName = this.currentStep;
     const maxSteps = 10; // Prevent infinite loops
@@ -101,9 +99,8 @@ export class WorkflowEngine {
 
       if (stepConfig.transitions[event]) {
         currentStepName = stepConfig.transitions[event];
-        console.log(`[Workflow] Transitioning from '${currentStepName}' to '${stepConfig.transitions[event]}' on event '${event}'`);
       } else {
-        console.warn(`[Workflow] No transition found for event '${event}' in step '${currentStepName}'`);
+        console.warn(`❌ No transition found for event '${event}' in step '${currentStepName}'`);
         break;
       }
 
@@ -112,9 +109,9 @@ export class WorkflowEngine {
     }
 
     if (stepCount >= maxSteps) {
-      console.warn('[Workflow] Maximum step count reached, stopping workflow');
+      console.warn('❌ Maximum step count reached, stopping workflow');
     }
 
-    console.log('[Workflow] Workflow completed');
+    console.log('✅ Workflow completed');
   }
 }
