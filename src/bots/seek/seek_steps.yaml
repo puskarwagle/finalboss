@@ -72,7 +72,25 @@ steps_config:
     step: 5
     func: "performBasicSearch"
     transitions:
-      search_completed: "done"
+      search_completed: "collect_job_cards"
       search_failed: "refresh_page"
     timeout: 60
     on_timeout_event: "search_failed"
+
+  collect_job_cards:
+    step: 6
+    func: "collectJobCards"
+    transitions:
+      cards_collected: "click_job_card"
+      cards_collect_retry: "collect_job_cards"
+    timeout: 30
+    on_timeout_event: "cards_collect_retry"
+
+  click_job_card:
+    step: 7
+    func: "clickJobCard"
+    transitions:
+      job_card_clicked: "done"
+      job_card_skipped: "click_job_card"
+    timeout: 10
+    on_timeout_event: "job_card_skipped"

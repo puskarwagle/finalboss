@@ -120,6 +120,45 @@ export async function* performBasicSearch(ctx: WorkflowContext): AsyncGenerator<
   yield currentUrl.includes('jobs') ? "search_completed" : "search_failed";
 }
 
+// Collect Job Cards
+export async function* collectJobCards(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  const selectors = ctx.selectors?.job_cards || ['article[data-testid="job-card"]'];
+
+  for (const selector of selectors) {
+    try {
+      const cards = await ctx.driver.findElements(By.css(selector));
+      if (cards.length > 0) {
+        ctx.job_cards = cards;
+        ctx.job_index = 0;
+        yield "cards_collected";
+        return;
+      }
+    } catch { continue; }
+  }
+  yield "cards_collect_retry";
+}
+
+// Click Job Card
+export async function* clickJobCard(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  const cards = ctx.job_cards || [];
+  const index = ctx.job_index || 0;
+
+  if (!cards.length || index >= cards.length) {
+    yield "job_card_skipped";
+    return;
+  }
+
+  try {
+    await ctx.driver.executeScript("arguments[0].scrollIntoView(true);", cards[index]);
+    await cards[index].click();
+    ctx.job_index = index + 1;
+    yield "job_card_clicked";
+  } catch {
+    ctx.job_index = index + 1;
+    yield "job_card_skipped";
+  }
+}
+
 // Export all step functions for the workflow engine
 export const seekStepFunctions = {
   step0,
@@ -129,5 +168,7 @@ export const seekStepFunctions = {
   detectPageState,
   clickSearchButton,
   showSignInBanner,
-  performBasicSearch
+  performBasicSearch,
+  collectJobCards,
+  clickJobCard
 };

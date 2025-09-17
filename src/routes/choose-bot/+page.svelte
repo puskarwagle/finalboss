@@ -1,34 +1,39 @@
 <script>
-  import { bots } from '../../bots/botsinit.json';
   import { invoke } from '@tauri-apps/api/core';
+  import { onMount } from 'svelte';
+
+  // Dynamic bot list
+  let bots = [
+    {
+      name: 'seek_bot',
+      description: 'Automate job searching on Seek.com.au with advanced filtering and application features',
+      image: '/seek-logo.png'
+    }
+  ];
+
+  // Load available bots on mount
+  onMount(async () => {
+    try {
+      // Try to get bots dynamically - if this fails, keep the static list
+      const availableBots = await invoke('get_available_bots');
+      if (availableBots && availableBots.length > 0) {
+        bots = availableBots.map(botName => ({
+          name: `${botName}_bot`,
+          description: `Automate job searching on ${botName}`,
+          image: `/${botName}-logo.png`
+        }));
+      }
+    } catch (error) {
+      console.log('Using static bot list (dynamic discovery not available)');
+      // Keep the static bot list as fallback
+    }
+  });
 
   let isRunning = false;
   let runningBot = '';
   let statusMessage = '';
   let selectedBot = '';
   let showBrowserSelection = false;
-  let showAdvancedOptions = false;
-  
-  // Advanced options state
-  let useNewContext = false;
-  let usePlaywright = true; // Default to Playwright mode
-  let useFullscreen = false;
-  let customSize = '';
-  let selectedBrowser = 'chrome';
-  
-  // Get screen dimensions
-  let screenWidth = 1920;
-  let screenHeight = 1080;
-  
-  // Detect screen size on mount
-  import { onMount } from 'svelte';
-  
-  onMount(() => {
-    if (typeof window !== 'undefined') {
-      screenWidth = window.screen.width;
-      screenHeight = window.screen.height;
-    }
-  });
 
   function closeStatusMessage() {
     statusMessage = '';
@@ -39,52 +44,33 @@
 
   function handleBotClick(botName) {
     if (isRunning) return; // Prevent multiple clicks while running
-    
-    // Show browser selection for this bot
-    selectedBot = botName;
-    showBrowserSelection = true;
+
+    // Directly run the bot - no browser selection needed
+    runBot(botName);
   }
 
-  function buildArgs(botName, browser) {
+  function buildArgs(botName) {
     // Convert bot names: seek_bot -> seek, linkedin_bot -> linkedin, indeed_bot -> indeed
     const cleanBotName = botName.replace('_bot', '');
-    const args = [cleanBotName, browser];
 
-    // For seek_bot, use Selenium workflow instead of Playwright
-    if (cleanBotName === 'seek') {
-      args.push('--selenium');
-    } else {
-      // Other bots still use Playwright
-      if (usePlaywright) args.push('--playwright');
-    }
-
-    if (useNewContext) args.push('--new-context');
-    if (useFullscreen) args.push('--fullscreen');
-    if (customSize && customSize.includes('x')) {
-      args.push(`--size=${customSize}`);
-    } else {
-      // Use detected screen size if no custom size specified
-      args.push(`--size=${screenWidth}x${screenHeight}`);
-    }
-
-    return args;
+    // New bot_starter.ts only needs the bot name
+    return [cleanBotName];
   }
 
-  async function runBotWithBrowser(botName, browser) {
+  async function runBot(botName) {
     try {
       isRunning = true;
       runningBot = botName;
-      showBrowserSelection = false;
-      statusMessage = `Starting ${botName.replace('_', ' ')} with ${browser}... Please wait while we open your browser.`;
-      console.log(`Running ${botName} with ${browser}...`);
+      statusMessage = `Starting ${botName.replace('_', ' ')}... Please wait while we open your browser.`;
+      console.log(`Running ${botName}...`);
       
-      // Build arguments for botrunner.ts
-      const args = buildArgs(botName, browser);
+      // Build arguments for bot_starter.ts
+      const args = buildArgs(botName);
       console.log(`Built args:`, args);
       
-      // Execute the botrunner.ts script
+      // Execute the bot_starter.ts script
       const result = await invoke('run_javascript_script', {
-        scriptPath: 'src/botfiles/botrunner.ts',
+        scriptPath: 'src/bots/bot_starter.ts',
         args: args
       });
       
@@ -121,20 +107,6 @@
     }
   }
 
-  function cancelBrowserSelection() {
-    selectedBot = '';
-    showBrowserSelection = false;
-    showAdvancedOptions = false;
-    // Reset advanced options
-    useNewContext = false;
-    usePlaywright = true; // Keep Playwright as default
-    useFullscreen = false;
-    customSize = '';
-  }
-
-  function toggleAdvancedOptions() {
-    showAdvancedOptions = !showAdvancedOptions;
-  }
 </script>
 
 <style>
@@ -317,244 +289,6 @@
     transform: scale(1.1);
   }
 
-  .browser-selection {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--bg-overlay);
-    border-radius: inherit;
-    display: flex;
-    flex-direction: column;
-    padding: var(--space-lg);
-    z-index: 10;
-    animation: fadeIn 0.3s ease-in-out;
-    overflow-y: auto;
-    max-height: 100%;
-  }
-
-  .browser-selection h3 {
-    color: var(--color-primary);
-    font-size: var(--font-size-lg);
-    margin-bottom: var(--space-md);
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-normal);
-    text-align: center;
-  }
-
-  .browser-section {
-    margin-bottom: var(--space-md);
-  }
-
-  .browser-section h4 {
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--space-sm);
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-normal);
-  }
-
-  .browser-buttons {
-    display: flex;
-    gap: var(--space-sm);
-    justify-content: center;
-  }
-
-  .browser-btn {
-    padding: var(--space-xs) var(--space-md);
-    background: transparent;
-    color: var(--color-primary-dark);
-    border: 1px solid var(--color-primary-dark);
-    border-radius: var(--radius-sm);
-    font-family: var(--font-family);
-    font-size: var(--font-size-sm);
-    cursor: pointer;
-    transition: var(--transition-normal);
-  }
-
-  .browser-btn:hover,
-  .browser-btn.active {
-    background: var(--color-primary);
-    color: var(--bg-primary);
-    border-color: var(--color-primary);
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-  }
-
-  .advanced-toggle {
-    padding: var(--space-xs) var(--space-sm);
-    background: transparent;
-    color: var(--color-primary-dark);
-    border: 1px dashed var(--color-primary-dark);
-    border-radius: var(--radius-sm);
-    font-family: var(--font-family);
-    font-size: var(--font-size-xs);
-    cursor: pointer;
-    transition: var(--transition-normal);
-    margin: var(--space-sm) 0;
-    width: 100%;
-  }
-
-  .advanced-toggle:hover {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-    border-style: solid;
-  }
-
-  .advanced-options {
-    background: rgba(0, 255, 255, 0.05);
-    border: 1px solid var(--color-primary-dark);
-    border-radius: var(--radius-sm);
-    padding: var(--space-md);
-    margin-bottom: var(--space-md);
-    animation: slideDown 0.3s ease-in-out;
-  }
-
-  .option-group {
-    margin-bottom: var(--space-md);
-  }
-
-  .option-group:last-child {
-    margin-bottom: 0;
-  }
-
-  .option-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: var(--space-sm);
-    cursor: pointer;
-    font-size: var(--font-size-xs);
-    color: var(--color-primary-dark);
-    position: relative;
-    padding-left: var(--space-lg);
-  }
-
-  .option-item input[type="checkbox"] {
-    position: absolute;
-    left: 0;
-    top: 2px;
-    width: 14px;
-    height: 14px;
-    cursor: pointer;
-    opacity: 0;
-  }
-
-  .checkmark {
-    position: absolute;
-    left: 0;
-    top: 2px;
-    width: 14px;
-    height: 14px;
-    border: 1px solid var(--color-primary-dark);
-    border-radius: 2px;
-    transition: var(--transition-normal);
-  }
-
-  .option-item input[type="checkbox"]:checked + .checkmark {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-  }
-
-  .option-item input[type="checkbox"]:checked + .checkmark::after {
-    content: '✓';
-    position: absolute;
-    left: 2px;
-    top: -2px;
-    color: var(--bg-primary);
-    font-size: 10px;
-    line-height: 1;
-  }
-
-  .option-item small {
-    display: block;
-    color: var(--color-primary-dark);
-    font-size: 10px;
-    margin-top: 2px;
-    opacity: 0.7;
-  }
-
-  .size-option {
-    margin-top: var(--space-sm);
-  }
-
-  .size-option label {
-    display: block;
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-xs);
-    margin-bottom: var(--space-xs);
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-normal);
-  }
-
-  .size-input {
-    width: 100%;
-    padding: var(--space-xs);
-    background: var(--bg-primary);
-    border: 1px solid var(--color-primary-dark);
-    border-radius: var(--radius-sm);
-    color: var(--color-primary);
-    font-family: var(--font-family);
-    font-size: var(--font-size-xs);
-  }
-
-  .size-input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
-  }
-
-  .size-input:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: var(--space-sm);
-    justify-content: center;
-    margin-top: auto;
-    padding-top: var(--space-md);
-    border-top: 1px solid var(--color-primary-dark);
-  }
-
-  .launch-btn {
-    padding: var(--space-sm) var(--space-lg);
-    background: var(--color-primary);
-    color: var(--bg-primary);
-    border: none;
-    border-radius: var(--radius-sm);
-    font-family: var(--font-family);
-    font-weight: var(--font-weight-bold);
-    font-size: var(--font-size-sm);
-    cursor: pointer;
-    transition: var(--transition-normal);
-    flex: 1;
-    max-width: 120px;
-  }
-
-  .launch-btn:hover {
-    background: var(--color-primary-bright);
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-  }
-
-  .cancel-btn {
-    padding: var(--space-sm) var(--space-lg);
-    background: transparent;
-    color: var(--color-primary-dark);
-    border: 1px solid var(--color-primary-dark);
-    border-radius: var(--radius-sm);
-    font-family: var(--font-family);
-    font-size: var(--font-size-sm);
-    cursor: pointer;
-    transition: var(--transition-normal);
-    flex: 1;
-    max-width: 100px;
-  }
-
-  .cancel-btn:hover {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-  }
 
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -611,99 +345,6 @@
               {/if}
             </p>
           </div>
-          
-            {#if showBrowserSelection && selectedBot === bot.name}
-              <div class="browser-selection">
-                <h3>Launch Configuration</h3>
-                
-                <!-- Browser Selection -->
-                <div class="browser-section">
-                  <h4>Browser</h4>
-                  <div class="browser-buttons">
-                    <button 
-                      class="browser-btn"
-                      class:active={selectedBrowser === 'chrome'}
-                      on:click|stopPropagation={() => selectedBrowser = 'chrome'}
-                    >
-                      Chrome
-                    </button>
-                    <button 
-                      class="browser-btn"
-                      class:active={selectedBrowser === 'firefox'}
-                      on:click|stopPropagation={() => selectedBrowser = 'firefox'}
-                    >
-                      Firefox
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Advanced Options Toggle -->
-                <button 
-                  class="advanced-toggle"
-                  on:click|stopPropagation={toggleAdvancedOptions}
-                >
-                  ⚙️ Advanced Options {showAdvancedOptions ? '▼' : '▶'}
-                </button>
-
-                {#if showAdvancedOptions}
-                  <div class="advanced-options">
-                    <!-- Session Options -->
-                    <div class="option-group">
-                      <label class="option-item">
-                        <input type="checkbox" bind:checked={useNewContext}>
-                        <span class="checkmark"></span>
-                        Force New Session
-                        <small>Start fresh (ignore saved login)</small>
-                      </label>
-                      
-                      <label class="option-item">
-                        <input type="checkbox" bind:checked={usePlaywright}>
-                        <span class="checkmark"></span>
-                        Playwright Mode  
-                        <small>No session persistence</small>
-                      </label>
-                    </div>
-
-                    <!-- Display Options -->
-                    <div class="option-group">
-                      <label class="option-item">
-                        <input type="checkbox" bind:checked={useFullscreen}>
-                        <span class="checkmark"></span>
-                        Fullscreen (Kiosk)
-                        <small>No browser UI, pure fullscreen</small>
-                      </label>
-                      
-                      <div class="size-option">
-                        <label>Custom Size:</label>
-                        <input 
-                          type="text" 
-                          placeholder="1920x1080"
-                          bind:value={customSize}
-                          class="size-input"
-                          disabled={useFullscreen}
-                        >
-                      </div>
-                    </div>
-                  </div>
-                {/if}
-
-                <!-- Action Buttons -->
-                <div class="action-buttons">
-                  <button 
-                    class="launch-btn"
-                    on:click|stopPropagation={() => runBotWithBrowser(bot.name, selectedBrowser)}
-                  >
-                    🚀 Launch Bot
-                  </button>
-                  <button 
-                    class="cancel-btn"
-                    on:click|stopPropagation={cancelBrowserSelection}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            {/if}
         </div>
       {/each}
     </div>
