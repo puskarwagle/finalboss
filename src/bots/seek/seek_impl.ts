@@ -196,8 +196,226 @@ export async function* detectApplyType(ctx: WorkflowContext): AsyncGenerator<str
 
 // Parse Job Details
 export async function* parseJobDetails(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("Quick Apply job found - parsing details...");
-  yield "job_parsed";
+  try {
+    const jobData = await ctx.driver.executeScript(`
+      // Extract job content with improved Seek structure handling
+      function extractJobContent() {
+        const container = document.querySelector('[data-automation="jobDetailsPage"]');
+        if (!container) return null;
+
+        // Try to extract title using specific selectors first
+        let titleText = '';
+        const titleSelectors = [
+          '[data-automation="job-detail-title"]',
+          'h1[data-automation="jobTitle"]',
+          'h1',
+          '.job-title'
+        ];
+
+        for (const selector of titleSelectors) {
+          const titleEl = container.querySelector(selector);
+          if (titleEl && titleEl.textContent.trim()) {
+            titleText = titleEl.textContent.trim();
+            break;
+          }
+        }
+
+        // Try to extract company using specific selectors
+        let companyText = '';
+        const companySelectors = [
+          '[data-automation="advertiser-name"]',
+          '[data-automation="jobCompany"]',
+          '.advertiser-name'
+        ];
+
+        for (const selector of companySelectors) {
+          const companyEl = container.querySelector(selector);
+          if (companyEl && companyEl.textContent.trim()) {
+            companyText = companyEl.textContent.trim();
+            break;
+          }
+        }
+
+        // Extract job header section (title, company, location, etc.)
+        let headerText = '';
+        const headerEl = container.querySelector('[data-automation="jobHeader"]') ||
+                        container.querySelector('.job-header') ||
+                        container.querySelector('header');
+
+        if (headerEl) {
+          headerText = headerEl.textContent.trim();
+        } else {
+          // Fallback: construct header from individual elements
+          const locationEl = container.querySelector('[data-automation="job-detail-location"]');
+          const workTypeEl = container.querySelector('[data-automation="job-detail-work-type"]');
+          const salaryEl = container.querySelector('[data-automation="job-detail-salary"]');
+
+          headerText = [titleText, companyText,
+                       locationEl?.textContent?.trim(),
+                       workTypeEl?.textContent?.trim(),
+                       salaryEl?.textContent?.trim()].filter(Boolean).join('\\n');
+        }
+
+        // Extract full content using DOM walker for details
+        const texts = [];
+        const walker = document.createTreeWalker(
+          container,
+          NodeFilter.SHOW_TEXT,
+          {
+            acceptNode: function(node) {
+              let parent = node.parentElement;
+              while (parent && parent !== container) {
+                const tagName = parent.tagName.toLowerCase();
+                const style = window.getComputedStyle(parent);
+
+                if (tagName === 'style' || tagName === 'script' || tagName === 'noscript' ||
+                    style.display === 'none' || style.visibility === 'hidden') {
+                  return NodeFilter.FILTER_REJECT;
+                }
+                parent = parent.parentElement;
+              }
+              return NodeFilter.FILTER_ACCEPT;
+            }
+          },
+          false
+        );
+
+        while (walker.nextNode()) {
+          const text = walker.currentNode.textContent.trim();
+          if (text !== '') texts.push(text);
+        }
+
+        const allText = [...new Set(texts)].join('\\n');
+
+        const unwantedLines = [
+          'View all jobs', 'Quick apply', 'Apply', 'Save', 'Report this job advert',
+          'Be careful', "Don't provide your bank or credit card details when applying for jobs.",
+          'Learn how to protect yourself', 'Report this job ad', 'Career Advice'
+        ];
+
+        const ratingPatterns = [/^\\d+\\.\\d+$/, /^\\d+\\s+reviews?$/, /^·$/];
+
+        let cleanedLines = allText.split('\\n').filter(line => {
+          const trimmed = line.trim();
+          if (trimmed === '' || unwantedLines.includes(trimmed)) return false;
+          return !ratingPatterns.some(pattern => pattern.test(trimmed));
+        });
+
+        const cleanedText = cleanedLines.join('\\n');
+
+        return {
+          raw_title: headerText || titleText,
+          details: cleanedText,
+          extracted_title: titleText,
+          extracted_company: companyText
+        };
+      }
+
+      // Parse job title with structured fields
+      function parseJobTitle(titleText) {
+        const lines = titleText ? titleText.split('\\n').map(l => l.trim()).filter(l => l) : [];
+
+        const parsed = {
+          title: '', company: '', location: '', work_type: '', category: '',
+          salary_note: '', posted: '', application_volume: ''
+        };
+
+        if (!lines.length) return parsed;
+
+        parsed.title = lines[0];
+        if (lines.length >= 2) parsed.company = lines[1];
+
+        let postedIndex = -1;
+        for (let i = 2; i < lines.length; i++) {
+          if (lines[i].toLowerCase().includes('posted') || lines[i].includes('ago')) {
+            postedIndex = i;
+            parsed.posted = lines[i].replace(/posted\\s+/i, '');
+            break;
+          }
+        }
+
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].toLowerCase().includes('application volume')) {
+            parsed.application_volume = lines[i];
+            break;
+          }
+        }
+
+        const structuredEndIndex = postedIndex > 0 ? postedIndex : lines.length;
+        const structuredData = lines.slice(2, structuredEndIndex).filter(line => {
+          return !/^\\d+\\.\\d+$/.test(line) && !/^\\d+\\s+reviews?$/.test(line) && line !== '·';
+        });
+
+        if (structuredData.length >= 1) parsed.location = structuredData[0];
+        if (structuredData.length >= 2) parsed.work_type = structuredData[1];
+        if (structuredData.length >= 3) parsed.category = structuredData[2];
+
+        for (const item of structuredData) {
+          if (item.includes('$') && !parsed.salary_note) {
+            parsed.salary_note = item;
+            break;
+          }
+        }
+
+        return parsed;
+      }
+
+      const extracted = extractJobContent();
+      if (!extracted) return null;
+
+      const parsedTitle = parseJobTitle(extracted.raw_title);
+
+      // Extract job ID from URL
+      const jobId = new URL(window.location.href).searchParams.get('jobId') || '';
+
+      // Use directly extracted values if parsing failed
+      const finalData = {
+        ...parsedTitle,
+        details: extracted.details,
+        raw_title: extracted.raw_title,
+        url: window.location.href,
+        jobId: jobId,
+        scrapedAt: new Date().toISOString(),
+        debug: {
+          title_length: extracted.raw_title ? extracted.raw_title.length : 0,
+          details_length: extracted.details ? extracted.details.length : 0,
+          extracted_title: extracted.extracted_title,
+          extracted_company: extracted.extracted_company
+        }
+      };
+
+      // Override with directly extracted values if available and parsed values are empty
+      if (!finalData.title && extracted.extracted_title) {
+        finalData.title = extracted.extracted_title;
+      }
+      if (!finalData.company && extracted.extracted_company) {
+        finalData.company = extracted.extracted_company;
+      }
+
+      return finalData;
+    `);
+
+    if (jobData) {
+      // Save job data to file in src/bots/jobs/
+      const jobsDir = path.join(__dirname, '..', 'jobs');
+      if (!fs.existsSync(jobsDir)) {
+        fs.mkdirSync(jobsDir, { recursive: true });
+      }
+
+      const filename = `job_${Date.now()}.json`;
+      const filepath = path.join(jobsDir, filename);
+      fs.writeFileSync(filepath, JSON.stringify(jobData, null, 2));
+
+      printLog(`Quick Apply job saved: ${jobData.title} at ${jobData.company}`);
+    } else {
+      printLog("Quick Apply job found but failed to extract data");
+    }
+
+    yield "job_parsed";
+  } catch (error) {
+    printLog(`Job parsing error: ${error}`);
+    yield "parse_failed";
+  }
 }
 
 // Skip to Next Card
@@ -222,4 +440,6 @@ export const seekStepFunctions = {
   parseJobDetails,
   skipToNextCard
 };
+
+
 
