@@ -9,3 +9,7 @@ node_modules
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 sessions/
+
+# Bot job data - exclude all except template
+src/bots/jobs/*
+!src/bots/jobs/job_template.json

@@ -134,6 +134,7 @@ export class WorkflowEngine {
   async run(): Promise<void> {
     console.log(`🤖 ${this.config.workflow_meta.title}`);
 
+
     // Initialize overlay if driver is available in context
     console.log('🔍 Debug: Checking for driver in context...', !!this.context.driver);
     if (this.context.driver && !this.overlay) {
@@ -162,7 +163,7 @@ export class WorkflowEngine {
     }
 
     let currentStepName = this.currentStep;
-    const maxSteps = 50; // Prevent infinite loops - increased to handle more job cards
+    const maxSteps = 20; // Prevent infinite loops - limit workflow steps
     let stepCount = 0;
 
     while (currentStepName !== 'done' && stepCount < maxSteps) {

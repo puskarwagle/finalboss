@@ -459,11 +459,15 @@ export async function* parseJobDetails(ctx: WorkflowContext): AsyncGenerator<str
         fs.mkdirSync(jobsDir, { recursive: true });
       }
 
-      const filename = `job_${Date.now()}.json`;
+      // Create filename using company and jobId
+      const company = (jobData.company || 'unknown').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const jobId = jobData.jobId || Date.now().toString();
+      const filename = `${company}_${jobId}.json`;
       const filepath = path.join(jobsDir, filename);
+
       fs.writeFileSync(filepath, JSON.stringify(jobData, null, 2));
 
-      printLog(`Quick Apply job saved: ${jobData.title} at ${jobData.company}`);
+      printLog(`Quick Apply job saved: ${jobData.title} at ${jobData.company} (${filename})`);
 
       // Update progress counter and overlay
       if (ctx.overlay && ctx.total_jobs) {
@@ -530,8 +534,17 @@ export async function* clickQuickApply(ctx: WorkflowContext): AsyncGenerator<str
     `);
 
     if (clicked) {
-      // Wait for any modal or form to appear
-      await ctx.driver.sleep(3000);
+      // Wait for potential new tab/window to open
+      await ctx.driver.sleep(2000);
+
+      // Check if a new window/tab opened
+      const handles = await ctx.driver.getAllWindowHandles();
+      if (handles.length > 1) {
+        // Switch to the new tab (last one opened)
+        await ctx.driver.switchTo().window(handles[handles.length - 1]);
+        printLog("Switched to Quick Apply tab");
+      }
+
       printLog("Quick Apply button clicked successfully");
       yield "quick_apply_clicked";
     } else {
@@ -553,20 +566,55 @@ export async function* waitForQuickApplyPage(ctx: WorkflowContext): AsyncGenerat
     // Wait for page navigation and new elements to appear
     await ctx.driver.sleep(3000);
 
-    // Check if we're on a Quick Apply page by looking for progress bar or resume selector
-    const pageReady = await ctx.driver.executeScript(`
-      const progressBar = document.querySelector('nav[aria-label="Progress bar"]');
-      const resumeSelect = document.querySelector('select[data-testid="select-input"]');
-      const continueBtn = document.querySelector('button[data-testid="continue-button"]');
+    // Check current URL to see if we're on a Quick Apply page
+    const currentUrl = await ctx.driver.getCurrentUrl();
+    printLog(`Current URL: ${currentUrl}`);
 
-      return !!(progressBar || resumeSelect || continueBtn);
-    `);
+    // Try multiple checks with retries
+    let pageReady = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      pageReady = await ctx.driver.executeScript(`
+        // Check multiple indicators for Quick Apply page
+        const progressBar = document.querySelector('nav[aria-label="Progress bar"]');
+        const resumeSelect = document.querySelector('select[data-testid="select-input"]');
+        const continueBtn = document.querySelector('button[data-testid="continue-button"]');
+        const seekLogo = document.querySelector('[data-testid="seek-logo"]');
+        const formElements = document.querySelectorAll('form, fieldset');
+
+        // Check if URL contains Quick Apply indicators
+        const urlHasQuickApply = window.location.href.includes('quick-apply') ||
+                                 window.location.href.includes('apply') ||
+                                 window.location.pathname.includes('/apply');
+
+        const hasQuickApplyElements = !!(progressBar || resumeSelect || continueBtn);
+        const hasFormElements = formElements.length > 0;
+        const hasSeekBranding = !!seekLogo;
+
+        console.log('Page check attempt ${attempt + 1}:', {
+          progressBar: !!progressBar,
+          resumeSelect: !!resumeSelect,
+          continueBtn: !!continueBtn,
+          urlHasQuickApply,
+          hasFormElements,
+          hasSeekBranding
+        });
+
+        return hasQuickApplyElements || (urlHasQuickApply && (hasFormElements || hasSeekBranding));
+      `);
+
+      if (pageReady) break;
+
+      if (attempt < 2) {
+        printLog(`Page not ready, attempt ${attempt + 1}/3, waiting...`);
+        await ctx.driver.sleep(2000);
+      }
+    }
 
     if (pageReady) {
       printLog("Quick Apply page loaded successfully");
       yield "quick_apply_page_ready";
     } else {
-      printLog("Quick Apply page not ready, will retry");
+      printLog("Quick Apply page not ready after retries");
       yield "page_load_timeout";
     }
 
@@ -783,16 +831,22 @@ export async function* closeQuickApplyAndContinueSearch(ctx: WorkflowContext): A
   try {
     printLog("Closing Quick Apply page and continuing search...");
 
-    // Close current tab/window and switch back to job search
-    await ctx.driver.executeScript(`
-      window.close();
-    `);
-
-    // Switch back to main window
     const handles = await ctx.driver.getAllWindowHandles();
-    if (handles.length > 0) {
+    printLog(`Found ${handles.length} window handles`);
+
+    if (handles.length > 1) {
+      // Close current tab/window
+      await ctx.driver.close();
+
+      // Switch back to main window (first handle)
       await ctx.driver.switchTo().window(handles[0]);
       await ctx.driver.sleep(1000);
+
+      // Verify we're back on the job search page
+      const currentUrl = await ctx.driver.getCurrentUrl();
+      printLog(`Switched back to main window: ${currentUrl}`);
+    } else {
+      printLog("Only one window found, staying on current page");
     }
 
     printLog("Returned to job search page");
@@ -800,7 +854,8 @@ export async function* closeQuickApplyAndContinueSearch(ctx: WorkflowContext): A
 
   } catch (error) {
     printLog(`Close and continue error: ${error}`);
-    yield "close_and_continue_error";
+    // Try to continue anyway
+    yield "hunting_next_job";
   }
 }
 

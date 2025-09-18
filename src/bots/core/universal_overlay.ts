@@ -5,7 +5,7 @@ export interface OverlayConfig {
   content?: string;
   html?: string;
   position?: { x: number; y: number };
-  size?: { width: number; height: number };
+  size?: { width: number | string; height: number | string };
   draggable?: boolean;
   collapsible?: boolean;
   autoUpdate?: boolean;
