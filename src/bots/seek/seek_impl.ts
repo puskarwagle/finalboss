@@ -6,6 +6,10 @@ import { UniversalOverlay } from '../core/universal_overlay';
 import type { WorkflowContext } from '../core/workflow_engine';
 import * as path from 'path';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 const BASE_URL = "https://www.seek.com.au";
@@ -50,18 +54,41 @@ export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void,
 
 // Step 1: Open Homepage
 export async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  const { driver, sessionExists, sessionsDir } = await setupChromeDriver('seek');
-  ctx.driver = driver;
-  ctx.sessionExists = sessionExists;
-  ctx.sessionsDir = sessionsDir;
-  ctx.humanBehavior = new HumanBehavior(DEFAULT_HUMANIZATION);
-  ctx.sessionManager = new UniversalSessionManager(driver, SessionConfigs.seek);
+  try {
+    const { driver, sessionExists, sessionsDir } = await setupChromeDriver('seek');
+    ctx.driver = driver;
+    ctx.sessionExists = sessionExists;
+    ctx.sessionsDir = sessionsDir;
+    ctx.humanBehavior = new HumanBehavior(DEFAULT_HUMANIZATION);
+    ctx.sessionManager = new UniversalSessionManager(driver, SessionConfigs.seek);
 
-  await StealthFeatures.hideWebDriver(driver);
-  await StealthFeatures.randomizeUserAgent(driver);
-  await driver.get(ctx.seek_url || `${BASE_URL}/jobs`);
+    await StealthFeatures.hideWebDriver(driver);
+    await StealthFeatures.randomizeUserAgent(driver);
 
-  yield "homepage_opened";
+    printLog(`Opening URL: ${ctx.seek_url || `${BASE_URL}/jobs`}`);
+    await driver.get(ctx.seek_url || `${BASE_URL}/jobs`);
+
+    // Wait longer for slow networks
+    printLog("Waiting for page to load...");
+    await driver.sleep(5000);
+
+    // Check if page loaded successfully
+    const currentUrl = await driver.getCurrentUrl();
+    const title = await driver.getTitle();
+
+    printLog(`Current URL: ${currentUrl}`);
+    printLog(`Page title: ${title}`);
+
+    if (currentUrl && title && !title.includes('error')) {
+      yield "homepage_opened";
+    } else {
+      printLog("Page load failed - will retry");
+      yield "page_navigation_failed";
+    }
+  } catch (error) {
+    printLog(`Homepage opening failed: ${error}`);
+    yield "page_navigation_failed";
+  }
 }
 
 // Step 2: Wait For Page Load
@@ -73,9 +100,36 @@ export async function* waitForPageLoad(ctx: WorkflowContext): AsyncGenerator<str
 
 // Step 2.5: Refresh Page
 export async function* refreshPage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  await ctx.driver.navigate().refresh();
-  await ctx.driver.sleep(2000);
-  yield "page_refreshed";
+  try {
+    if (!ctx.driver) {
+      printLog("No driver available for refresh");
+      yield "no_page_to_refresh";
+      return;
+    }
+
+    printLog("Refreshing page...");
+    await ctx.driver.navigate().refresh();
+
+    // Wait longer for slow networks
+    printLog("Waiting after refresh...");
+    await ctx.driver.sleep(5000);
+
+    // Check if refresh worked
+    const currentUrl = await ctx.driver.getCurrentUrl();
+    const title = await ctx.driver.getTitle();
+
+    printLog(`After refresh - URL: ${currentUrl}, Title: ${title}`);
+
+    if (currentUrl && title && !title.includes('error')) {
+      yield "page_refreshed";
+    } else {
+      printLog("Refresh failed - will retry opening homepage");
+      yield "page_reload_failed";
+    }
+  } catch (error) {
+    printLog(`Refresh failed: ${error}`);
+    yield "page_reload_failed";
+  }
 }
 
 // Step 3: Detect Page State
@@ -432,8 +486,326 @@ export async function* parseJobDetails(ctx: WorkflowContext): AsyncGenerator<str
   }
 }
 
+// Click Quick Apply Button
+export async function* clickQuickApply(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Clicking Quick Apply button...");
+
+    const clicked = await ctx.driver.executeScript(`
+      const container = document.querySelector('[data-automation="jobDetailsPage"]') || document.body;
+
+      // Try multiple selectors for Quick Apply button
+      const quickApplySelectors = [
+        '[data-automation="job-detail-apply"]',
+        'button',
+        'a'
+      ];
+
+      for (const selector of quickApplySelectors) {
+        const elements = Array.from(container.querySelectorAll(selector));
+
+        for (const element of elements) {
+          const text = (element.textContent || '').toLowerCase();
+
+          if (text.includes('quick apply') ||
+              (text.includes('apply') && !text.includes('applied'))) {
+
+            if (element.offsetParent !== null && !element.disabled) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+              // Small delay before clicking
+              setTimeout(() => {
+                element.click();
+                console.log('Quick Apply button clicked successfully');
+              }, 500);
+
+              return true;
+            }
+          }
+        }
+      }
+
+      console.log('Quick Apply button not found or not clickable');
+      return false;
+    `);
+
+    if (clicked) {
+      // Wait for any modal or form to appear
+      await ctx.driver.sleep(3000);
+      printLog("Quick Apply button clicked successfully");
+      yield "quick_apply_clicked";
+    } else {
+      printLog("Quick Apply button not found or not clickable");
+      yield "quick_apply_failed";
+    }
+
+  } catch (error) {
+    printLog(`Error clicking Quick Apply: ${error}`);
+    yield "quick_apply_failed";
+  }
+}
+
+// Wait for Quick Apply Page to Load
+export async function* waitForQuickApplyPage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Waiting for Quick Apply page to load...");
+
+    // Wait for page navigation and new elements to appear
+    await ctx.driver.sleep(3000);
+
+    // Check if we're on a Quick Apply page by looking for progress bar or resume selector
+    const pageReady = await ctx.driver.executeScript(`
+      const progressBar = document.querySelector('nav[aria-label="Progress bar"]');
+      const resumeSelect = document.querySelector('select[data-testid="select-input"]');
+      const continueBtn = document.querySelector('button[data-testid="continue-button"]');
+
+      return !!(progressBar || resumeSelect || continueBtn);
+    `);
+
+    if (pageReady) {
+      printLog("Quick Apply page loaded successfully");
+      yield "quick_apply_page_ready";
+    } else {
+      printLog("Quick Apply page not ready, will retry");
+      yield "page_load_timeout";
+    }
+
+  } catch (error) {
+    printLog(`Quick Apply page load error: ${error}`);
+    yield "page_load_timeout";
+  }
+}
+
+// Get Current Step in Quick Apply Flow
+export async function* getCurrentStep(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    const currentStep = await ctx.driver.executeScript(`
+      const nav = document.querySelector('nav[aria-label="Progress bar"]');
+      if (!nav) return 'progress_bar_not_found';
+
+      const currentStepBtn = nav.querySelector('li button[aria-current="step"]');
+      if (!currentStepBtn) return 'progress_bar_not_found';
+
+      const stepText = currentStepBtn.querySelector('span:nth-child(2) span:nth-child(2) span span')?.textContent?.trim() || '';
+      return stepText;
+    `);
+
+    printLog(`Current Quick Apply step: ${currentStep}`);
+
+    if (currentStep === 'progress_bar_not_found') {
+      yield "progress_bar_not_found";
+    } else if (currentStep === "Choose documents") {
+      yield "current_step_choose_documents";
+    } else if (currentStep === "Answer employer questions") {
+      yield "current_step_employer_questions";
+    } else if (currentStep === "Update SEEK Profile") {
+      yield "current_step_update_profile";
+    } else if (currentStep === "Review and submit") {
+      yield "current_step_review_submit";
+    } else {
+      printLog(`Unknown step: ${currentStep}`);
+      yield "current_step_unknown";
+    }
+
+  } catch (error) {
+    printLog(`Error getting current step: ${error}`);
+    yield "progress_bar_evaluation_error";
+  }
+}
+
+// Handle Resume Selection (Choose Documents step)
+export async function* handleResumeSelection(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Handling resume selection...");
+
+    const resumeHandled = await ctx.driver.executeScript(`
+      // Try to find and select the first available resume
+      const resumeSelectors = [
+        'select[data-testid="select-input"]',
+        'select[placeholder*="resumé"]',
+        'select[placeholder*="resume"]',
+        'select'
+      ];
+
+      for (const selector of resumeSelectors) {
+        const select = document.querySelector(selector);
+        if (select && select.options && select.options.length > 1) {
+          // Find first non-empty option
+          for (let i = 1; i < select.options.length; i++) {
+            if (select.options[i].value && select.options[i].value !== '') {
+              select.value = select.options[i].value;
+              select.dispatchEvent(new Event('change', { bubbles: true }));
+              console.log('Selected resume:', select.options[i].text);
+              return true;
+            }
+          }
+        }
+      }
+
+      // Try to click resume method change radio button if select not found
+      const methodChange = document.querySelector('input[data-testid="resume-method-change"][value="change"]');
+      if (methodChange && !methodChange.checked) {
+        methodChange.click();
+
+        // Wait a bit and try select again
+        setTimeout(() => {
+          const select = document.querySelector('select[data-testid="select-input"]');
+          if (select && select.options && select.options.length > 1) {
+            for (let i = 1; i < select.options.length; i++) {
+              if (select.options[i].value && select.options[i].value !== '') {
+                select.value = select.options[i].value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log('Selected resume after method change:', select.options[i].text);
+                return true;
+              }
+            }
+          }
+        }, 1000);
+
+        return true;
+      }
+
+      return false;
+    `);
+
+    if (resumeHandled) {
+      await ctx.driver.sleep(1000); // Give time for any UI updates
+      printLog("Resume selection handled");
+      yield "resume_selected";
+    } else {
+      printLog("No resume options found or already selected");
+      yield "resume_not_required";
+    }
+
+  } catch (error) {
+    printLog(`Resume selection error: ${error}`);
+    yield "resume_selection_error";
+  }
+}
+
+// Handle Cover Letter (part of Choose Documents step)
+export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Handling cover letter...");
+
+    const coverLetterHandled = await ctx.driver.executeScript(`
+      // Try to find cover letter radio button
+      const coverLetterRadio = document.querySelector('input[data-testid="coverLetter-method-change"]');
+      if (coverLetterRadio && !coverLetterRadio.checked) {
+        coverLetterRadio.click();
+
+        // Wait a bit for textarea to appear
+        setTimeout(() => {
+          const textarea = document.querySelector('textarea[data-testid="coverLetterTextInput"]');
+          if (textarea) {
+            const defaultText = "Dear Hiring Manager,\\n\\nI am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.\\n\\nI am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.\\n\\nThank you for your consideration.\\n\\nBest regards";
+            textarea.value = defaultText;
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log('Cover letter filled');
+          }
+        }, 500);
+
+        return true;
+      }
+
+      return false;
+    `);
+
+    if (coverLetterHandled) {
+      await ctx.driver.sleep(1000);
+      printLog("Cover letter handled");
+      yield "cover_letter_filled";
+    } else {
+      printLog("Cover letter not required or already handled");
+      yield "cover_letter_not_required";
+    }
+
+  } catch (error) {
+    printLog(`Cover letter error: ${error}`);
+    yield "cover_letter_error";
+  }
+}
+
+// Click Continue Button
+export async function* clickContinueButton(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Clicking continue button...");
+
+    const continueClicked = await ctx.driver.executeScript(`
+      const continueSelectors = [
+        'button[data-testid="continue-button"]',
+        'button:contains("Continue")',
+        'button:contains("Next")'
+      ];
+
+      for (const selector of continueSelectors) {
+        let button;
+        if (selector.includes(':contains')) {
+          const text = selector.match(/contains\\("([^"]+)"\\)/)[1];
+          const buttons = Array.from(document.querySelectorAll('button')).filter(btn =>
+            btn.textContent.toLowerCase().includes(text.toLowerCase())
+          );
+          button = buttons.find(btn => btn.offsetParent !== null && !btn.disabled);
+        } else {
+          button = document.querySelector(selector);
+        }
+
+        if (button && button.offsetParent !== null && !button.disabled) {
+          button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            button.click();
+            console.log('Continue button clicked');
+          }, 300);
+          return true;
+        }
+      }
+
+      return false;
+    `);
+
+    if (continueClicked) {
+      await ctx.driver.sleep(2000); // Wait for navigation/page change
+      printLog("Continue button clicked successfully");
+      yield "continue_clicked";
+    } else {
+      printLog("Continue button not found");
+      yield "continue_button_not_found";
+    }
+
+  } catch (error) {
+    printLog(`Continue button error: ${error}`);
+    yield "continue_button_error";
+  }
+}
+
+// Close Quick Apply and Continue Search
+export async function* closeQuickApplyAndContinueSearch(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Closing Quick Apply page and continuing search...");
+
+    // Close current tab/window and switch back to job search
+    await ctx.driver.executeScript(`
+      window.close();
+    `);
+
+    // Switch back to main window
+    const handles = await ctx.driver.getAllWindowHandles();
+    if (handles.length > 0) {
+      await ctx.driver.switchTo().window(handles[0]);
+      await ctx.driver.sleep(1000);
+    }
+
+    printLog("Returned to job search page");
+    yield "hunting_next_job";
+
+  } catch (error) {
+    printLog(`Close and continue error: ${error}`);
+    yield "close_and_continue_error";
+  }
+}
+
 // Skip to Next Card
-export async function* skipToNextCard(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+export async function* skipToNextCard(_ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("Regular Apply job found - skipping to next card...");
   yield "card_skipped";
 }
@@ -452,6 +824,13 @@ export const seekStepFunctions = {
   clickJobCard,
   detectApplyType,
   parseJobDetails,
+  clickQuickApply,
+  waitForQuickApplyPage,
+  getCurrentStep,
+  handleResumeSelection,
+  handleCoverLetter,
+  clickContinueButton,
+  closeQuickApplyAndContinueSearch,
   skipToNextCard
 };
 

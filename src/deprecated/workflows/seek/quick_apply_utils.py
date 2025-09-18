@@ -204,13 +204,13 @@ def get_default_cover_letter() -> str:
     """Get the default cover letter template."""
     return """Dear Hiring Manager,
 
-I am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.
+    I am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.
 
-I am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.
+    I am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.
 
-Thank you for your consideration.
+    Thank you for your consideration.
 
-Best regards"""
+    Best regards"""
 
 
 async def log_quick_apply_progress(page, step_name: str) -> None:

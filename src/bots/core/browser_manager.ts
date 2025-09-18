@@ -1,7 +1,11 @@
 import { Builder, WebDriver } from 'selenium-webdriver';
-import { Options } from 'selenium-webdriver/chrome';
+import { Options, ServiceBuilder } from 'selenium-webdriver/chrome';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface BotConfig {
   formData: {
@@ -124,7 +128,7 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     const driver = await new Builder()
       .forBrowser('chrome')
       .setChromeOptions(options)
-      .setChromeService(new (require('selenium-webdriver/chrome').ServiceBuilder)())
+      .setChromeService(new ServiceBuilder())
       .build();
 
     await driver.manage().window().maximize();

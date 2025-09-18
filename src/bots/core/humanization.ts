@@ -1,4 +1,5 @@
-import { WebDriver, WebElement, Actions } from 'selenium-webdriver';
+import { WebDriver, WebElement } from 'selenium-webdriver';
+import { Actions } from 'selenium-webdriver/lib/input';
 
 export interface HumanizationConfig {
   clickDelay: {

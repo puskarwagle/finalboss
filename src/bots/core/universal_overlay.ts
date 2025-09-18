@@ -44,7 +44,7 @@ export class UniversalOverlay {
             title: 'Bot Status',
             content: 'Working...',
             position: { x: 20, y: 20 },
-            size: { width: 400, height: 'auto' },
+            size: { width: 400, height: 200 },
             draggable: true,
             collapsible: true,
             style: {
@@ -372,25 +372,19 @@ export class UniversalOverlay {
   // Show simple step progress overlay
   async showStepProgress(stepName: string, stepIndex: number, description?: string): Promise<void> {
     const progressHTML = `
-      <div style="display: flex; flex-direction: column; gap: 12px; text-align: center;">
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 15px; text-align: center;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
           <div style="
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #00ffff, #00dd88);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: #00ffff;
+            font-size: 20px;
             font-weight: bold;
-            font-size: 18px;
-            color: #000;
+            min-width: 30px;
           ">${stepIndex}</div>
-          <div style="color: #00ffff; font-size: 16px; font-weight: bold;">
+          <div style="color: #ffffff; font-size: 20px; font-weight: bold;">
             ${stepName}
           </div>
         </div>
-        ${description ? `<div style="font-size: 13px; opacity: 0.8; line-height: 1.4;">${description}</div>` : ''}
+        ${description ? `<div style="font-size: 16px; color: #00dd88; line-height: 1.4; margin-top: 5px;">${description}</div>` : ''}
         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
           <div style="
             width: 8px;
@@ -411,7 +405,7 @@ export class UniversalOverlay {
     `;
 
     await this.showOverlay({
-      title: '🤖 Bot Status',
+      title: '🤖 Bot Status: Running',
       html: progressHTML,
       position: { x: 20, y: 20 },
       draggable: true,
@@ -427,25 +421,19 @@ export class UniversalOverlay {
   // Update step progress
   async updateStepProgress(stepName: string, stepIndex: number, description?: string): Promise<void> {
     const progressHTML = `
-      <div style="display: flex; flex-direction: column; gap: 12px; text-align: center;">
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 15px; text-align: center;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
           <div style="
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #00ffff, #00dd88);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: #00ffff;
+            font-size: 20px;
             font-weight: bold;
-            font-size: 18px;
-            color: #000;
+            min-width: 30px;
           ">${stepIndex}</div>
-          <div style="color: #00ffff; font-size: 16px; font-weight: bold;">
+          <div style="color: #ffffff; font-size: 20px; font-weight: bold;">
             ${stepName}
           </div>
         </div>
-        ${description ? `<div style="font-size: 13px; opacity: 0.8; line-height: 1.4;">${description}</div>` : ''}
+        ${description ? `<div style="font-size: 16px; color: #00dd88; line-height: 1.4; margin-top: 5px;">${description}</div>` : ''}
         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
           <div style="
             width: 8px;
@@ -466,6 +454,7 @@ export class UniversalOverlay {
     `;
 
     await this.updateOverlay({
+      title: '🤖 Bot Status: Running',
       html: progressHTML
     });
   }
@@ -491,7 +480,7 @@ export class UniversalOverlay {
       title: '🤖 Seek Bot Progress',
       html: progressHTML,
       position: { x: 20, y: 20 },
-      size: { width: 400, height: 'auto' },
+      size: { width: 400, height: 200 },
       style: {
         backgroundColor: '#1a1a1a',
         borderColor: '#00ffff',
