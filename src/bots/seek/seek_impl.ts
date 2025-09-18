@@ -113,14 +113,14 @@ export async function* showSignInBanner(ctx: WorkflowContext): AsyncGenerator<st
   yield "signin_banner_shown";
 }
 
-// Basic search functionality - just click search since we already have URL with keywords/location
+// Step 5: Basic search functionality - just click search since we already have URL with keywords/location
 export async function* performBasicSearch(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   await ctx.driver.sleep(2000);
   const currentUrl = await ctx.driver.getCurrentUrl();
   yield currentUrl.includes('jobs') ? "search_completed" : "search_failed";
 }
 
-// Collect Job Cards
+// Step 6: Collect Job Cards
 export async function* collectJobCards(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   const selectors = ctx.selectors?.job_cards || ['article[data-testid="job-card"]'];
 
@@ -138,25 +138,72 @@ export async function* collectJobCards(ctx: WorkflowContext): AsyncGenerator<str
   yield "cards_collect_retry";
 }
 
-// Click Job Card
+// Step 7: Click Job Card
 export async function* clickJobCard(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   const cards = ctx.job_cards || [];
   const index = ctx.job_index || 0;
 
   if (!cards.length || index >= cards.length) {
-    yield "job_card_skipped";
+    yield "job_cards_finished";
     return;
   }
 
   try {
     await ctx.driver.executeScript("arguments[0].scrollIntoView(true);", cards[index]);
     await cards[index].click();
+    await ctx.driver.sleep(2000); // Wait for details panel to load
     ctx.job_index = index + 1;
     yield "job_card_clicked";
   } catch {
     ctx.job_index = index + 1;
     yield "job_card_skipped";
   }
+}
+
+// Detect Apply Button Type
+export async function* detectApplyType(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    const result = await ctx.driver.executeScript(`
+      const container = document.querySelector('[data-automation="jobDetailsPage"]') || document.body;
+      const hasText = (el, txt) => (el.textContent || '').toLowerCase().includes(String(txt).toLowerCase());
+
+      const quickApplyElements = Array.from(container.querySelectorAll('*')).filter(el => hasText(el, 'quick apply'));
+      const quickApplyAttr = Array.from(container.querySelectorAll('[data-automation="job-detail-apply"]'));
+      const regularApplyElements = Array.from(container.querySelectorAll('*')).filter(el => {
+        const txt = (el.textContent || '').trim();
+        if (!txt) return false;
+        const lower = txt.toLowerCase();
+        return lower === 'apply' || (lower.includes('apply') && !lower.includes('quick'));
+      });
+
+      const hasQuick = quickApplyElements.length > 0 || quickApplyAttr.length > 0;
+      const hasRegular = regularApplyElements.length > 0;
+
+      return { hasQuickApply: hasQuick, hasRegularApply: hasRegular };
+    `);
+
+    if (result.hasQuickApply) {
+      yield "quick_apply_found";
+    } else if (result.hasRegularApply) {
+      yield "regular_apply_found";
+    } else {
+      yield "no_apply_found";
+    }
+  } catch {
+    yield "detect_apply_failed";
+  }
+}
+
+// Parse Job Details
+export async function* parseJobDetails(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("Quick Apply job found - parsing details...");
+  yield "job_parsed";
+}
+
+// Skip to Next Card
+export async function* skipToNextCard(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("Regular Apply job found - skipping to next card...");
+  yield "card_skipped";
 }
 
 // Export all step functions for the workflow engine
@@ -170,5 +217,9 @@ export const seekStepFunctions = {
   showSignInBanner,
   performBasicSearch,
   collectJobCards,
-  clickJobCard
+  clickJobCard,
+  detectApplyType,
+  parseJobDetails,
+  skipToNextCard
 };
+

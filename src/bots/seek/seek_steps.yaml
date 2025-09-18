@@ -90,7 +90,36 @@ steps_config:
     step: 7
     func: "clickJobCard"
     transitions:
-      job_card_clicked: "done"
+      job_card_clicked: "detect_apply_type"
       job_card_skipped: "click_job_card"
+      job_cards_finished: "done"
     timeout: 10
     on_timeout_event: "job_card_skipped"
+
+  detect_apply_type:
+    step: 8
+    func: "detectApplyType"
+    transitions:
+      quick_apply_found: "parse_job_details"
+      regular_apply_found: "skip_to_next_card"
+      no_apply_found: "skip_to_next_card"
+      detect_apply_failed: "skip_to_next_card"
+    timeout: 10
+    on_timeout_event: "skip_to_next_card"
+
+  parse_job_details:
+    step: 9
+    func: "parseJobDetails"
+    transitions:
+      job_parsed: "click_job_card"
+      parse_failed: "skip_to_next_card"
+    timeout: 15
+    on_timeout_event: "parse_failed"
+
+  skip_to_next_card:
+    step: 10
+    func: "skipToNextCard"
+    transitions:
+      card_skipped: "click_job_card"
+    timeout: 5
+    on_timeout_event: "card_skipped"
