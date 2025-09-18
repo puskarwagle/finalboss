@@ -130,6 +130,9 @@ export async function* collectJobCards(ctx: WorkflowContext): AsyncGenerator<str
       if (cards.length > 0) {
         ctx.job_cards = cards;
         ctx.job_index = 0;
+        ctx.total_jobs = cards.length;
+        ctx.applied_jobs = 0;
+
         yield "cards_collected";
         return;
       }
@@ -407,6 +410,17 @@ export async function* parseJobDetails(ctx: WorkflowContext): AsyncGenerator<str
       fs.writeFileSync(filepath, JSON.stringify(jobData, null, 2));
 
       printLog(`Quick Apply job saved: ${jobData.title} at ${jobData.company}`);
+
+      // Update progress counter and overlay
+      if (ctx.overlay && ctx.total_jobs) {
+        ctx.applied_jobs = (ctx.applied_jobs || 0) + 1;
+        await ctx.overlay.updateJobProgress(
+          ctx.applied_jobs,
+          ctx.total_jobs,
+          "Quick Apply job saved",
+          9
+        );
+      }
     } else {
       printLog("Quick Apply job found but failed to extract data");
     }

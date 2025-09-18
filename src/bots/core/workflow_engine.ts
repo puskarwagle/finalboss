@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
+import { UniversalOverlay } from './universal_overlay';
 
 export interface WorkflowStep {
   step: number;
@@ -30,6 +31,7 @@ export class WorkflowEngine {
   private stepFunctions: Map<string, StepFunction> = new Map();
   private currentStep: string;
   private context: WorkflowContext = {};
+  private overlay: UniversalOverlay | null = null;
 
   constructor(configPath: string) {
     const configContent = fs.readFileSync(configPath, 'utf8');
@@ -72,6 +74,38 @@ export class WorkflowEngine {
       ]);
 
       console.log(`Step ${stepConfig.step} [${stepConfig.func}] → ${result}`);
+
+      // Initialize overlay after first step if not already done (driver might be set in first step)
+      if (!this.overlay && this.context.driver) {
+        console.log('🎨 Creating overlay...');
+        this.overlay = new UniversalOverlay(this.context.driver);
+        try {
+          await this.overlay.showStepProgress(
+            "🚀 BOT RUNNING",
+            stepConfig.step,
+            `Current: ${stepConfig.func} → ${result}`
+          );
+          console.log('✅ Overlay is now visible in browser!');
+        } catch (error) {
+          console.warn('❌ Failed to initialize late overlay:', error);
+          this.overlay = null;
+        }
+      }
+
+      // Update overlay if available
+      if (this.overlay) {
+        try {
+          await this.overlay.updateStepProgress(
+            "🚀 BOT RUNNING",
+            stepConfig.step,
+            `Current: ${stepConfig.func} → ${result}`
+          );
+        } catch (error) {
+          // Ignore overlay errors to not break workflow
+          console.warn('Overlay update failed:', error);
+        }
+      }
+
       return result;
     } catch (error) {
       console.error(`[Workflow] Error in step '${stepName}':`, error);
@@ -86,6 +120,27 @@ export class WorkflowEngine {
 
   async run(): Promise<void> {
     console.log(`🤖 ${this.config.workflow_meta.title}`);
+
+    // Initialize overlay if driver is available in context
+    console.log('🔍 Debug: Checking for driver in context...', !!this.context.driver);
+    if (this.context.driver && !this.overlay) {
+      console.log('🎨 Debug: Creating overlay...');
+      this.overlay = new UniversalOverlay(this.context.driver);
+      try {
+        console.log('🎨 Debug: Showing initial overlay...');
+        await this.overlay.showStepProgress(
+          "Starting Workflow",
+          0,
+          this.config.workflow_meta.description
+        );
+        console.log('✅ Debug: Overlay initialized successfully');
+      } catch (error) {
+        console.warn('❌ Failed to initialize overlay:', error);
+        this.overlay = null;
+      }
+    } else if (!this.context.driver) {
+      console.log('❌ Debug: No driver found in context');
+    }
 
     let currentStepName = this.currentStep;
     const maxSteps = 10; // Prevent infinite loops
@@ -110,6 +165,19 @@ export class WorkflowEngine {
 
     if (stepCount >= maxSteps) {
       console.warn('❌ Maximum step count reached, stopping workflow');
+    }
+
+    // Update overlay with completion status
+    if (this.overlay) {
+      try {
+        await this.overlay.updateStepProgress(
+          "Workflow Completed",
+          stepCount,
+          "✅ All steps finished successfully"
+        );
+      } catch (error) {
+        console.warn('Failed to update overlay completion:', error);
+      }
     }
 
     console.log('✅ Workflow completed');
