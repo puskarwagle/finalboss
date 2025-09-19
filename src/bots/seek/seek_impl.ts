@@ -68,7 +68,17 @@ export async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string
     printLog(`Opening URL: ${ctx.seek_url || `${BASE_URL}/jobs`}`);
     await driver.get(ctx.seek_url || `${BASE_URL}/jobs`);
 
-    // Wait longer for slow networks
+    // Show overlay immediately after opening
+    const overlay = new UniversalOverlay(driver);
+    await overlay.showOverlay({
+      title: '🤖 Seek Bot Active',
+      html: '<p style="text-align: center;">Bot is running...</p>',
+      position: { x: 20, y: 20 },
+      draggable: true,
+      collapsible: true
+    });
+
+    // Wait for page to load
     printLog("Waiting for page to load...");
     await driver.sleep(5000);
 
@@ -93,7 +103,12 @@ export async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string
 
 // Step 2: Wait For Page Load
 export async function* waitForPageLoad(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  await ctx.driver.sleep(2000);
+  // Wait for page to be fully loaded (document.readyState === 'complete')
+  await ctx.driver.wait(async () => {
+    const readyState = await ctx.driver.executeScript('return document.readyState');
+    return readyState === 'complete';
+  }, 10000);
+
   const title = await ctx.driver.getTitle();
   yield title.toLowerCase().includes('seek') ? "page_loaded" : "page_load_retry";
 }
@@ -134,10 +149,45 @@ export async function* refreshPage(ctx: WorkflowContext): AsyncGenerator<string,
 
 // Step 3: Detect Page State
 export async function* detectPageState(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  await ctx.driver.sleep(2000);
+  // Try multiple sign-in selectors - Seek changes them
+  const signInSelectors = [
+    'a[data-automation="sign in"]',
+    'a[href*="login"]',
+    'a[href*="sign-in"]',
+    '.sign-in',
+    '[data-testid="sign-in"]',
+    'button:contains("Sign in")',
+    'a:contains("Sign in")'
+  ];
+
+  printLog("🔍 Checking for sign-in button...");
+
+  for (const selector of signInSelectors) {
+    try {
+      const elements = await ctx.driver.findElements(By.css(selector));
+      for (const element of elements) {
+        if (await element.isDisplayed()) {
+          const text = await element.getText();
+          printLog(`🔴 Sign in element found: "${text}" with selector: ${selector}`);
+          yield "sign_in_required";
+          return;
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  // Also check page source for login indicators
   const pageSource = await ctx.driver.getPageSource();
-  const hasSignIn = pageSource.includes('data-automation="sign in"') || pageSource.includes('Sign in');
-  yield hasSignIn ? "sign_in_required" : "logged_in";
+  if (pageSource.includes('login.seek.com') || pageSource.includes('Sign in')) {
+    printLog("🔴 Login page detected in source");
+    yield "sign_in_required";
+    return;
+  }
+
+  printLog("✅ No sign in indicators found - already logged in");
+  yield "logged_in";
 }
 
 // Step 3.5: Click Search Button
@@ -161,9 +211,108 @@ export async function* clickSearchButton(ctx: WorkflowContext): AsyncGenerator<s
 // Step 4: Show Sign In Banner and Wait for Login
 export async function* showSignInBanner(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   const overlay = new UniversalOverlay(ctx.driver);
-  await overlay.showSignInOverlay();
-  await ctx.driver.get(ctx.seek_url || 'https://www.seek.com.au');
-  await ctx.driver.sleep(2000);
+
+  printLog("🔴 PLEASE SIGN IN TO SEEK MANUALLY");
+
+  await overlay.showOverlay({
+    title: '🔴 SIGN IN REQUIRED',
+    html: `
+      <div style="text-align: center; line-height: 1.6;">
+        <p style="font-size: 18px; margin: 15px 0;"><strong>Please Sign In to Seek</strong></p>
+        <p style="color: #e74c3c; font-size: 14px;">Bot is waiting for you to sign in manually</p>
+        <p style="font-size: 12px; color: #666; margin: 15px 0;">1. Click on "Sign in" button on the page</p>
+        <p style="font-size: 12px; color: #666; margin: 15px 0;">2. Complete login process</p>
+        <p style="font-size: 12px; color: #666; margin: 15px 0;">3. Click "Done" below when finished</p>
+        <button id="done-signin" style="
+          background: #e74c3c;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+          margin-top: 10px;
+        ">Done</button>
+      </div>
+    `,
+    position: { x: 50, y: 50 },
+    draggable: true,
+    collapsible: false,
+    style: {
+      backgroundColor: '#2c3e50',
+      borderColor: '#e74c3c',
+      textColor: '#ffffff'
+    }
+  });
+
+  // Wait for user to click Done button with overlay persistence
+  await ctx.driver.executeScript(`
+    return new Promise((resolve) => {
+      const doneButton = document.getElementById('done-signin');
+      if (doneButton) {
+        doneButton.onclick = () => resolve('done');
+      }
+
+      // Re-inject overlay if page changes (sign-in navigation)
+      const observer = new MutationObserver(() => {
+        const overlay = document.getElementById('universal-overlay');
+        if (!overlay && document.readyState === 'complete') {
+          // Page changed, re-create overlay
+          setTimeout(() => {
+            const newOverlay = document.createElement('div');
+            newOverlay.id = 'universal-overlay';
+            newOverlay.className = 'universal-dynamic-overlay';
+            newOverlay.innerHTML = \`
+              <div style="
+                position: fixed;
+                top: 50px;
+                left: 50px;
+                width: 400px;
+                height: auto;
+                background: #2c3e50;
+                border: 2px solid #e74c3c;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                z-index: 999999;
+                font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
+                color: #ffffff;
+                padding: 16px;
+                text-align: center;
+                line-height: 1.6;
+              ">
+                <p style="font-size: 18px; margin: 15px 0;"><strong>🔴 SIGN IN REQUIRED</strong></p>
+                <p style="color: #e74c3c; font-size: 14px;">Bot is waiting for you to sign in manually</p>
+                <p style="font-size: 12px; color: #666; margin: 15px 0;">1. Complete login process on this page</p>
+                <p style="font-size: 12px; color: #666; margin: 15px 0;">2. Click "Done" below when finished</p>
+                <button id="done-signin-new" style="
+                  background: #e74c3c;
+                  color: white;
+                  border: none;
+                  padding: 10px 20px;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-size: 16px;
+                  margin-top: 10px;
+                ">Done</button>
+              </div>
+            \`;
+
+            document.body.appendChild(newOverlay);
+
+            // Attach new click handler
+            const newDoneButton = document.getElementById('done-signin-new');
+            if (newDoneButton) {
+              newDoneButton.onclick = () => resolve('done');
+            }
+          }, 1000);
+        }
+      });
+
+      observer.observe(document, { childList: true, subtree: true });
+    });
+  `);
+
+  printLog("✅ User clicked Done - continuing automation");
   yield "signin_banner_shown";
 }
 
@@ -638,7 +787,7 @@ export async function* getCurrentStep(ctx: WorkflowContext): AsyncGenerator<stri
       return stepText;
     `);
 
-    printLog(`Current Quick Apply step: ${currentStep}`);
+    printLog(`📊 Current step: "${currentStep}"`);
 
     if (currentStep === 'progress_bar_not_found') {
       yield "progress_bar_not_found";
@@ -737,40 +886,166 @@ export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<s
     printLog("Handling cover letter...");
 
     const coverLetterHandled = await ctx.driver.executeScript(`
-      // Try to find cover letter radio button
+      // First, try to find "Don't include a cover letter" option
+      const dontIncludeSpan = Array.from(document.querySelectorAll('span')).find(span =>
+        span.textContent && span.textContent.trim() === "Don't include a cover letter"
+      );
+
+      if (dontIncludeSpan) {
+        // Find the parent label or radio input
+        const label = dontIncludeSpan.closest('label');
+        const radioInput = label ? label.querySelector('input[type="radio"]') : null;
+
+        if (radioInput) {
+          radioInput.click();
+          console.log('Clicked "Don\\'t include a cover letter" option');
+          return 'no_cover_letter';
+        } else if (label) {
+          label.click();
+          console.log('Clicked "Don\\'t include a cover letter" label');
+          return 'no_cover_letter';
+        }
+      }
+
+      // Fallback: Try to find cover letter radio button to enable it
       const coverLetterRadio = document.querySelector('input[data-testid="coverLetter-method-change"]');
       if (coverLetterRadio && !coverLetterRadio.checked) {
         coverLetterRadio.click();
+        console.log('Cover letter radio clicked as fallback');
 
-        // Wait a bit for textarea to appear
-        setTimeout(() => {
-          const textarea = document.querySelector('textarea[data-testid="coverLetterTextInput"]');
-          if (textarea) {
-            const defaultText = "Dear Hiring Manager,\\n\\nI am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.\\n\\nI am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.\\n\\nThank you for your consideration.\\n\\nBest regards";
-            textarea.value = defaultText;
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            console.log('Cover letter filled');
-          }
-        }, 500);
+        // Wait for textarea to appear and fill it
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            const textarea = document.querySelector('textarea[data-testid="coverLetterTextInput"]') ||
+                            document.querySelector('textarea[placeholder*="cover"]') ||
+                            document.querySelector('textarea[placeholder*="Cover"]') ||
+                            document.querySelector('textarea');
+            if (textarea) {
+              const defaultText = "Dear Hiring Manager,\\n\\nI am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.\\n\\nI am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.\\n\\nThank you for your consideration.\\n\\nBest regards";
 
-        return true;
+              textarea.value = '';
+              textarea.focus();
+              textarea.value = defaultText;
+              textarea.dispatchEvent(new Event('input', { bubbles: true }));
+              textarea.dispatchEvent(new Event('change', { bubbles: true }));
+              textarea.dispatchEvent(new Event('blur', { bubbles: true }));
+
+              console.log('Cover letter filled as fallback');
+              resolve('filled');
+            } else {
+              console.log('Cover letter textarea not found');
+              resolve('failed');
+            }
+          }, 1000);
+        });
       }
 
-      return false;
+      return 'not_found';
     `);
 
-    if (coverLetterHandled) {
-      await ctx.driver.sleep(1000);
-      printLog("Cover letter handled");
+    await ctx.driver.sleep(1000);
+
+    if (coverLetterHandled === 'no_cover_letter') {
+      printLog("✅ Selected 'Don't include a cover letter' option");
+      yield "cover_letter_not_required";
+    } else if (coverLetterHandled === 'filled') {
+      printLog("✅ Cover letter filled as fallback");
       yield "cover_letter_filled";
     } else {
-      printLog("Cover letter not required or already handled");
+      printLog("Cover letter handling completed");
       yield "cover_letter_not_required";
     }
 
   } catch (error) {
     printLog(`Cover letter error: ${error}`);
     yield "cover_letter_error";
+  }
+}
+
+// Retry Cover Letter (when validation fails)
+export async function* retryCoverLetter(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("🔄 Retrying cover letter - trying 'Don't include' option...");
+
+    const retryResult = await ctx.driver.executeScript(`
+      // First priority: Try "Don't include a cover letter" option
+      const dontIncludeSpan = Array.from(document.querySelectorAll('span')).find(span =>
+        span.textContent && span.textContent.trim() === "Don't include a cover letter"
+      );
+
+      if (dontIncludeSpan) {
+        const label = dontIncludeSpan.closest('label');
+        const radioInput = label ? label.querySelector('input[type="radio"]') : null;
+
+        if (radioInput && !radioInput.checked) {
+          radioInput.click();
+          console.log('Retry: Clicked "Don\\'t include a cover letter" option');
+          return 'no_cover_letter';
+        } else if (label) {
+          label.click();
+          console.log('Retry: Clicked "Don\\'t include a cover letter" label');
+          return 'no_cover_letter';
+        }
+      }
+
+      // Fallback: Try to fill cover letter aggressively
+      let textarea = document.querySelector('textarea[data-testid="coverLetterTextInput"]') ||
+                    document.querySelector('textarea[placeholder*="cover"]') ||
+                    document.querySelector('textarea[placeholder*="Cover"]') ||
+                    document.querySelector('textarea');
+
+      if (!textarea) {
+        const coverLetterRadio = document.querySelector('input[data-testid="coverLetter-method-change"]');
+        if (coverLetterRadio) {
+          coverLetterRadio.click();
+          setTimeout(() => {
+            textarea = document.querySelector('textarea[data-testid="coverLetterTextInput"]') ||
+                      document.querySelector('textarea[placeholder*="cover"]') ||
+                      document.querySelector('textarea[placeholder*="Cover"]') ||
+                      document.querySelector('textarea');
+          }, 1000);
+        }
+      }
+
+      if (textarea) {
+        const defaultText = "Dear Hiring Manager,\\n\\nI am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.\\n\\nI am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.\\n\\nThank you for your consideration.\\n\\nBest regards";
+
+        textarea.value = '';
+        textarea.focus();
+        textarea.click();
+
+        setTimeout(() => {
+          textarea.value = defaultText;
+          textarea.dispatchEvent(new Event('focus', { bubbles: true }));
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          textarea.dispatchEvent(new Event('change', { bubbles: true }));
+          textarea.dispatchEvent(new Event('keyup', { bubbles: true }));
+          textarea.dispatchEvent(new Event('blur', { bubbles: true }));
+          console.log('Retry: Cover letter filled aggressively');
+        }, 500);
+
+        return 'filled';
+      }
+
+      return 'failed';
+    `);
+
+    await ctx.driver.sleep(2000);
+
+    if (retryResult === 'no_cover_letter') {
+      printLog("✅ Retry: Selected 'Don't include a cover letter'");
+      yield "cover_letter_retried";
+    } else if (retryResult === 'filled') {
+      printLog("✅ Retry: Cover letter filled aggressively");
+      yield "cover_letter_retried";
+    } else {
+      printLog("❌ Cover letter retry failed");
+      yield "retry_failed";
+    }
+
+  } catch (error) {
+    printLog(`Cover letter retry error: ${error}`);
+    yield "retry_failed";
   }
 }
 
@@ -800,10 +1075,8 @@ export async function* clickContinueButton(ctx: WorkflowContext): AsyncGenerator
 
         if (button && button.offsetParent !== null && !button.disabled) {
           button.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => {
-            button.click();
-            console.log('Continue button clicked');
-          }, 300);
+          button.click();
+          console.log('Continue button clicked');
           return true;
         }
       }
@@ -812,9 +1085,36 @@ export async function* clickContinueButton(ctx: WorkflowContext): AsyncGenerator
     `);
 
     if (continueClicked) {
-      await ctx.driver.sleep(2000); // Wait for navigation/page change
-      printLog("Continue button clicked successfully");
-      yield "continue_clicked";
+      await ctx.driver.sleep(3000); // Wait for validation/page change
+
+      // Check for errors after clicking continue
+      const errorFound = await ctx.driver.executeScript(`
+        const errorPanel = document.querySelector('#errorPanel') ||
+                          document.querySelector('[role="alert"]') ||
+                          document.querySelector('[id*="error"]');
+
+        if (errorPanel && errorPanel.offsetParent !== null) {
+          const errorText = errorPanel.textContent || '';
+          if (errorText.toLowerCase().includes('cover letter') && errorText.toLowerCase().includes('required')) {
+            return 'cover_letter_required';
+          } else if (errorText.toLowerCase().includes('required')) {
+            return 'field_required';
+          }
+          return 'other_error';
+        }
+        return 'no_error';
+      `);
+
+      if (errorFound === 'cover_letter_required') {
+        printLog("❌ Cover letter validation failed - field required error");
+        yield "continue_validation_failed";
+      } else if (errorFound === 'field_required' || errorFound === 'other_error') {
+        printLog(`❌ Form validation failed: ${errorFound}`);
+        yield "continue_validation_failed";
+      } else {
+        printLog("✅ Continue button clicked successfully - no errors");
+        yield "continue_clicked";
+      }
     } else {
       printLog("Continue button not found");
       yield "continue_button_not_found";
@@ -865,6 +1165,675 @@ export async function* skipToNextCard(_ctx: WorkflowContext): AsyncGenerator<str
   yield "card_skipped";
 }
 
+// Handle Review and Submit Step (for development - goes to next job instead of submitting)
+export async function* handleReviewAndSubmit(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("📋 On Review and Submit page - development mode");
+
+    // Check if submit button exists
+    const submitButtonInfo = await ctx.driver.executeScript(`
+      const submitSelectors = [
+        'button[type="submit"][data-testid="review-submit-application"]',
+        'button[data-testid="review-submit-application"]',
+        'button[type="submit"]'
+      ];
+
+      for (const selector of submitSelectors) {
+        const button = document.querySelector(selector);
+        if (button) {
+          const text = button.textContent || '';
+          if (text.toLowerCase().includes('submit') && text.toLowerCase().includes('application')) {
+            return {
+              found: true,
+              text: text.trim(),
+              selector: selector
+            };
+          }
+        }
+      }
+      return { found: false };
+    `);
+
+    if (submitButtonInfo.found) {
+      printLog(`✅ Found submit button: "${submitButtonInfo.text}"`);
+      printLog(`🔧 Development mode: Skipping submission and going to next job`);
+
+      // Show overlay indicating we found the submit button but won't click it
+      if (ctx.driver) {
+        const overlay = new UniversalOverlay(ctx.driver);
+        await overlay.showOverlay({
+          title: '📋 Review and Submit Page',
+          html: `
+            <div style="text-align: center; line-height: 1.6;">
+              <p style="font-size: 18px; margin: 15px 0;"><strong>Submit Button Found!</strong></p>
+              <p style="color: #00ff88; font-size: 14px;">✅ "${submitButtonInfo.text}"</p>
+              <p style="color: #ffaa00; font-size: 12px; margin: 15px 0;">Development Mode: Not submitting</p>
+              <p style="font-size: 12px; color: #ccc;">Going to next job card...</p>
+              <div style="margin: 15px 0;">
+                <div style="
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 50%;
+                  background: #00ff88;
+                  animation: pulse 2s ease-in-out infinite;
+                  margin: 0 auto;
+                "></div>
+              </div>
+            </div>
+            <style>
+              @keyframes pulse {
+                0%, 100% { opacity: 0.3; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.2); }
+              }
+            </style>
+          `,
+          position: { x: 20, y: 20 },
+          draggable: true,
+          collapsible: false,
+          style: {
+            backgroundColor: '#1a2a1a',
+            borderColor: '#00ff88',
+            textColor: '#ffffff'
+          }
+        });
+
+        // Show overlay for 3 seconds
+        await ctx.driver.sleep(3000);
+      }
+
+      // Close Quick Apply tab and go to next job
+      printLog("🔄 Closing Quick Apply tab and returning to job search...");
+
+      const handles = await ctx.driver.getAllWindowHandles();
+      if (handles.length > 1) {
+        await ctx.driver.close();
+        await ctx.driver.switchTo().window(handles[0]);
+        await ctx.driver.sleep(1000);
+
+        const currentUrl = await ctx.driver.getCurrentUrl();
+        printLog(`🔙 Returned to job search: ${currentUrl}`);
+
+        yield "application_completed_dev_mode";
+      } else {
+        printLog("❌ Only one window found");
+        yield "submit_error";
+      }
+    } else {
+      printLog("❌ Submit button not found on review page");
+      yield "submit_button_not_found";
+    }
+
+  } catch (error) {
+    printLog(`Review and submit error: ${error}`);
+    yield "submit_error";
+  }
+}
+
+// Stay Put (for development - don't close page, don't move)
+export async function* stayPut(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("🛑 STAYING PUT - Bot will remain on current page for inspection");
+  printLog("📋 Page URL: " + await ctx.driver.getCurrentUrl());
+
+  // Check if we're on Update SEEK Profile step
+  const currentStep = await ctx.driver.executeScript(`
+    const nav = document.querySelector('nav[aria-label="Progress bar"]');
+    if (!nav) return 'not_found';
+
+    const currentStepBtn = nav.querySelector('li button[aria-current="step"]');
+    if (!currentStepBtn) return 'not_found';
+
+    const stepText = currentStepBtn.querySelector('span:nth-child(2) span:nth-child(2) span span')?.textContent?.trim() || '';
+    return stepText;
+  `);
+
+  if (currentStep === "Update SEEK Profile") {
+    printLog("👤 Detected Update SEEK Profile step - showing profile update overlay");
+
+    // Show profile update overlay with timer
+    if (ctx.driver) {
+      const overlay = new UniversalOverlay(ctx.driver);
+      await overlay.showOverlay({
+        title: '👤 Update Your SEEK Profile',
+        html: `
+          <div style="text-align: center; line-height: 1.6;">
+            <p style="font-size: 18px; margin: 15px 0;"><strong>Please Update Your SEEK Profile</strong></p>
+            <p style="color: #ffaa00; font-size: 14px;">Complete any required profile fields on this page</p>
+            <div style="margin: 20px 0;">
+              <div id="timer-display" style="
+                font-size: 32px;
+                font-weight: bold;
+                color: #00ff88;
+                background: rgba(0, 255, 136, 0.1);
+                padding: 15px;
+                border-radius: 8px;
+                border: 2px solid #00ff88;
+                margin: 10px 0;
+              ">5:00</div>
+              <p style="font-size: 12px; color: #ccc;">Time remaining</p>
+            </div>
+            <button id="profile-done-btn" style="
+              background: #00ff88;
+              color: #1a1a1a;
+              border: none;
+              border-radius: 8px;
+              padding: 15px 25px;
+              font-size: 16px;
+              font-weight: bold;
+              cursor: pointer;
+              width: 100%;
+              margin-top: 10px;
+            ">
+              ✅ Done - Profile Updated
+            </button>
+          </div>
+        `,
+        position: { x: 20, y: 20 },
+        draggable: true,
+        collapsible: true,
+        style: {
+          backgroundColor: '#1a2a1a',
+          borderColor: '#00ff88',
+          textColor: '#ffffff'
+        }
+      });
+
+      // Add timer and button functionality
+      await ctx.driver.executeScript(`
+        let timeLeft = 300; // 5 minutes in seconds
+        const timerDisplay = document.getElementById('timer-display');
+        const doneButton = document.getElementById('profile-done-btn');
+
+        // Button hover effects
+        if (doneButton) {
+          doneButton.onmouseover = () => doneButton.style.background = '#00dd77';
+          doneButton.onmouseout = () => doneButton.style.background = '#00ff88';
+          doneButton.onclick = () => {
+            window.profileDoneClicked = true;
+            localStorage.setItem('profileDoneClicked', 'true');
+          };
+        }
+
+        // Timer countdown
+        const timerInterval = setInterval(() => {
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+          timerDisplay.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.textContent = 'Time Up!';
+            timerDisplay.style.color = '#ff4444';
+            timerDisplay.style.borderColor = '#ff4444';
+          }
+
+          timeLeft--;
+        }, 1000);
+
+        // Store timer interval for cleanup
+        window.profileTimerInterval = timerInterval;
+      `);
+
+      printLog("👤 Waiting for user to update profile and click Done...");
+
+      // Wait for done button to be clicked or timeout
+      await new Promise<void>((resolve) => {
+        const checkInterval = setInterval(async () => {
+          try {
+            const buttonClicked = await ctx.driver.executeScript('return window.profileDoneClicked;');
+            if (buttonClicked) {
+              await ctx.driver.executeScript(`
+                delete window.profileDoneClicked;
+                if (window.profileTimerInterval) {
+                  clearInterval(window.profileTimerInterval);
+                  delete window.profileTimerInterval;
+                }
+              `);
+              clearInterval(checkInterval);
+              printLog("✅ Profile Done clicked - now clicking continue button...");
+              resolve();
+            }
+          } catch (error) {
+            // Continue checking
+          }
+        }, 500);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          printLog("⏰ Profile update timer expired");
+          resolve();
+        }, 5 * 60 * 1000);
+      });
+
+      // Now click the continue button on the page
+      printLog("🔄 Clicking continue button after profile update...");
+      const continueClicked = await ctx.driver.executeScript(`
+        const continueSelectors = [
+          'button[data-testid="continue-button"]',
+          'button:contains("Continue")',
+          'button:contains("Next")'
+        ];
+
+        for (const selector of continueSelectors) {
+          let button;
+          if (selector.includes(':contains')) {
+            const text = selector.match(/contains\\("([^"]+)"\\)/)[1];
+            const buttons = Array.from(document.querySelectorAll('button')).filter(btn =>
+              btn.textContent.toLowerCase().includes(text.toLowerCase())
+            );
+            button = buttons.find(btn => btn.offsetParent !== null && !btn.disabled);
+          } else {
+            button = document.querySelector(selector);
+          }
+
+          if (button && button.offsetParent !== null && !button.disabled) {
+            button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            button.click();
+            console.log('Continue button clicked after profile update');
+            return true;
+          }
+        }
+        return false;
+      `);
+
+      if (continueClicked) {
+        await ctx.driver.sleep(3000); // Wait for navigation
+
+        // Check the new step after continue
+        const newStep = await ctx.driver.executeScript(`
+          const nav = document.querySelector('nav[aria-label="Progress bar"]');
+          if (!nav) return 'not_found';
+
+          const currentStepBtn = nav.querySelector('li button[aria-current="step"]');
+          if (!currentStepBtn) return 'not_found';
+
+          const stepText = currentStepBtn.querySelector('span:nth-child(2) span:nth-child(2) span span')?.textContent?.trim() || '';
+          return stepText;
+        `);
+
+        printLog(`📊 Progress bar after continue: "${newStep}"`);
+
+        if (newStep === "Review and submit") {
+          printLog("🎯 Reached final step - Review and submit");
+          yield "reached_review_and_submit";
+          return;
+        } else if (newStep === "Answer employer questions") {
+          printLog("❓ Next step is employer questions");
+          yield "reached_employer_questions";
+          return;
+        } else if (newStep === "" || newStep === "not_found") {
+          printLog("📊 Progress bar empty or not found - checking if we reached review step");
+
+          // Check if submit button exists (indicates review and submit page)
+          const hasSubmitButton = await ctx.driver.executeScript(`
+            const submitSelectors = [
+              'button[type="submit"][data-testid="review-submit-application"]',
+              'button[data-testid="review-submit-application"]',
+              'button[type="submit"]'
+            ];
+
+            for (const selector of submitSelectors) {
+              const button = document.querySelector(selector);
+              if (button) {
+                const text = button.textContent || '';
+                if (text.toLowerCase().includes('submit') && text.toLowerCase().includes('application')) {
+                  console.log('Found submit application button:', text);
+                  return true;
+                }
+              }
+            }
+            return false;
+          `);
+
+          if (hasSubmitButton) {
+            printLog("🎯 Submit button found - we're on Review and Submit page");
+            yield "reached_review_and_submit";
+            return;
+          } else {
+            printLog(`➡️ Progress bar empty but no submit button found`);
+            yield "step_progressed";
+            return;
+          }
+        } else {
+          printLog(`➡️ Moved to step: "${newStep}"`);
+          yield "step_progressed";
+          return;
+        }
+      } else {
+        printLog("❌ Continue button not found after profile update");
+        yield "continue_not_found";
+        return;
+      }
+    }
+  } else {
+    printLog("🔧 General inspection mode");
+
+    // Show general stay put overlay
+    if (ctx.driver) {
+      const overlay = new UniversalOverlay(ctx.driver);
+      await overlay.showOverlay({
+        title: '🛑 Bot Staying Put',
+        html: `
+          <div style="text-align: center; line-height: 1.6;">
+            <p style="font-size: 18px; margin: 15px 0;"><strong>Page Inspection Mode</strong></p>
+            <p style="color: #ffaa00; font-size: 14px;">Bot is staying on current page</p>
+            <p style="color: #00ff88; font-size: 12px;">Current step: "${currentStep}"</p>
+            <p style="font-size: 12px; color: #ccc; margin-top: 20px;">Will stay here for 10 minutes...</p>
+            <div style="margin-top: 15px;">
+              <div style="
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #ffaa00;
+                animation: pulse 3s ease-in-out infinite;
+                margin: 0 auto;
+              "></div>
+            </div>
+          </div>
+          <style>
+            @keyframes pulse {
+              0%, 100% { opacity: 0.2; transform: scale(1); }
+              50% { opacity: 1; transform: scale(1.1); }
+            }
+          </style>
+        `,
+        position: { x: 20, y: 20 },
+        draggable: true,
+        collapsible: true,
+        style: {
+          backgroundColor: '#1a1a2a',
+          borderColor: '#ffaa00',
+          textColor: '#ffffff'
+        }
+      });
+    }
+
+    // Stay here for 10 minutes to allow inspection
+    printLog("⏰ Staying put for 10 minutes to allow page inspection...");
+    printLog("💡 Press Ctrl+C to stop the bot when you're done inspecting");
+
+    await ctx.driver.sleep(600000); // 10 minutes
+  }
+
+  yield "stay_put_complete";
+}
+
+// Check Progress After Continue Button (for development visibility)
+export async function* checkProgressAfterContinue(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("🔍 Checking progress after continue...");
+
+    // Wait a moment for page to update
+    await ctx.driver.sleep(2000);
+
+    const currentStep = await ctx.driver.executeScript(`
+      const nav = document.querySelector('nav[aria-label="Progress bar"]');
+      if (!nav) return 'not_found';
+
+      const currentStepBtn = nav.querySelector('li button[aria-current="step"]');
+      if (!currentStepBtn) return 'not_found';
+
+      const stepText = currentStepBtn.querySelector('span:nth-child(2) span:nth-child(2) span span')?.textContent?.trim() || '';
+      return stepText;
+    `);
+
+    if (currentStep !== 'not_found') {
+      printLog(`📊 After continue - Current step: "${currentStep}"`);
+
+      if (currentStep === "Update SEEK Profile") {
+        yield "current_step_update_profile";
+      } else if (currentStep === "Review and submit") {
+        yield "current_step_review_submit";
+      } else {
+        yield "progress_checked";
+      }
+    } else {
+      printLog("❌ Progress bar not found after continue");
+      yield "progress_check_failed";
+    }
+
+  } catch (error) {
+    printLog(`❌ Error checking progress: ${error}`);
+    yield "progress_check_failed";
+  }
+}
+
+// Handle Update SEEK Profile Step
+export async function* handleUpdateProfile(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("👤 Handling Update SEEK Profile step...");
+
+    // Show interactive overlay asking user to update profile
+    if (ctx.driver) {
+      const overlay = new UniversalOverlay(ctx.driver);
+      await overlay.showOverlay({
+        title: '👤 Update SEEK Profile Required',
+        html: `
+          <div style="text-align: center; line-height: 1.6;">
+            <p style="font-size: 18px; margin: 15px 0;"><strong>Please Update Your SEEK Profile</strong></p>
+            <p style="color: #ffaa00; font-size: 14px;">Complete your profile information on this page</p>
+            <p style="font-size: 12px; color: #ccc; margin: 15px 0;">Fill in any required fields, then click continue below</p>
+            <button id="profile-continue-btn" style="
+              background: #00ff88;
+              color: #1a1a1a;
+              border: none;
+              border-radius: 8px;
+              padding: 12px 20px;
+              font-size: 14px;
+              font-weight: bold;
+              cursor: pointer;
+              width: 100%;
+              margin-top: 10px;
+            ">
+              ✅ Profile Updated - Continue
+            </button>
+          </div>
+        `,
+        position: { x: 20, y: 20 },
+        draggable: true,
+        collapsible: true,
+        style: {
+          backgroundColor: '#1a2a1a',
+          borderColor: '#00ff88',
+          textColor: '#ffffff'
+        }
+      });
+
+      // Add button functionality
+      await ctx.driver.executeScript(`
+        const button = document.getElementById('profile-continue-btn');
+        if (button) {
+          button.onmouseover = () => button.style.background = '#00dd77';
+          button.onmouseout = () => button.style.background = '#00ff88';
+          button.onclick = () => {
+            window.profileContinueClicked = true;
+            localStorage.setItem('profileContinueClicked', 'true');
+          };
+        }
+      `);
+
+      printLog("👤 Waiting for user to update profile and click continue...");
+
+      // Wait for continue button to be clicked
+      return new Promise<void>((resolve) => {
+        const checkInterval = setInterval(async () => {
+          try {
+            const buttonClicked = await ctx.driver.executeScript('return window.profileContinueClicked;');
+            if (buttonClicked) {
+              await ctx.driver.executeScript('delete window.profileContinueClicked;');
+              clearInterval(checkInterval);
+              printLog("✅ Profile continue clicked - proceeding...");
+              resolve();
+            }
+          } catch (error) {
+            // Continue checking
+          }
+        }, 500);
+
+        // Timeout after 10 minutes
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          printLog("⏰ Profile update timeout reached");
+          resolve();
+        }, 10 * 60 * 1000);
+      });
+    }
+
+    yield "profile_updated";
+
+  } catch (error) {
+    printLog(`Profile update error: ${error}`);
+    yield "profile_update_error";
+  }
+}
+
+// Click Continue After Profile Update
+export async function* clickContinueAfterProfile(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("🔄 Checking current step and clicking continue if still on Update Profile...");
+
+    // First check current step
+    const currentStep = await ctx.driver.executeScript(`
+      const nav = document.querySelector('nav[aria-label="Progress bar"]');
+      if (!nav) return 'not_found';
+
+      const currentStepBtn = nav.querySelector('li button[aria-current="step"]');
+      if (!currentStepBtn) return 'not_found';
+
+      const stepText = currentStepBtn.querySelector('span:nth-child(2) span:nth-child(2) span span')?.textContent?.trim() || '';
+      return stepText;
+    `);
+
+    printLog(`📊 Current step before continue: "${currentStep}"`);
+
+    if (currentStep === "Update SEEK Profile") {
+      // Still on Update Profile, click continue button
+      const continueClicked = await ctx.driver.executeScript(`
+        const continueSelectors = [
+          'button[data-testid="continue-button"]',
+          'button:contains("Continue")',
+          'button:contains("Next")'
+        ];
+
+        for (const selector of continueSelectors) {
+          let button;
+          if (selector.includes(':contains')) {
+            const text = selector.match(/contains\\("([^"]+)"\\)/)[1];
+            const buttons = Array.from(document.querySelectorAll('button')).filter(btn =>
+              btn.textContent.toLowerCase().includes(text.toLowerCase())
+            );
+            button = buttons.find(btn => btn.offsetParent !== null && !btn.disabled);
+          } else {
+            button = document.querySelector(selector);
+          }
+
+          if (button && button.offsetParent !== null && !button.disabled) {
+            button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            button.click();
+            console.log('Continue button clicked after profile update');
+            return true;
+          }
+        }
+        return false;
+      `);
+
+      if (continueClicked) {
+        await ctx.driver.sleep(3000); // Wait for navigation
+
+        // Check final step
+        const finalStep = await ctx.driver.executeScript(`
+          const nav = document.querySelector('nav[aria-label="Progress bar"]');
+          if (!nav) return 'not_found';
+
+          const currentStepBtn = nav.querySelector('li button[aria-current="step"]');
+          if (!currentStepBtn) return 'not_found';
+
+          const stepText = currentStepBtn.querySelector('span:nth-child(2) span:nth-child(2) span span')?.textContent?.trim() || '';
+          return stepText;
+        `);
+
+        printLog(`📊 Final step after continue: "${finalStep}"`);
+
+        if (finalStep === "Review and submit") {
+          yield "reached_review_submit";
+        } else {
+          yield "continue_successful";
+        }
+      } else {
+        printLog("❌ Continue button not found");
+        yield "continue_not_found";
+      }
+    } else {
+      printLog(`✅ Already moved past Update Profile to: "${currentStep}"`);
+      if (currentStep === "Review and submit") {
+        yield "reached_review_submit";
+      } else {
+        yield "step_changed";
+      }
+    }
+
+  } catch (error) {
+    printLog(`Continue after profile error: ${error}`);
+    yield "continue_error";
+  }
+}
+
+// Pause for Development (keeps bot running for inspection)
+export async function* pauseForDevelopment(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("🛑 DEVELOPMENT PAUSE - Bot will stay here for inspection");
+  printLog("📋 You can now inspect the Quick Apply page state");
+  printLog("🔧 Add your new functions and continue development");
+
+  // Show development pause overlay
+  if (ctx.driver) {
+    const overlay = new UniversalOverlay(ctx.driver);
+    await overlay.showOverlay({
+      title: '🛑 Development Pause',
+      html: `
+        <div style="text-align: center; line-height: 1.6;">
+          <p style="font-size: 18px; margin: 15px 0;"><strong>Bot Paused for Development</strong></p>
+          <p style="color: #00ff88; font-size: 14px;">✅ Resume and cover letter handled</p>
+          <p style="color: #00ff88; font-size: 14px;">✅ Continue button clicked</p>
+          <p style="color: #00ff88; font-size: 14px;">✅ Progress bar checked</p>
+          <p style="font-size: 12px; color: #ffaa00; margin-top: 20px;">Ready for next development step...</p>
+          <div style="margin-top: 15px;">
+            <div style="
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background: #ffaa00;
+              animation: pulse 2s ease-in-out infinite;
+              margin: 0 auto;
+            "></div>
+          </div>
+        </div>
+        <style>
+          @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+          }
+        </style>
+      `,
+      position: { x: 20, y: 20 },
+      draggable: true,
+      collapsible: true,
+      style: {
+        backgroundColor: '#1a2a1a',
+        borderColor: '#ffaa00',
+        textColor: '#ffffff'
+      }
+    });
+  }
+
+  // In development mode, we'll wait for a long time (10 minutes) to inspect
+  printLog("⏰ Pausing for 10 minutes to allow development inspection...");
+  printLog("💡 Press Ctrl+C to stop the bot when you're done inspecting");
+
+  await ctx.driver.sleep(600000); // 10 minutes
+
+  yield "development_pause_complete";
+}
+
 // Export all step functions for the workflow engine
 export const seekStepFunctions = {
   step0,
@@ -884,9 +1853,16 @@ export const seekStepFunctions = {
   getCurrentStep,
   handleResumeSelection,
   handleCoverLetter,
+  retryCoverLetter,
   clickContinueButton,
+  checkProgressAfterContinue,
+  handleUpdateProfile,
+  clickContinueAfterProfile,
+  handleReviewAndSubmit,
+  pauseForDevelopment,
   closeQuickApplyAndContinueSearch,
-  skipToNextCard
+  skipToNextCard,
+  stayPut
 };
 
 

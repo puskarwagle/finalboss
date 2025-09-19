@@ -1,0 +1,52 @@
+{
+  "search": {
+    "keywords_input": "input[name='q']",
+    "location_input": "input[name='l']",
+    "search_button": "button[type='submit']"
+  },
+  "filters": {
+    "date_posted": "button[aria-label*='Date posted']",
+    "job_type": "button[aria-label*='Job type']",
+    "experience_level": "button[aria-label*='Experience level']",
+    "salary": "button[aria-label*='Salary']",
+    "company_type": "button[aria-label*='Company type']"
+  },
+  "job_cards": [
+    "div[data-jk]",
+    ".job_seen_beacon",
+    ".jobsearch-SerpJobCard"
+  ],
+  "job_details": {
+    "title": "h1[data-testid='jobsearch-JobInfoHeader-title']",
+    "company": "span[data-testid='jobsearch-JobInfoHeader-companyName']",
+    "location": "div[data-testid='jobsearch-JobInfoHeader-companyLocation']",
+    "description": "#jobDescriptionText"
+  },
+  "apply": {
+    "apply_button": "button[aria-label*='Apply now']",
+    "indeed_apply": "button[id*='indeedApplyButton']",
+    "continue_button": "button[aria-label*='Continue']",
+    "submit_button": "button[aria-label*='Submit']",
+    "close_button": "button[aria-label*='Close']"
+  },
+  "forms": {
+    "text_input": "input[type='text']",
+    "email_input": "input[type='email']",
+    "phone_input": "input[type='tel']",
+    "textarea": "textarea",
+    "select": "select",
+    "radio": "input[type='radio']",
+    "checkbox": "input[type='checkbox']",
+    "file_upload": "input[type='file']"
+  },
+  "resume": {
+    "upload_resume": "input[type='file'][accept*='.pdf']",
+    "select_resume": "button[aria-label*='Select resume']",
+    "resume_dropdown": "select[name*='resume']"
+  },
+  "navigation": {
+    "next_page": "a[aria-label='Next Page']",
+    "previous_page": "a[aria-label='Previous Page']",
+    "page_numbers": "nav[role='navigation'] a"
+  }
+}

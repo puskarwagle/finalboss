@@ -1,0 +1,22 @@
+workflow_meta:
+  title: "LinkedIn Bot - Homepage Only"
+  description: "Just open LinkedIn homepage"
+  start_step: "init_context"
+
+steps_config:
+  init_context:
+    step: 0
+    func: "step0"
+    transitions:
+      ctx_ready: "open_homepage"
+    timeout: 30
+    on_timeout_event: "ctx_ready"
+
+  open_homepage:
+    step: 1
+    func: "openHomepage"
+    transitions:
+      homepage_opened: "done"
+      page_navigation_failed: "open_homepage"
+    timeout: 30
+    on_timeout_event: "page_navigation_failed"

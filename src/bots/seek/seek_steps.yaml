@@ -139,10 +139,10 @@ steps_config:
     func: "getCurrentStep"
     transitions:
       current_step_choose_documents: "handle_resume_selection"
-      current_step_employer_questions: "close_quick_apply_and_continue_search"
-      current_step_update_profile: "close_quick_apply_and_continue_search"
-      current_step_review_submit: "close_quick_apply_and_continue_search"
-      current_step_unknown: "close_quick_apply_and_continue_search"
+      current_step_employer_questions: "pause_for_development"
+      current_step_update_profile: "pause_for_development"
+      current_step_review_submit: "pause_for_development"
+      current_step_unknown: "pause_for_development"
       progress_bar_not_found: "handle_resume_selection"
       progress_bar_evaluation_error: "close_quick_apply_and_continue_search"
     timeout: 10
@@ -172,11 +172,75 @@ steps_config:
     step: 14
     func: "clickContinueButton"
     transitions:
-      continue_clicked: "close_quick_apply_and_continue_search"
+      continue_clicked: "check_progress_after_continue"
+      continue_validation_failed: "retry_cover_letter"
       continue_button_not_found: "close_quick_apply_and_continue_search"
       continue_button_error: "close_quick_apply_and_continue_search"
     timeout: 15
     on_timeout_event: "continue_button_error"
+
+  retry_cover_letter:
+    step: 14.1
+    func: "retryCoverLetter"
+    transitions:
+      cover_letter_retried: "click_continue_button"
+      retry_failed: "stay_put"
+    timeout: 10
+    on_timeout_event: "retry_failed"
+
+  stay_put:
+    step: 18
+    func: "stayPut"
+    transitions:
+      reached_review_and_submit: "handle_review_and_submit"
+      reached_employer_questions: "done"
+      step_progressed: "done"
+      continue_not_found: "done"
+      stay_put_complete: "done"
+    timeout: 600
+    on_timeout_event: "stay_put_complete"
+
+  handle_review_and_submit:
+    step: 19
+    func: "handleReviewAndSubmit"
+    transitions:
+      application_completed_dev_mode: "click_job_card"
+      submit_button_not_found: "done"
+      submit_error: "done"
+    timeout: 30
+    on_timeout_event: "submit_error"
+
+  check_progress_after_continue:
+    step: 14.5
+    func: "checkProgressAfterContinue"
+    transitions:
+      current_step_update_profile: "handle_update_profile"
+      current_step_review_submit: "stay_put"
+      progress_checked: "pause_for_development"
+      progress_check_failed: "close_quick_apply_and_continue_search"
+    timeout: 10
+    on_timeout_event: "progress_check_failed"
+
+  handle_update_profile:
+    step: 14.6
+    func: "handleUpdateProfile"
+    transitions:
+      profile_updated: "click_continue_after_profile"
+      profile_update_error: "stay_put"
+    timeout: 600
+    on_timeout_event: "profile_updated"
+
+  click_continue_after_profile:
+    step: 14.7
+    func: "clickContinueAfterProfile"
+    transitions:
+      reached_review_submit: "stay_put"
+      continue_successful: "stay_put"
+      step_changed: "stay_put"
+      continue_not_found: "stay_put"
+      continue_error: "stay_put"
+    timeout: 15
+    on_timeout_event: "stay_put"
 
   close_quick_apply_and_continue_search:
     step: 15
@@ -194,3 +258,11 @@ steps_config:
       card_skipped: "click_job_card"
     timeout: 5
     on_timeout_event: "card_skipped"
+
+  pause_for_development:
+    step: 17
+    func: "pauseForDevelopment"
+    transitions:
+      development_pause_complete: "done"
+    timeout: 600
+    on_timeout_event: "development_pause_complete"

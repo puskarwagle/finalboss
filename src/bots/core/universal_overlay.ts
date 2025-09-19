@@ -44,7 +44,7 @@ export class UniversalOverlay {
             title: 'Bot Status',
             content: 'Working...',
             position: { x: 20, y: 20 },
-            size: { width: 400, height: 200 },
+            size: { width: 400, height: 'auto' },
             draggable: true,
             collapsible: true,
             style: {
@@ -137,7 +137,7 @@ export class UniversalOverlay {
                 content.style.display = 'block';
                 titleEl.style.display = 'block';
                 overlay.style.width = (typeof finalConfig.size.width === 'number' ? finalConfig.size.width + 'px' : finalConfig.size.width);
-                overlay.style.height = (typeof finalConfig.size.height === 'number' ? finalConfig.size.height + 'px' : finalConfig.size.height);
+                overlay.style.height = 'auto';
                 overlay.style.borderRadius = '12px';
                 overlay.style.borderWidth = '2px';
                 collapseBtn.innerHTML = '−';
@@ -189,7 +189,9 @@ export class UniversalOverlay {
             'font-size: 13px;' +
             'line-height: 1.4;' +
             'max-height: 400px;' +
-            'overflow-y: auto;';
+            'overflow-y: auto;' +
+            'word-wrap: break-word;' +
+            'overflow-wrap: break-word;';
 
           if (finalConfig.html) {
             content.innerHTML = finalConfig.html;

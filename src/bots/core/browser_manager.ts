@@ -82,8 +82,10 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     const configPath = path.join(__dirname, 'user-bots-config.json');
     const config: BotConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-    // Create session management like botrunner.ts
-    const sessionsDir = path.join(process.cwd(), 'sessions', botName);
+    // Create unique session directory to avoid conflicts with running Chrome
+    const timestamp = Date.now();
+    const sessionId = `${botName}_${timestamp}`;
+    const sessionsDir = path.join(process.cwd(), 'sessions', sessionId);
     const screenshotsDir = path.join(sessionsDir, 'screenshots');
     const logsDir = path.join(sessionsDir, 'logs');
     const resumeDir = path.join(sessionsDir, 'resume');
@@ -91,10 +93,8 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
 
     makeDirectories([sessionsDir, screenshotsDir, logsDir, resumeDir, tempDir]);
 
-    // Check if session exists (has saved data)
-    const sessionExists = fs.readdirSync(sessionsDir).filter(file =>
-      !['screenshots', 'logs', 'resume', 'temp'].includes(file)
-    ).length > 0;
+    // Since we're using unique timestamp, this is always a new session
+    const sessionExists = false;
 
     const options = new Options();
 
@@ -102,27 +102,19 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     const disableExtensions = process.env.DISABLE_EXTENSIONS === 'true';
     const safeMode = process.env.SAFE_MODE === 'true';
 
+    // Minimal flags like Python version - only add what's absolutely necessary
     if (runInBackground) options.addArguments('--headless');
     if (disableExtensions) options.addArguments('--disable-extensions');
 
-    options.addArguments('--no-sandbox');
-    options.addArguments('--disable-dev-shm-usage');
-    options.addArguments('--disable-gpu');
-    options.addArguments('--remote-debugging-port=0'); // Use random available port
-    options.addArguments('--disable-web-security');
-    options.addArguments('--disable-features=VizDisplayCompositor');
 
+    printLog("IF YOU HAVE MORE THAN 10 TABS OPENED, PLEASE CLOSE OR BOOKMARK THEM! Or it's highly likely that application will just open browser and not do anything!");
 
     if (safeMode) {
       printLog('SAFE MODE: Will login with a guest profile, browsing history will not be saved in the browser!');
     } else {
-      // Use the session directory for Chrome profile (like botrunner.ts)
+      // Use unique session profile to avoid conflicts with running Chrome
       options.addArguments(`--user-data-dir=${sessionsDir}`);
-      if (sessionExists) {
-        printLog(`Using existing session: ${sessionsDir}`);
-      } else {
-        printLog(`Creating new session: ${sessionsDir}`);
-      }
+      printLog(`Creating new isolated session: ${sessionId}`);
     }
 
     const driver = await new Builder()
@@ -136,9 +128,9 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     const actions = driver.actions();
 
     // Start monitoring for manual browser closure
-    const stopMonitoring = monitorBrowserClose(driver);
+    monitorBrowserClose(driver);
 
-    return { driver, actions, sessionExists, sessionsDir, stopMonitoring };
+    return { driver, actions, sessionExists, sessionsDir };
 
   } catch (error) {
     const errorMessage = 'Seems like either... \n\n1. Chrome is already running. \nA. Close all Chrome windows and try again. \n\n2. Google Chrome or Chromedriver is out dated. \nA. Update browser and Chromedriver! \n\n3. Chrome not installed or not in PATH. \nA. Install Chrome and ensure chromedriver is in PATH. \n\nPlease check GitHub discussions/support for solutions';

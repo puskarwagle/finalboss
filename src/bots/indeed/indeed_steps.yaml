@@ -1,0 +1,149 @@
+workflow_meta:
+  title: "Indeed Job Search & Apply"
+  description: "Search and apply to jobs on Indeed with automated application flow"
+  start_step: "init_context"
+
+steps_config:
+  init_context:
+    step: 0
+    func: "step0"
+    transitions:
+      ctx_ready: "open_homepage"
+    timeout: 30
+    on_timeout_event: "ctx_ready"
+
+  open_homepage:
+    step: 1
+    func: "openHomepage"
+    transitions:
+      homepage_opened: "wait_for_load"
+      page_navigation_failed: "refresh_page"
+    timeout: 30
+    on_timeout_event: "page_navigation_failed"
+
+  wait_for_load:
+    step: 2
+    func: "waitForPageLoad"
+    transitions:
+      page_loaded: "detect_page_state"
+      page_load_retry: "refresh_page"
+    timeout: 20
+    on_timeout_event: "page_load_retry"
+
+  refresh_page:
+    step: 2.5
+    func: "refreshPage"
+    transitions:
+      page_refreshed: "wait_for_load"
+      no_page_to_refresh: "open_homepage"
+      page_reload_failed: "open_homepage"
+    timeout: 30
+    on_timeout_event: "page_reload_failed"
+
+  detect_page_state:
+    step: 3
+    func: "detectPageState"
+    transitions:
+      logged_in: "perform_search"
+      sign_in_required: "show_sign_in_banner"
+    timeout: 20
+    on_timeout_event: "perform_search"
+
+  show_sign_in_banner:
+    step: 4
+    func: "showSignInBanner"
+    transitions:
+      signin_banner_shown: "perform_search"
+      signin_banner_retry: "refresh_page"
+    timeout: 300
+    on_timeout_event: "signin_banner_retry"
+
+  perform_search:
+    step: 5
+    func: "performJobSearch"
+    transitions:
+      search_completed: "collect_job_cards"
+      search_failed: "refresh_page"
+    timeout: 60
+    on_timeout_event: "search_failed"
+
+  collect_job_cards:
+    step: 6
+    func: "collectJobCards"
+    transitions:
+      cards_collected: "click_job_card"
+      cards_collect_retry: "collect_job_cards"
+    timeout: 30
+    on_timeout_event: "cards_collect_retry"
+
+  click_job_card:
+    step: 7
+    func: "clickJobCard"
+    transitions:
+      job_card_clicked: "detect_apply_type"
+      job_card_skipped: "click_job_card"
+      job_cards_finished: "done"
+    timeout: 10
+    on_timeout_event: "job_card_skipped"
+
+  detect_apply_type:
+    step: 8
+    func: "detectApplyType"
+    transitions:
+      indeed_apply_found: "parse_job_details"
+      external_apply_found: "skip_to_next_card"
+      no_apply_found: "skip_to_next_card"
+    timeout: 10
+    on_timeout_event: "skip_to_next_card"
+
+  parse_job_details:
+    step: 9
+    func: "parseJobDetails"
+    transitions:
+      job_parsed: "click_apply_now"
+      parse_failed: "skip_to_next_card"
+    timeout: 15
+    on_timeout_event: "parse_failed"
+
+  click_apply_now:
+    step: 10
+    func: "clickApplyNow"
+    transitions:
+      apply_clicked: "handle_application_flow"
+      apply_failed: "skip_to_next_card"
+    timeout: 10
+    on_timeout_event: "apply_failed"
+
+  handle_application_flow:
+    step: 11
+    func: "handleApplicationFlow"
+    transitions:
+      application_submitted: "close_and_continue"
+      application_failed: "skip_to_next_card"
+      manual_input_required: "stay_put"
+    timeout: 120
+    on_timeout_event: "application_failed"
+
+  close_and_continue:
+    step: 12
+    func: "closeAndContinue"
+    transitions:
+      ready_for_next: "click_job_card"
+    timeout: 10
+    on_timeout_event: "ready_for_next"
+
+  skip_to_next_card:
+    step: 13
+    func: "skipToNextCard"
+    transitions:
+      card_skipped: "click_job_card"
+    timeout: 5
+    on_timeout_event: "card_skipped"
+
+  stay_put:
+    step: 14
+    func: "stayPut"
+    transitions:
+      stay_put_complete: "done"
+    timeout: 600
+    on_timeout_event: "stay_put_complete"
