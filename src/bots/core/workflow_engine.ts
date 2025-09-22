@@ -163,7 +163,7 @@ export class WorkflowEngine {
     }
 
     let currentStepName = this.currentStep;
-    const maxSteps = 20; // Prevent infinite loops - limit workflow steps
+    const maxSteps = 100; // Prevent infinite loops - limit workflow steps
     let stepCount = 0;
 
     while (currentStepName !== 'done' && stepCount < maxSteps) {
