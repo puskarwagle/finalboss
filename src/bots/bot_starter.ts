@@ -177,6 +177,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (args.length === 0) {
     console.log('Usage: bun bot_starter.ts <bot_name> [options]');
     console.log('Example: bun bot_starter.ts seek');
+    console.log('Example: bun bot_starter.ts seek test');
 
     const bot_starter = new BotStarter();
     const available_bots = bot_starter.get_available_bots();
@@ -185,14 +186,28 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   const bot_name = args[0];
+  const is_test_mode = args.includes('test');
   const headless = args.includes('--headless');
   const no_keep_open = args.includes('--close');
 
-  run_bot(bot_name, undefined, {
-    headless,
-    keep_open: !no_keep_open
-  }).catch(error => {
-    console.error('Bot execution failed:', error);
-    process.exit(1);
-  });
+  // Handle test mode for seek bot
+  if (is_test_mode && bot_name === 'seek') {
+    (async () => {
+      try {
+        const { runQuickApplyTests } = await import('./seek/seek_quick_apply_test');
+        await runQuickApplyTests();
+      } catch (error) {
+        console.error('Test execution failed:', error);
+        process.exit(1);
+      }
+    })();
+  } else {
+    run_bot(bot_name, undefined, {
+      headless,
+      keep_open: !no_keep_open
+    }).catch(error => {
+      console.error('Bot execution failed:', error);
+      process.exit(1);
+    });
+  }
 }
