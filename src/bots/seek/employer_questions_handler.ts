@@ -15,197 +15,11 @@ export async function* handleEmployerQuestions(ctx: WorkflowContext): AsyncGener
   try {
     printLog("Scanning for employer questions...");
 
-    const questionsData = await ctx.driver.executeScript(`
-      let questions = [];
+    // Read the browser script from the external file
+    const scriptPath = path.join(__dirname, 'browser_question_extractor.js');
+    const browserScript = fs.readFileSync(scriptPath, 'utf8');
 
-      // Strategy 1: Look for strong tags that contain questions
-      const strongTags = document.querySelectorAll('strong');
-
-      strongTags.forEach((strong, index) => {
-        const questionText = strong.textContent.trim();
-        if (!questionText) return;
-
-        // Find the closest parent container that might contain the input
-        let container = strong.closest('div, fieldset, section, label');
-        if (!container) {
-          // Go up a few levels to find the container
-          container = strong.parentElement?.parentElement?.parentElement;
-        }
-
-        if (!container) return;
-
-        // Look for select dropdowns in the container or nearby
-        const selects = container.querySelectorAll('select');
-        selects.forEach(select => {
-          const options = Array.from(select.options).map(opt => ({
-            value: opt.value || '',
-            text: (opt.textContent || opt.innerText || '').trim(),
-            selected: opt.selected,
-            disabled: opt.disabled
-          }));
-
-          questions.push({
-            type: 'select',
-            question: questionText,
-            element: select.id || select.name || \`select_\${index}\`,
-            options: options,
-            required: select.required,
-            currentValue: select.value || '',
-            selectedIndex: select.selectedIndex
-          });
-        });
-
-        // Look for radio button groups - check the fieldset or parent div
-        let radioContainer = container;
-        if (container.tagName === 'FIELDSET') {
-          radioContainer = container;
-        } else {
-          // Find the fieldset that might contain this question
-          radioContainer = container.closest('fieldset') || container;
-        }
-
-        const radios = radioContainer.querySelectorAll('input[type="radio"]');
-        if (radios.length > 0) {
-          // Group radios by name
-          const radioGroups = {};
-          radios.forEach(radio => {
-            const name = radio.name;
-            if (!radioGroups[name]) {
-              radioGroups[name] = [];
-            }
-
-            // Find the label text for this radio
-            let labelText = '';
-            const label = radioContainer.querySelector(\`label[for="\${radio.id}"]\`);
-            if (label) {
-              labelText = label.textContent.trim();
-            } else {
-              // Try to find text near the radio
-              const parent = radio.closest('div');
-              if (parent) {
-                const spans = parent.querySelectorAll('span');
-                labelText = spans[spans.length - 1]?.textContent?.trim() || radio.value;
-              }
-            }
-
-            radioGroups[name].push({
-              value: radio.value,
-              text: labelText,
-              checked: radio.checked,
-              id: radio.id
-            });
-          });
-
-          // Add each radio group as a question (but avoid duplicates)
-          Object.entries(radioGroups).forEach(([name, options]) => {
-            // Check if we already have this radio group
-            const alreadyExists = questions.some(q => q.type === 'radio' && q.element === name);
-            if (!alreadyExists) {
-              questions.push({
-                type: 'radio',
-                question: questionText,
-                element: name,
-                options: options,
-                required: radios[0].required
-              });
-            }
-          });
-        }
-      });
-
-      // Strategy 2: Look for labels with question-like text
-      const labels = document.querySelectorAll('label');
-
-      labels.forEach((label, index) => {
-        const labelText = label.textContent.trim();
-        if (!labelText || labelText.length < 5) return;
-
-        // Look for question patterns
-        if (labelText.includes('?') || labelText.toLowerCase().includes('experience') ||
-            labelText.toLowerCase().includes('qualification') || labelText.toLowerCase().includes('skill')) {
-
-          // Find associated input elements
-          const forAttr = label.getAttribute('for');
-          let inputElement = null;
-
-          if (forAttr) {
-            inputElement = document.getElementById(forAttr);
-          } else {
-            // Look for inputs within the label or nearby
-            inputElement = label.querySelector('input, select, textarea') ||
-                          label.parentElement?.querySelector('input, select, textarea');
-          }
-
-          if (inputElement) {
-            if (inputElement.type === 'radio') {
-              // Handle radio group
-              const radioName = inputElement.name;
-              const allRadios = document.querySelectorAll(\`input[name="\${radioName}"]\`);
-
-              const radioOptions = Array.from(allRadios).map(radio => ({
-                value: radio.value,
-                text: radio.parentElement?.textContent?.trim() || radio.value,
-                checked: radio.checked,
-                id: radio.id
-              }));
-
-              questions.push({
-                type: 'radio',
-                question: labelText,
-                element: radioName,
-                options: radioOptions,
-                required: inputElement.required
-              });
-            } else if (inputElement.tagName === 'SELECT') {
-              // Handle select dropdown
-              const options = Array.from(inputElement.options).map(opt => ({
-                value: opt.value,
-                text: opt.textContent.trim(),
-                selected: opt.selected
-              }));
-
-              questions.push({
-                type: 'select',
-                question: labelText,
-                element: inputElement.id || inputElement.name || \`select_label_\${index}\`,
-                options: options,
-                required: inputElement.required,
-                currentValue: inputElement.value
-              });
-            }
-          }
-        }
-      });
-
-      // Remove duplicates based on element identifier
-      const uniqueQuestions = [];
-      const seenElements = new Set();
-
-      questions.forEach(q => {
-        if (!seenElements.has(q.element)) {
-          seenElements.add(q.element);
-          uniqueQuestions.push(q);
-        }
-      });
-
-      // Debug: Log detailed question data to verify extraction
-      uniqueQuestions.forEach((q, index) => {
-        console.log(\`Question \${index + 1}: \${q.question}\`);
-        console.log(\`  Type: \${q.type}, Element: \${q.element}\`);
-        console.log(\`  Current Value: '\${q.currentValue}'\`);
-        console.log(\`  Options (\${q.options.length}):\`);
-        q.options.forEach((opt, i) => {
-          console.log(\`    \${i + 1}. Value: '\${opt.value}' | Text: '\${opt.text}' | Selected: \${opt.selected}\`);
-        });
-      });
-
-      return {
-        questionsFound: uniqueQuestions.length,
-        questions: uniqueQuestions,
-        pageUrl: window.location.href,
-        scrapedAt: new Date().toISOString()
-      };
-    `);
+    const questionsData = await ctx.driver.executeScript(browserScript);
 
     if (questionsData && questionsData.questionsFound > 0) {
       printLog(`Found ${questionsData.questionsFound} employer questions`);
@@ -221,21 +35,70 @@ export async function* handleEmployerQuestions(ctx: WorkflowContext): AsyncGener
         }
       }
 
-      // Create AI format with automation mapping
+      // Helper to build per-type instructions
+      const instructionByType: Record<string, { instruction: string; expected: string }> = {
+        select: {
+          instruction: 'Choose the best single option index for this select question based on the resume.',
+          expected: 'Return a single number representing the selected option index (0-based).'
+        },
+        radio: {
+          instruction: 'Choose the best single option index for this radio group based on the resume.',
+          expected: 'Return a single number representing the selected option index (0-based).'
+        },
+        checkbox: {
+          instruction: 'Select all applicable option indices for this checkbox group based on the resume.',
+          expected: 'Return an array of numbers representing the selected option indices (0-based).'
+        },
+        textarea: {
+          instruction: 'Write a concise, professional sentence or two that answers this prompt.',
+          expected: 'Return a string (max 2 sentences).'
+        },
+        text: {
+          instruction: 'Provide a concise text answer based on the resume.',
+          expected: 'Return a string.'
+        },
+        number: {
+          instruction: 'Provide a numeric answer (e.g., expected salary, years of experience).',
+          expected: 'Return a number (no commas).'
+        },
+        date: {
+          instruction: 'Provide a realistic date consistent with the resume and context.',
+          expected: "Return a date string in 'YYYY-MM-DD' format."
+        },
+        email: {
+          instruction: 'Provide the candidate professional email address if requested.',
+          expected: 'Return a valid email string.'
+        },
+        tel: {
+          instruction: 'Provide the candidate phone number in international or local format.',
+          expected: 'Return a phone number string.'
+        },
+        url: {
+          instruction: 'Provide a relevant URL (e.g., portfolio, LinkedIn) if requested.',
+          expected: 'Return a URL string.'
+        }
+      };
+
+      // Create AI format: merge automation fields into questions and attach per-type instructions
       const aiFormat = {
-        instruction: "Read the user's resume and answer these employer questions. Respond ONLY with a JSON array of numbers (0-indexed option selections). Example: [0, 2, 1]",
-        questions: questionsData.questions.map((q, index) => ({
-          id: index,
-          q: q.question,
-          opts: q.options.filter(opt => opt.value !== '').map(opt => opt.text)
-        })),
-        expectedResponse: "JSON array like [0, 1, 2] where each number is the option index for that question",
-        automation: questionsData.questions.map((q, index) => ({
-          questionIndex: index,
-          element: q.element,
-          type: q.type,
-          optionValues: q.options.filter(opt => opt.value !== '').map(opt => opt.value)
-        }))
+        instruction: "Answer each question in order according to its type. For select/radio: return the chosen option index (number). For checkbox: return an array of option indices. For text/textarea: return a string. For number: return a number. For date: return 'YYYY-MM-DD'.",
+        questions: questionsData.questions.map((q: any, index: number) => {
+          const hasOptions = Array.isArray(q.options);
+          const optsTexts = hasOptions
+            ? (q.options as any[])
+                .filter((opt: any) => ((opt.value ?? '') !== '' || (opt.text ?? '') !== ''))
+                .map((opt: any) => (opt.text ?? '').trim())
+            : [];
+          const meta = instructionByType[q.type] || instructionByType['text'];
+          return {
+            id: index,
+            q: q.question,
+            type: q.type,
+            opts: optsTexts,
+            instruction: meta.instruction,
+            expectedResponse: meta.expected
+          };
+        })
       };
 
       // Save only the clean AI format

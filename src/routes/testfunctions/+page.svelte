@@ -218,7 +218,7 @@
         font-family: 'Orbitron', monospace;
         font-size: 0.9rem;
         resize: vertical;
-        min-height: 80px;
+        min-height: 1200px;
     }
 
     input::placeholder,

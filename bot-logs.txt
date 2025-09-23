@@ -1,0 +1,274 @@
+[2025-09-16T10:48:55.616Z] 🔍 Trying to connect to existing Chrome on port 9222...
+[2025-09-16T10:48:55.701Z] ❌ Failed to connect to existing Chrome: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:48:55.701Z] 🚀 Starting your regular Chrome with debugging enabled...
+[2025-09-16T10:49:05.126Z] 🔍 Trying to connect to existing Chrome on port 9222...
+[2025-09-16T10:49:05.189Z] ❌ Failed to connect to existing Chrome: overCDP: ECONNREFUSED
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:49:05.189Z] 🚀 Starting your regular Chrome with debugging enabled...
+[2025-09-16T10:49:26.363Z] 🔄 Running Seek automation...
+[2025-09-16T10:49:26.364Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T10:59:12.184Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T10:59:12.184Z] 🔍 Trying to connect to existing Chrome on port 9222...
+[2025-09-16T10:59:12.278Z] ❌ Failed to connect to existing Chrome: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:59:12.278Z] 🚀 Starting your regular Chrome with debugging enabled...
+[2025-09-16T10:59:12.280Z] ✅ Chrome launched successfully with PID: 33446
+[2025-09-16T10:59:12.280Z] ⏳ Waiting for Chrome to start... (attempt 1/5)
+[2025-09-16T10:59:12.785Z] ❌ Attempt 1 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:59:12.785Z] ⏳ Waiting for Chrome to start... (attempt 2/5)
+[2025-09-16T10:59:13.798Z] ❌ Attempt 2 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:59:13.798Z] ⏳ Waiting for Chrome to start... (attempt 3/5)
+[2025-09-16T10:59:15.304Z] ❌ Attempt 3 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:59:15.304Z] ⏳ Waiting for Chrome to start... (attempt 4/5)
+[2025-09-16T10:59:17.310Z] ❌ Attempt 4 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:59:17.310Z] ⏳ Waiting for Chrome to start... (attempt 5/5)
+[2025-09-16T10:59:19.815Z] ❌ Attempt 5 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:59:19.815Z] ❌ Failed to connect to Chrome after 5 attempts.
+[2025-09-16T10:59:31.399Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T10:59:31.399Z] 🔍 Trying to connect to existing Chrome on port 9222...
+[2025-09-16T10:59:31.461Z] ❌ Failed to connect to existing Chrome: overCDP: ECONNREFUSED
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T10:59:31.461Z] 🚀 Starting your regular Chrome with debugging enabled...
+[2025-09-16T10:59:31.462Z] ✅ Chrome launched successfully with PID: 33650
+[2025-09-16T10:59:31.463Z] ⏳ Waiting for Chrome to start... (attempt 1/5)
+[2025-09-16T11:00:01.975Z] ❌ Attempt 1 failed: overCDP: Timeout 30000ms exceeded.
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+[2m  - <ws connecting> ws://localhost:9222/devtools/browser/85dd2e56-9e5f-4d42-a1b3-ebb10a8ab60b[22m
+
+[2025-09-16T11:00:01.975Z] ⏳ Waiting for Chrome to start... (attempt 2/5)
+[2025-09-16T11:00:32.982Z] ❌ Attempt 2 failed: overCDP: Timeout 30000ms exceeded.
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+[2m  - <ws connecting> ws://localhost:9222/devtools/browser/85dd2e56-9e5f-4d42-a1b3-ebb10a8ab60b[22m
+
+[2025-09-16T11:00:32.982Z] ⏳ Waiting for Chrome to start... (attempt 3/5)
+[2025-09-16T11:00:54.934Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:00:54.934Z] 🔍 Trying to connect to existing Chrome on port 9222...
+[2025-09-16T11:01:24.960Z] ❌ Failed to connect to existing Chrome: overCDP: Timeout 30000ms exceeded.
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+[2m  - <ws connecting> ws://localhost:9222/devtools/browser/85dd2e56-9e5f-4d42-a1b3-ebb10a8ab60b[22m
+
+[2025-09-16T11:01:24.960Z] 🚀 Starting your regular Chrome with debugging enabled...
+[2025-09-16T11:01:24.963Z] ✅ Chrome launched successfully with PID: 34791
+[2025-09-16T11:01:24.963Z] ⏳ Waiting for Chrome to start... (attempt 1/5)
+[2025-09-16T11:01:55.968Z] ❌ Attempt 1 failed: overCDP: Timeout 30000ms exceeded.
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+[2m  - <ws connecting> ws://localhost:9222/devtools/browser/85dd2e56-9e5f-4d42-a1b3-ebb10a8ab60b[22m
+
+[2025-09-16T11:01:55.968Z] ⏳ Waiting for Chrome to start... (attempt 2/5)
+[2025-09-16T11:02:27.973Z] ❌ Attempt 2 failed: overCDP: Timeout 30000ms exceeded.
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+[2m  - <ws connecting> ws://localhost:9222/devtools/browser/85dd2e56-9e5f-4d42-a1b3-ebb10a8ab60b[22m
+
+[2025-09-16T11:02:27.973Z] ⏳ Waiting for Chrome to start... (attempt 3/5)
+[2025-09-16T11:02:49.999Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:02:50.000Z] 🔍 Trying to connect to existing Chrome on port 9222...
+[2025-09-16T11:02:50.068Z] ❌ Failed to connect to existing Chrome: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T11:02:50.068Z] 🚀 Starting your regular Chrome with debugging enabled...
+[2025-09-16T11:02:50.070Z] ✅ Chrome launched successfully with PID: 35881
+[2025-09-16T11:02:50.070Z] ⏳ Waiting for Chrome to start... (attempt 1/5)
+[2025-09-16T11:02:51.075Z] ❌ Attempt 1 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T11:02:51.076Z] ⏳ Waiting for Chrome to start... (attempt 2/5)
+[2025-09-16T11:02:53.082Z] ❌ Attempt 2 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T11:02:53.083Z] ⏳ Waiting for Chrome to start... (attempt 3/5)
+[2025-09-16T11:02:56.089Z] ❌ Attempt 3 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T11:02:56.090Z] ⏳ Waiting for Chrome to start... (attempt 4/5)
+[2025-09-16T11:03:00.097Z] ❌ Attempt 4 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T11:03:00.097Z] ⏳ Waiting for Chrome to start... (attempt 5/5)
+[2025-09-16T11:03:05.102Z] ❌ Attempt 5 failed: overCDP: Unable to connect. Is the computer able to access the url?
+Call log:
+[2m  - <ws preparing> retrieving websocket url from http://localhost:9222[22m
+
+[2025-09-16T11:03:05.102Z] ❌ Failed to connect to Chrome after 5 attempts.
+[2025-09-16T11:05:30.894Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:05:30.894Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:05:32.706Z] ✅ Chrome launched successfully with Playwright
+[2025-09-16T11:05:36.597Z] 🔄 Running Seek automation...
+[2025-09-16T11:05:36.597Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:06:08.294Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:06:08.294Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:06:08.492Z] ❌ Failed to launch Chrome: persistentContext: Failed to create a ProcessSingleton for your profile directory. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+[2m  - <launching> /Applications/Google Chrome.app/Contents/MacOS/Google Chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --enable-unsafe-swiftshader --no-sandbox --remote-debugging-port=9222 --no-first-run --no-default-browser-check --disable-web-security --disable-features=VizDisplayCompositor --no-sandbox --disable-dev-shm-usage --window-size=1680,1050 --window-position=0,0 --user-data-dir=/Users/admin/extratech/finalboss/sessions/seek --remote-debugging-pipe about:blank[22m
+[2m  - <launched> pid=37612[22m
+[2m  - [pid=37612][err] [37612:6202055:0916/210608.482425:ERROR:chrome/browser/process_singleton_posix.cc:340] Failed to create /Users/admin/extratech/finalboss/sessions/seek/SingletonLock: File exists (17)[22m
+[2m  - [pid=37612][err] [37612:6202055:0916/210608.482742:ERROR:chrome/app/chrome_main_delegate.cc:505] Failed to create a ProcessSingleton for your profile directory. This means that running multiple instances would start multiple browser processes rather than opening a new window in the existing process. Aborting now to avoid profile corruption.[22m
+[2m  - [pid=37612] <gracefully close start>[22m
+[2m  - [pid=37612] <kill>[22m
+[2m  - [pid=37612] <will force kill>[22m
+[2m  - [pid=37612] exception while trying to kill process: SystemError: kill() failed: EPERM: Operation not permitted[22m
+[2m  - [pid=37612] <process did exit: exitCode=21, signal=null>[22m
+[2m  - [pid=37612] starting temporary directories cleanup[22m
+[2m  - [pid=37612] finished temporary directories cleanup[22m
+[2m  - [pid=37612] <gracefully close end>[22m
+
+[2025-09-16T11:06:08.493Z] 🔄 Falling back to Playwright's bundled Chromium...
+[2025-09-16T11:06:31.073Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:06:31.073Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:06:31.274Z] ❌ Failed to launch Chrome: persistentContext: Failed to create a ProcessSingleton for your profile directory. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+[2m  - <launching> /Applications/Google Chrome.app/Contents/MacOS/Google Chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --enable-unsafe-swiftshader --no-sandbox --remote-debugging-port=9222 --no-first-run --no-default-browser-check --disable-web-security --disable-features=VizDisplayCompositor --no-sandbox --disable-dev-shm-usage --window-size=1680,1050 --window-position=0,0 --user-data-dir=/Users/admin/extratech/finalboss/sessions/seek --remote-debugging-pipe about:blank[22m
+[2m  - <launched> pid=37750[22m
+[2m  - [pid=37750][err] [37750:6202636:0916/210631.263777:ERROR:chrome/browser/process_singleton_posix.cc:340] Failed to create /Users/admin/extratech/finalboss/sessions/seek/SingletonLock: File exists (17)[22m
+[2m  - [pid=37750][err] [37750:6202636:0916/210631.264111:ERROR:chrome/app/chrome_main_delegate.cc:505] Failed to create a ProcessSingleton for your profile directory. This means that running multiple instances would start multiple browser processes rather than opening a new window in the existing process. Aborting now to avoid profile corruption.[22m
+[2m  - [pid=37750] <gracefully close start>[22m
+[2m  - [pid=37750] <kill>[22m
+[2m  - [pid=37750] <will force kill>[22m
+[2m  - [pid=37750] exception while trying to kill process: SystemError: kill() failed: EPERM: Operation not permitted[22m
+[2m  - [pid=37750] <process did exit: exitCode=21, signal=null>[22m
+[2m  - [pid=37750] starting temporary directories cleanup[22m
+[2m  - [pid=37750] finished temporary directories cleanup[22m
+[2m  - [pid=37750] <gracefully close end>[22m
+
+[2025-09-16T11:06:31.274Z] 🔄 Falling back to Playwright's bundled Chromium...
+[2025-09-16T11:06:57.637Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:06:57.637Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:06:58.864Z] ✅ Chrome launched successfully with Playwright
+[2025-09-16T11:07:01.765Z] 🔄 Running Seek automation...
+[2025-09-16T11:07:01.765Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:10:04.109Z] 📁 Using session directory: /Users/admin/extratech/finalboss/sessions/seek-1758021004109
+[2025-09-16T11:10:04.109Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:10:04.109Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:10:04.181Z] 🧹 Cleaned up any existing Chrome processes
+[2025-09-16T11:10:06.113Z] ✅ Your local Google Chrome launched successfully!
+[2025-09-16T11:10:10.221Z] 🔄 Running Seek automation...
+[2025-09-16T11:10:10.221Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:13:24.734Z] 📁 Using persistent session directory: /Users/admin/extratech/finalboss/sessions/seek
+[2025-09-16T11:13:24.734Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:13:24.734Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:13:24.734Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:13:24.857Z] 🧹 Cleaned up Chrome processes using session: seek
+[2025-09-16T11:13:26.947Z] ✅ Your local Google Chrome launched successfully!
+[2025-09-16T11:13:30.131Z] 🔄 Running Seek automation...
+[2025-09-16T11:13:30.131Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:17:11.278Z] 📁 Using your actual Chrome profile: /Users/admin/Library/Application Support/Google/Chrome/Default
+[2025-09-16T11:17:11.278Z] 💾 All your login data, bookmarks, extensions, and settings will be preserved!
+[2025-09-16T11:17:11.278Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:17:11.278Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:17:11.279Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:17:11.279Z] ⚠️  Using your actual Chrome profile - will not kill existing Chrome processes
+[2025-09-16T11:17:11.279Z] 💡 If you have Chrome open, please close it manually to avoid conflicts
+[2025-09-16T11:17:13.199Z] ✅ Your local Google Chrome launched successfully!
+[2025-09-16T11:17:17.303Z] 🔄 Running Seek automation...
+[2025-09-16T11:17:17.303Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:18:23.820Z] 📁 Using your actual Chrome profile: /Users/admin/Library/Application Support/Google/Chrome/Default
+[2025-09-16T11:18:23.821Z] 💾 All your login data, bookmarks, extensions, and settings will be preserved!
+[2025-09-16T11:18:23.821Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:18:23.821Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:18:23.821Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:18:23.821Z] ⚠️  Using your actual Chrome profile - will not kill existing Chrome processes
+[2025-09-16T11:18:23.822Z] 💡 If you have Chrome open, please close it manually to avoid conflicts
+[2025-09-16T11:18:25.048Z] ✅ Your local Google Chrome launched successfully!
+[2025-09-16T11:18:28.242Z] 🔄 Running Seek automation...
+[2025-09-16T11:18:28.242Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:20:46.932Z] 📁 Using your actual Chrome profile: /Users/admin/Library/Application Support/Google/Chrome/Default
+[2025-09-16T11:20:46.932Z] 💾 All your login data, bookmarks, extensions, and settings will be preserved!
+[2025-09-16T11:20:46.933Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:20:46.933Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:20:46.933Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:20:46.933Z] 🧹 Killing all Chrome processes to ensure clean profile access...
+[2025-09-16T11:20:49.022Z] ✅ All Chrome processes killed - your profile will load cleanly
+[2025-09-16T11:20:51.100Z] ✅ Your local Google Chrome launched successfully!
+[2025-09-16T11:20:52.509Z] 🔄 Running Seek automation...
+[2025-09-16T11:20:52.509Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:21:45.487Z] 📁 Using your actual Chrome profile: /Users/admin/Library/Application Support/Google/Chrome/Default
+[2025-09-16T11:21:45.487Z] 💾 All your login data, bookmarks, extensions, and settings will be preserved!
+[2025-09-16T11:21:45.488Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:21:45.488Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:21:45.488Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:21:45.488Z] 🧹 Killing all Chrome processes to ensure clean profile access...
+[2025-09-16T11:21:47.607Z] ✅ All Chrome processes killed - your profile will load cleanly
+[2025-09-16T11:21:49.419Z] ✅ Your local Google Chrome launched successfully!
+[2025-09-16T11:21:54.143Z] 🔍 Sign-in button found - user is not logged in
+[2025-09-16T11:21:54.157Z] 🔄 Running Seek automation...
+[2025-09-16T11:21:54.158Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:23:32.730Z] 📁 Using your actual Chrome profile: /Users/admin/Library/Application Support/Google/Chrome/Default
+[2025-09-16T11:23:32.730Z] 💾 All your login data, bookmarks, extensions, and settings will be preserved!
+[2025-09-16T11:23:32.731Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:23:32.731Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:23:32.731Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:23:32.731Z] 🧹 Killing all Chrome processes to ensure clean profile access...
+[2025-09-16T11:23:34.819Z] ✅ All Chrome processes killed - your profile will load cleanly
+[2025-09-16T11:23:36.558Z] ✅ Your local Google Chrome launched successfully!
+[2025-09-16T11:23:41.879Z] 🔍 Sign-in button found - user is not logged in
+[2025-09-16T11:23:41.909Z] 🔄 Running Seek automation...
+[2025-09-16T11:23:41.909Z] 📍 Current URL: https://www.seek.com.au/
+[2025-09-16T11:27:10.349Z] 📁 Using your actual Chrome User Data root: /Users/admin/Library/Application Support/Google/Chrome
+[2025-09-16T11:27:10.349Z] 💾 Profile: Default (bookmarks, extensions, logins will load)
+[2025-09-16T11:27:10.350Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:27:10.350Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:27:10.350Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:27:10.447Z] 🧹 Cleaned up Chrome processes using session: Chrome
+[2025-09-16T11:27:10.482Z] ❌ Failed to launch your local Chrome: Pass userDataDir parameter to 'browserType.launchPersistentContext(userDataDir, options)' instead of specifying '--user-data-dir' argument
+[2025-09-16T11:28:10.907Z] 📁 Using your actual Chrome User Data root: /Users/admin/Library/Application Support/Google/Chrome
+[2025-09-16T11:28:10.907Z] 💾 Profile: Default (bookmarks, extensions, logins will load)
+[2025-09-16T11:28:10.908Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:28:10.908Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:28:10.908Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:28:10.992Z] 🧹 Cleaned up Chrome processes using session: Chrome
+[2025-09-16T11:31:39.753Z] ❌ Failed to launch your local Chrome: Timeout 180000ms exceeded.
+Call log:
+[2m  - <launching> /Applications/Google Chrome.app/Contents/MacOS/Google Chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --enable-unsafe-swiftshader --no-sandbox --remote-debugging-port=9222 --no-first-run --no-default-browser-check --disable-web-security --disable-features=VizDisplayCompositor --no-sandbox --disable-dev-shm-usage --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --disable-features=TranslateUI --disable-ipc-flooding-protection --profile-directory=Default --window-size=1680,1050 --window-position=0,0 --user-data-dir=/Users/admin/Library/Application Support/Google/Chrome --remote-debugging-pipe about:blank[22m
+[2m  - <launched> pid=48931[22m
+[2m  - [pid=48931][err] [0916/212811.098172:ERROR:chrome/app/chrome_main_delegate.cc:1054] Web security may only be disabled if '--user-data-dir' is also specified with a non-default value.[22m
+[2m  - [pid=48931][err] [48931:6237565:0916/212811.656546:ERROR:components/signin/public/webdata/token_service_table.cc:189] Failed to decrypt token for service AccountId-114208302882059729285[22m
+[2m  - [pid=48931][err][22m
+[2m  - [pid=48931][err] DevTools remote debugging requires a non-default data directory. Specify this using --user-data-dir.[22m
+[2m  - [pid=48931][err] [48931:6237553:0916/212815.887804:ERROR:google_apis/gcm/engine/gcm_store_impl.cc:942] Failed to restore security token.[22m
+[2m  - [pid=48931][err] Trying to load the allocator multiple times. This is *not* supported.[22m
+[2m  - [pid=48931][err] Created TensorFlow Lite XNNPACK delegate for CPU.[22m
+[2m  - [pid=48931][err] [48931:6237554:0916/212816.628696:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT[22m
+[2m  - [pid=48931][err] [49044:6238157:0916/212826.025560:ERROR:sandbox/mac/system_services.cc:31] SetApplicationIsDaemon: Error Domain=NSOSStatusErrorDomain Code=-50 "paramErr: error in user parameter list" (-50)[22m
+[2m  - [pid=48931][err] [48931:6237554:0916/212844.661011:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT[22m
+[2m  - [pid=48931][err] [48931:6237490:0916/212850.636343:ERROR:mojo/public/cpp/bindings/lib/interface_endpoint_client.cc:732] Message 5 rejected by interface blink.mojom.WidgetHost[22m
+[2m  - [pid=48931][err] [48931:6237554:0916/212937.269746:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT[22m
+
+[2025-09-16T11:31:41.953Z] 📁 Using your actual Chrome User Data root: /Users/admin/Library/Application Support/Google/Chrome
+[2025-09-16T11:31:41.954Z] 💾 Profile: Default (bookmarks, extensions, logins will load)
+[2025-09-16T11:31:41.954Z] 💾 Found existing session data - your login and autofill will be preserved!
+[2025-09-16T11:31:41.955Z] ✅ Using your regular Google Chrome (not Chromium)
+[2025-09-16T11:31:41.955Z] 🚀 Launching Chrome directly with Playwright...
+[2025-09-16T11:31:41.955Z] ⚠️  Cleanup warning: Can't find variable: chromeProfileDir

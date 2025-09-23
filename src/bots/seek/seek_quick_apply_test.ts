@@ -14,8 +14,7 @@ const printLog = (message: string) => {
 
 // Test URLs for Quick Apply
 const TEST_URLS = [
-  'https://www.seek.com.au/job/87353603/apply',
-  'https://www.seek.com.au/job/87378873/apply'
+  'https://www.seek.com.au/job/87119743/apply/role-requirements?sol=86a646b661f5c873ba3bc551361f849c1d927680'
 ];
 
 
