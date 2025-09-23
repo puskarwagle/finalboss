@@ -38,9 +38,10 @@ export async function* handleEmployerQuestions(ctx: WorkflowContext): AsyncGener
         const selects = container.querySelectorAll('select');
         selects.forEach(select => {
           const options = Array.from(select.options).map(opt => ({
-            value: opt.value,
-            text: opt.textContent.trim(),
-            selected: opt.selected
+            value: opt.value || '',
+            text: (opt.textContent || opt.innerText || '').trim(),
+            selected: opt.selected,
+            disabled: opt.disabled
           }));
 
           questions.push({
@@ -49,7 +50,8 @@ export async function* handleEmployerQuestions(ctx: WorkflowContext): AsyncGener
             element: select.id || select.name || \`select_\${index}\`,
             options: options,
             required: select.required,
-            currentValue: select.value
+            currentValue: select.value || '',
+            selectedIndex: select.selectedIndex
           });
         });
 
@@ -186,6 +188,17 @@ export async function* handleEmployerQuestions(ctx: WorkflowContext): AsyncGener
         }
       });
 
+      // Debug: Log detailed question data to verify extraction
+      uniqueQuestions.forEach((q, index) => {
+        console.log(\`Question \${index + 1}: \${q.question}\`);
+        console.log(\`  Type: \${q.type}, Element: \${q.element}\`);
+        console.log(\`  Current Value: '\${q.currentValue}'\`);
+        console.log(\`  Options (\${q.options.length}):\`);
+        q.options.forEach((opt, i) => {
+          console.log(\`    \${i + 1}. Value: '\${opt.value}' | Text: '\${opt.text}' | Selected: \${opt.selected}\`);
+        });
+      });
+
       return {
         questionsFound: uniqueQuestions.length,
         questions: uniqueQuestions,
@@ -208,10 +221,27 @@ export async function* handleEmployerQuestions(ctx: WorkflowContext): AsyncGener
         }
       }
 
-      // Add questions data to job file
+      // Create AI format with automation mapping
+      const aiFormat = {
+        instruction: "Read the user's resume and answer these employer questions. Respond ONLY with a JSON array of numbers (0-indexed option selections). Example: [0, 2, 1]",
+        questions: questionsData.questions.map((q, index) => ({
+          id: index,
+          q: q.question,
+          opts: q.options.filter(opt => opt.value !== '').map(opt => opt.text)
+        })),
+        expectedResponse: "JSON array like [0, 1, 2] where each number is the option index for that question",
+        automation: questionsData.questions.map((q, index) => ({
+          questionIndex: index,
+          element: q.element,
+          type: q.type,
+          optionValues: q.options.filter(opt => opt.value !== '').map(opt => opt.value)
+        }))
+      };
+
+      // Save only the clean AI format
       const updatedJobData = {
         ...existingJobData,
-        employerQuestions: questionsData,
+        ...aiFormat,
         lastUpdated: new Date().toISOString()
       };
 
