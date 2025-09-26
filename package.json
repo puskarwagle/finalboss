@@ -18,16 +18,21 @@
   "dependencies": {
     "@auth/core": "^0.40.0",
     "@auth/sveltekit": "^1.10.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-fs": "^2.4.2",
     "@tauri-apps/plugin-opener": "^2",
     "@types/js-yaml": "^4.0.9",
     "@types/selenium-webdriver": "^4.1.28",
+    "autoprefixer": "^10.4.21",
     "chromedriver": "^139.0.3",
+    "daisyui": "^5.1.23",
     "google-auth-library": "^10.3.0",
     "js-yaml": "^4.1.0",
     "playwright": "^1.55.0",
-    "selenium-webdriver": "^4.35.0"
+    "postcss": "^8.5.6",
+    "selenium-webdriver": "^4.35.0",
+    "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",

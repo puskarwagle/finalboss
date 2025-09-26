@@ -261,267 +261,80 @@
   }
 </script>
 
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
-  .test-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-    padding-top: 8rem;
-    font-family: 'Orbitron', monospace;
-    color: #00ff00;
-    min-height: 100vh;
-    background: #000;
-  }
-
-  .test-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  .test-title {
-    font-size: 3rem;
-    font-weight: 900;
-    color: #00ff00;
-    text-shadow: 0 0 20px #00ff0050;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    margin-bottom: 1rem;
-  }
-
-  .test-subtitle {
-    font-size: 1.2rem;
-    color: #00ffff;
-    margin-bottom: 2rem;
-  }
-
-  .test-controls {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-bottom: 3rem;
-  }
-
-  .test-btn {
-    background: linear-gradient(45deg, #00ff00, #00ffff);
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    padding: 1rem 2rem;
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .test-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
-  }
-
-  .test-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .cleanup-btn {
-    background: linear-gradient(45deg, #ff6600, #ff9900);
-  }
-
-  .progress-bar {
-    width: 100%;
-    height: 20px;
-    background: #001100;
-    border: 1px solid #00ff00;
-    border-radius: 10px;
-    margin-bottom: 2rem;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #00ff00, #00ffff);
-    transition: width 0.3s ease;
-  }
-
-  .progress-text {
-    text-align: center;
-    margin-top: 0.5rem;
-    font-weight: 700;
-  }
-
-  .test-summary {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-  }
-
-  .summary-card {
-    background: linear-gradient(135deg, #001100, #003300);
-    border: 1px solid #00ff00;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-  }
-
-  .summary-number {
-    font-size: 2rem;
-    font-weight: 900;
-    color: #00ffff;
-  }
-
-  .summary-label {
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .test-results {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .test-result {
-    background: linear-gradient(135deg, #001100, #003300);
-    border-left: 4px solid;
-    border-radius: 8px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-  }
-
-  .test-result.passed {
-    border-left-color: #00ff00;
-  }
-
-  .test-result.failed {
-    border-left-color: #ff0000;
-  }
-
-  .test-result:hover {
-    transform: translateX(5px);
-    box-shadow: 0 5px 15px rgba(0, 255, 0, 0.2);
-  }
-
-  .test-name {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #00ffff;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .test-status {
-    font-size: 1rem;
-    font-weight: 900;
-  }
-
-  .test-status.passed {
-    color: #00ff00;
-  }
-
-  .test-status.failed {
-    color: #ff0000;
-  }
-
-  .test-details {
-    color: #00cc00;
-    margin-bottom: 0.5rem;
-    word-break: break-all;
-  }
-
-  .test-error {
-    color: #ff6600;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
-    background: rgba(255, 0, 0, 0.1);
-    padding: 0.5rem;
-    border-radius: 4px;
-    margin-top: 0.5rem;
-  }
-
-  .test-timestamp {
-    color: #666;
-    font-size: 0.8rem;
-    text-align: right;
-  }
-</style>
-
-<div class="test-container">
-  <div class="test-header">
-    <h1 class="test-title">🧪 Form Test Suite</h1>
-    <p class="test-subtitle">Comprehensive testing for the configuration form's tokio fs operations</p>
-  </div>
-
-  <div class="test-controls">
-    <button 
-      class="test-btn" 
-      onclick={runAllTests}
-      disabled={isRunningTests}
-    >
-      {isRunningTests ? 'Running Tests...' : '🚀 Run All Tests'}
-    </button>
-    
-    <button 
-      class="test-btn cleanup-btn" 
-      onclick={cleanupTests}
-      disabled={isRunningTests}
-    >
-      🧹 Cleanup Test Files
-    </button>
-  </div>
-
-  {#if isRunningTests || testResults.length > 0}
-    <div class="progress-bar">
-      <div 
-        class="progress-fill" 
-        style="width: {(testProgress / totalTests) * 100}%"
-      ></div>
-    </div>
-    <div class="progress-text">
-      Progress: {testProgress} / {totalTests} tests completed
-    </div>
-  {/if}
-
-  {#if testResults.length > 0}
-    <div class="test-summary">
-      <div class="summary-card">
-        <div class="summary-number">{getTestSummary().passed}</div>
-        <div class="summary-label">Passed</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-number">{getTestSummary().failed}</div>
-        <div class="summary-label">Failed</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-number">{getTestSummary().total}</div>
-        <div class="summary-label">Total</div>
-      </div>
+<div class="min-h-screen bg-base-200 pt-32 pb-8">
+  <div class="container mx-auto max-w-6xl px-4">
+    <div class="text-center mb-12">
+      <h1 class="text-5xl font-bold text-primary mb-4">🧪 Form Test Suite</h1>
+      <p class="text-xl text-base-content/70">Comprehensive testing for the configuration form's tokio fs operations</p>
     </div>
 
-    <div class="test-results">
-      {#each testResults as result}
-        <div class="test-result {result.passed ? 'passed' : 'failed'}">
-          <div class="test-name">
-            <span>{result.name}</span>
-            <span class="test-status {result.passed ? 'passed' : 'failed'}">
-              {result.passed ? '✅ PASS' : '❌ FAIL'}
-            </span>
-          </div>
-          <div class="test-details">{result.details}</div>
-          {#if result.error}
-            <div class="test-error">Error: {result.error}</div>
-          {/if}
-          <div class="test-timestamp">{new Date(result.timestamp).toLocaleString()}</div>
+    <div class="flex gap-4 justify-center mb-12 flex-wrap">
+      <button
+        class="btn btn-primary btn-lg"
+        onclick={runAllTests}
+        disabled={isRunningTests}
+      >
+        {isRunningTests ? 'Running Tests...' : '🚀 Run All Tests'}
+      </button>
+
+      <button
+        class="btn btn-warning btn-lg"
+        onclick={cleanupTests}
+        disabled={isRunningTests}
+      >
+        🧹 Cleanup Test Files
+      </button>
+    </div>
+
+    {#if isRunningTests || testResults.length > 0}
+      <div class="mb-8">
+        <progress class="progress progress-primary w-full" value={(testProgress / totalTests) * 100} max="100"></progress>
+        <div class="text-center mt-2 font-semibold">
+          Progress: {testProgress} / {totalTests} tests completed
         </div>
-      {/each}
-    </div>
-  {/if}
+      </div>
+    {/if}
+
+    {#if testResults.length > 0}
+      <div class="stats shadow mb-8 justify-center">
+        <div class="stat">
+          <div class="stat-value text-success">{getTestSummary().passed}</div>
+          <div class="stat-title">Passed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value text-error">{getTestSummary().failed}</div>
+          <div class="stat-title">Failed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value text-primary">{getTestSummary().total}</div>
+          <div class="stat-title">Total</div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        {#each testResults as result}
+          <div class="card bg-base-100 shadow-xl border-l-4 {result.passed ? 'border-l-success' : 'border-l-error'}">
+            <div class="card-body">
+              <div class="flex justify-between items-center mb-2">
+                <h3 class="card-title text-lg">{result.name}</h3>
+                <span class="badge {result.passed ? 'badge-success' : 'badge-error'} badge-lg">
+                  {result.passed ? '✅ PASS' : '❌ FAIL'}
+                </span>
+              </div>
+              <p class="text-base-content/80">{result.details}</p>
+              {#if result.error}
+                <div class="mockup-code bg-error/10 border border-error/20 mt-2">
+                  <pre class="text-error"><code>Error: {result.error}</code></pre>
+                </div>
+              {/if}
+              <div class="text-right text-sm text-base-content/50 mt-2">
+                {new Date(result.timestamp).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 </div>

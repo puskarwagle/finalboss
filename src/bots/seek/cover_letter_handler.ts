@@ -37,38 +37,127 @@ async function getUserApiKey(): Promise<{apiKey: string, userId: string}> {
   }
 }
 
-// Generate AI-powered cover letter using the RAG API with proper authentication
+// Extract categorized information from job details
+interface JobInfo {
+  requirements: string[];
+  description: string;
+  responsibilities: string;
+  benefits: string;
+}
+
+function extractJobInfo(details: string): JobInfo {
+  const requirements: string[] = [];
+  let description = '';
+  let responsibilities = '';
+  let benefits = '';
+
+  // Common tech keywords to look for
+  const techKeywords = [
+    'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java', 'C#', 'PHP',
+    'Angular', 'Vue', 'AWS', 'Azure', 'Docker', 'Kubernetes', 'Git', 'SQL',
+    'MongoDB', 'PostgreSQL', 'Express', 'API', 'REST', 'GraphQL', 'DevOps',
+    'CI/CD', 'Spring Boot', 'Microservices', 'Agile', 'Scrum', 'Redis', 'Kafka',
+    'Terraform', 'Jenkins', 'Helm', 'Elasticsearch', 'RabbitMQ', 'Selenium'
+  ];
+
+  // Find mentioned technologies
+  techKeywords.forEach(tech => {
+    if (details.toLowerCase().includes(tech.toLowerCase())) {
+      requirements.push(tech);
+    }
+  });
+
+  // Extract sections based on common patterns
+  const lines = details.split('\n');
+  let currentSection = '';
+
+  for (const line of lines) {
+    const lowerLine = line.toLowerCase().trim();
+
+    // Identify section headers
+    if (lowerLine.includes('what you\'ll do') || lowerLine.includes('responsibilities') ||
+        lowerLine.includes('key duties') || lowerLine.includes('your role')) {
+      currentSection = 'responsibilities';
+    } else if (lowerLine.includes('about you') || lowerLine.includes('what you\'ll bring') ||
+               lowerLine.includes('requirements') || lowerLine.includes('skills') ||
+               lowerLine.includes('experience')) {
+      currentSection = 'requirements';
+    } else if (lowerLine.includes('what you\'ll enjoy') || lowerLine.includes('benefits') ||
+               lowerLine.includes('perks') || lowerLine.includes('we offer')) {
+      currentSection = 'benefits';
+    } else if (lowerLine.includes('about the role') || lowerLine.includes('opportunity') ||
+               lowerLine.includes('position')) {
+      currentSection = 'description';
+    }
+
+    // Add content to appropriate section
+    if (currentSection && line.trim() && !lowerLine.includes('what you\'ll') &&
+        !lowerLine.includes('about you') && !lowerLine.includes('benefits') &&
+        !lowerLine.includes('requirements')) {
+      switch (currentSection) {
+        case 'responsibilities':
+          responsibilities += line + '\n';
+          break;
+        case 'benefits':
+          benefits += line + '\n';
+          break;
+        case 'description':
+          description += line + '\n';
+          break;
+      }
+    }
+  }
+
+  // If no structured sections found, use first part as description
+  if (!description && !responsibilities) {
+    const paragraphs = details.split('\n\n');
+    description = paragraphs.slice(0, 3).join('\n\n'); // First 3 paragraphs
+  }
+
+  return {
+    requirements: [...new Set(requirements)], // Remove duplicates
+    description: description.trim(),
+    responsibilities: responsibilities.trim(),
+    benefits: benefits.trim()
+  };
+}
+
+// Generate AI-powered cover letter using the new /api/cover_letter endpoint
 async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
   const fs = await import('fs');
-  const path = await import('path');
 
   // Read job data from the current job file
-  let jobDescription = '';
+  let jobData: any = {};
   if (ctx.currentJobFile) {
-    const jobData = JSON.parse(fs.readFileSync(ctx.currentJobFile, 'utf8'));
-    jobDescription = `${jobData.title} at ${jobData.company}\n\n${jobData.details}`;
+    jobData = JSON.parse(fs.readFileSync(ctx.currentJobFile, 'utf8'));
   }
 
-  if (!jobDescription.trim()) {
-    throw new Error("No job description available - cannot generate cover letter");
+  if (!jobData.title || !jobData.company) {
+    throw new Error("No job data available - cannot generate cover letter");
   }
 
-  // Read prompt from file
-  const promptPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'cover_letter_prompt.txt');
-  const promptTemplate = fs.readFileSync(promptPath, 'utf8').trim();
-  const finalPrompt = promptTemplate.replace('{jobDescription}', jobDescription);
+  // Extract structured information from job details
+  const jobInfo = extractJobInfo(jobData.details || '');
 
-  printLog("Generating AI cover letter with proper authentication...");
-  printLog(`📝 Using prompt from: ${promptPath}`);
+  // Structure job details for the new API
+  const jobDetails = {
+    title: jobData.title || '',
+    company: jobData.company || '',
+    description: jobInfo.description || jobData.details || '',
+    requirements: jobInfo.requirements
+  };
+
+  printLog("Generating AI cover letter using new /api/cover_letter endpoint...");
+  printLog(`📝 Job: ${jobDetails.title} at ${jobDetails.company}`);
+  printLog(`🔧 Requirements found: ${jobDetails.requirements.join(', ')}`);
 
   // Get user's API key and ID
   const { apiKey, userId } = await getUserApiKey();
 
-  printLog(`📡 Making authenticated API request to: http://localhost:3000/api/rag/query`);
-  printLog(`📝 Job description length: ${jobDescription.length} chars`);
-  printLog(`👤 Using userId: ${userId}`);
+  printLog(`📡 Making authenticated API request to: http://localhost:3000/api/cover_letter`);
+  printLog(`👤 Using userEmail: ${userId}`);
 
-  const response = await fetch('http://localhost:3000/api/rag/query', {
+  const response = await fetch('http://localhost:3000/api/cover_letter', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -76,8 +165,8 @@ async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      userId: userId,
-      question: finalPrompt
+      jobDetails: jobDetails,
+      userEmail: userId
     })
   });
 
@@ -86,22 +175,22 @@ async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
   if (!response.ok) {
     const errorText = await response.text();
     printLog(`❌ API Error Response Body: ${errorText}`);
-    throw new Error(`AI API request failed: ${response.status} - ${errorText}`);
+    throw new Error(`Cover Letter API request failed: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
-  printLog(`📡 API Response Data Structure:`, JSON.stringify(data, null, 2));
+  printLog(`📡 API Response Data Structure: ${JSON.stringify(data, null, 2)}`);
 
-  if (data.success && data.data?.answer) {
+  if (data.success && data.data?.coverLetter) {
     printLog("✅ AI cover letter generated successfully");
-    printLog(`📄 Cover letter length: ${data.data.answer.length} chars`);
-    return data.data.answer;
+    printLog(`📄 Cover letter length: ${data.data.coverLetter.length} chars`);
+    return data.data.coverLetter;
   } else {
-    printLog(`❌ AI API returned unsuccessful response:`);
+    printLog(`❌ Cover Letter API returned unsuccessful response:`);
     printLog(`   - Success: ${data.success}`);
     printLog(`   - Error: ${data.error || 'No error message'}`);
     printLog(`   - Data: ${JSON.stringify(data.data)}`);
-    throw new Error(data.error || 'No answer returned from AI');
+    throw new Error(data.error || 'No cover letter returned from API');
   }
 }
 
@@ -194,10 +283,14 @@ export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<s
           const textareaInvalid = textarea.getAttribute('aria-invalid') === 'true';
           const textareaRequired = textarea.hasAttribute('required') && finalValue.length === 0;
 
+          // Debug validation logic
+          const successCondition = valueLength > 0 && !textareaInvalid && !textareaRequired;
           console.log('SendKeys result - Length:', valueLength, 'Errors:', hasErrors, 'TextareaInvalid:', textareaInvalid, 'Required:', textareaRequired);
+          console.log('Success calculation: valueLength > 0:', valueLength > 0, '!textareaInvalid:', !textareaInvalid, '!textareaRequired:', !textareaRequired);
+          console.log('Final success result:', successCondition);
 
           return {
-            success: valueLength > 0 && !textareaInvalid && !textareaRequired,
+            success: successCondition,
             length: valueLength,
             hasErrors: hasErrors || textareaInvalid || textareaRequired,
             errorMessages: errorMessages,
@@ -215,6 +308,9 @@ export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<s
     }
 
     printLog("🔍 Step 7: Evaluating final result...");
+    printLog(`🔍 Step 7 DEBUG: textareaResult.success = ${textareaResult.success}`);
+    printLog(`🔍 Step 7 DEBUG: Full textareaResult = ${JSON.stringify(textareaResult, null, 2)}`);
+
     if (textareaResult.success) {
       printLog(`✅ Step 7: SUCCESS! Cover letter filled - Length: ${textareaResult.length}, Value: ${textareaResult.actualValue}`);
       if (textareaResult.hasErrors) {

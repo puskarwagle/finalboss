@@ -13,7 +13,12 @@
   });
 </script>
 
-<main class="page page--centered">
-  <h1 class="section__title">Redirecting...</h1>
-  <p class="text--center">Please wait while we redirect you.</p>
+<main class="hero min-h-screen bg-base-200">
+  <div class="hero-content text-center">
+    <div class="max-w-md">
+      <h1 class="text-5xl font-bold">Redirecting...</h1>
+      <p class="py-6">Please wait while we redirect you.</p>
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  </div>
 </main>

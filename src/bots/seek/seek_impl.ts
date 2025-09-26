@@ -6,7 +6,7 @@ import { UniversalOverlay } from '../core/universal_overlay';
 import type { WorkflowContext } from '../core/workflow_engine';
 import { handleResumeSelection } from './resume_handler';
 import { handleCoverLetter } from './cover_letter_handler';
-import { handleEmployerQuestions } from './employer_questions_handler';
+import { handleEmployerQuestions } from './enhanced_employer_questions_handler';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';

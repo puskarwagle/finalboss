@@ -4,482 +4,154 @@
   import { page } from '$app/stores';
   import '../app.css';
 
-  let sidebarCollapsed = false;
-  let mobileMenuOpen = false;
-
   onMount(() => {
     auth.checkAuth();
   });
-
-  function toggleSidebar() {
-    sidebarCollapsed = !sidebarCollapsed;
-  }
-
-  function toggleMobileMenu() {
-    mobileMenuOpen = !mobileMenuOpen;
-  }
-
-  function closeMobileMenu() {
-    mobileMenuOpen = false;
-  }
 </script>
 
 {#if $page.data?.session?.user}
-  <!-- Authenticated Layout with Sidebar -->
-  <div class="app-layout">
-    <!-- Mobile Header -->
-    <header class="mobile-header">
-      <button class="hamburger" on:click={toggleMobileMenu}>
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <div class="mobile-logo">Quest Bot</div>
-      <div class="mobile-user">
-        {$page.data.session.user.name?.split(' ')[0] || $page.data.session.user.email.split('@')[0]}
-      </div>
-    </header>
+  <!-- Authenticated Layout with DaisyUI Drawer -->
+  <div class="drawer lg:drawer-open">
+    <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
 
-    <!-- Sidebar -->
-    <aside class="sidebar" class:collapsed={sidebarCollapsed} class:mobile-open={mobileMenuOpen}>
-      <div class="sidebar-header">
-        <div class="sidebar-logo">
-          <a href="/app">Quest Bot</a>
+    <!-- Drawer Content (Main) -->
+    <div class="drawer-content flex flex-col">
+      <!-- Mobile Navbar -->
+      <div class="navbar bg-base-100 lg:hidden">
+        <div class="flex-none">
+          <label for="drawer-toggle" class="btn btn-square btn-ghost">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </label>
         </div>
-        <button class="sidebar-toggle" on:click={toggleSidebar}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m9 18 6-6-6-6"/>
-          </svg>
-        </button>
+        <div class="flex-1">
+          <a class="btn btn-ghost text-xl" href="/app">Quest Bot</a>
+        </div>
+        <div class="flex-none">
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+              <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                {($page.data.session.user.name || $page.data.session.user.email).charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <ul tabindex="-1" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+              <li><a href="/profile">Profile</a></li>
+              <li><button on:click={() => auth.logout()}>Logout</button></li>
+            </ul>
+          </div>
+        </div>
       </div>
 
-      <nav class="sidebar-nav">
-        <a href="/app" class="nav-item" class:active={$page.url.pathname === '/app'} on:click={closeMobileMenu}>
-          <div class="nav-icon">🏠</div>
-          <span class="nav-text">Dashboard</span>
-        </a>
-        <a href="/choose-bot" class="nav-item" class:active={$page.url.pathname === '/choose-bot'} on:click={closeMobileMenu}>
-          <div class="nav-icon">🤖</div>
-          <span class="nav-text">Choose Bot</span>
-        </a>
-        <a href="/frontend-form" class="nav-item" class:active={$page.url.pathname === '/frontend-form'} on:click={closeMobileMenu}>
-          <div class="nav-icon">⚙️</div>
-          <span class="nav-text">Configuration</span>
-        </a>
-        <a href="/backend-analytics" class="nav-item" class:active={$page.url.pathname === '/backend-analytics'} on:click={closeMobileMenu}>
-          <div class="nav-icon">📊</div>
-          <span class="nav-text">Analytics</span>
-        </a>
-        <a href="/testfunctions" class="nav-item" class:active={$page.url.pathname === '/testfunctions'} on:click={closeMobileMenu}>
-          <div class="nav-icon">🧪</div>
-          <span class="nav-text">Test Functions</span>
-        </a>
-      </nav>
+      <!-- Main Content -->
+      <main class="flex-1 p-6">
+        <slot></slot>
+      </main>
+    </div>
 
-      <div class="sidebar-footer">
-        <div class="user-section">
-          <div class="user-info">
-            <div class="user-avatar">
-              {($page.data.session.user.name || $page.data.session.user.email).charAt(0).toUpperCase()}
+    <!-- Drawer Side -->
+    <div class="drawer-side">
+      <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+      <aside class="min-h-full w-80 bg-base-200">
+        <!-- Sidebar Header -->
+        <div class="p-4 border-b border-base-300">
+          <a href="/app" class="text-2xl font-bold text-primary">
+            Quest Bot
+          </a>
+        </div>
+
+        <!-- Navigation Menu -->
+        <ul class="menu p-4 space-y-2">
+          <li>
+            <a href="/app" class="{$page.url.pathname === '/app' ? 'active' : ''}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+              </svg>
+              Dashboard
+            </a>
+          </li>
+          <li>
+            <a href="/choose-bot" class="{$page.url.pathname === '/choose-bot' ? 'active' : ''}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+              Choose Bot
+            </a>
+          </li>
+          <li>
+            <a href="/frontend-form" class="{$page.url.pathname === '/frontend-form' ? 'active' : ''}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              Configuration
+            </a>
+          </li>
+          <li>
+            <a href="/backend-analytics" class="{$page.url.pathname === '/backend-analytics' ? 'active' : ''}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              Analytics
+            </a>
+          </li>
+          <li>
+            <a href="/testfunctions" class="{$page.url.pathname === '/testfunctions' ? 'active' : ''}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+              </svg>
+              Test Functions
+            </a>
+          </li>
+          <li>
+            <a href="/generic-questions" class="{$page.url.pathname === '/generic-questions' ? 'active' : ''}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Generic Questions
+            </a>
+          </li>
+        </ul>
+
+        <!-- User Section -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-base-300">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="avatar">
+              <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                {($page.data.session.user.name || $page.data.session.user.email).charAt(0).toUpperCase()}
+              </div>
             </div>
-            <div class="user-details">
-              <div class="user-name">
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-sm truncate">
                 {$page.data.session.user.name || $page.data.session.user.email.split('@')[0]}
               </div>
-              <div class="user-email">{$page.data.session.user.email}</div>
+              <div class="text-xs text-base-content/70 truncate">
+                {$page.data.session.user.email}
+              </div>
             </div>
           </div>
-          <button class="logout-btn" on:click={() => auth.logout()}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16,17 21,12 16,7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
+          <button class="btn btn-outline btn-sm w-full" on:click={() => auth.logout()}>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
             </svg>
-            <span class="logout-text">Logout</span>
+            Logout
           </button>
         </div>
-      </div>
-    </aside>
-
-    <!-- Mobile Overlay -->
-    {#if mobileMenuOpen}
-      <div class="mobile-overlay" on:click={closeMobileMenu}></div>
-    {/if}
-
-    <!-- Main Content -->
-    <main class="main-content" class:sidebar-collapsed={sidebarCollapsed}>
-      <slot></slot>
-    </main>
+      </aside>
+    </div>
   </div>
 {:else}
   <!-- Non-authenticated Layout -->
-  <nav class="simple-nav">
-    <div class="nav-logo">
-      <a href="/login">Quest Bot</a>
+  <div class="navbar bg-base-100">
+    <div class="flex-1">
+      <a class="btn btn-ghost text-xl" href="/login">Quest Bot</a>
     </div>
-    <div class="nav-links">
-      <a href="/login">Login</a>
+    <div class="flex-none">
+      <a class="btn btn-primary" href="/login">Login</a>
     </div>
-  </nav>
+  </div>
 
-  <main class="simple-main">
+  <main class="min-h-screen bg-base-200">
     <slot></slot>
   </main>
 {/if}
-
-<style>
-  /* App Layout */
-  .app-layout {
-    display: flex;
-    height: 100vh;
-    background: var(--bg-primary);
-  }
-
-  /* Mobile Header */
-  .mobile-header {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-    z-index: 1001;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 1rem;
-  }
-
-  .hamburger {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .hamburger span {
-    width: 20px;
-    height: 2px;
-    background: var(--color-primary);
-    transition: all 0.3s ease;
-  }
-
-  .mobile-logo {
-    font-weight: bold;
-    color: var(--color-primary);
-    font-size: 1.2rem;
-  }
-
-  .mobile-user {
-    color: var(--color-text-secondary);
-    font-size: 0.9rem;
-  }
-
-  /* Sidebar */
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 280px;
-    background: var(--color-surface);
-    border-right: 1px solid var(--color-border);
-    z-index: 1000;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .sidebar.collapsed {
-    width: 80px;
-  }
-
-  .sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 1rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .sidebar-logo a {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--color-primary);
-    text-decoration: none;
-    text-shadow: 0 0 10px var(--color-primary-bright);
-  }
-
-  .sidebar.collapsed .sidebar-logo a {
-    font-size: 0;
-  }
-
-  .sidebar.collapsed .sidebar-logo a::before {
-    content: "QB";
-    font-size: 1.2rem;
-  }
-
-  .sidebar-toggle {
-    background: none;
-    border: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s ease;
-  }
-
-  .sidebar-toggle:hover {
-    color: var(--color-primary);
-    background: var(--color-bg-hover);
-  }
-
-  .sidebar.collapsed .sidebar-toggle svg {
-    transform: rotate(180deg);
-  }
-
-  /* Sidebar Navigation */
-  .sidebar-nav {
-    flex: 1;
-    padding: 1rem 0;
-    overflow-y: auto;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    margin: 0.25rem 1rem;
-    border-radius: var(--radius-sm);
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    transition: all 0.3s ease;
-    position: relative;
-  }
-
-  .nav-item:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-text);
-  }
-
-  .nav-item.active {
-    background: var(--color-primary);
-    color: var(--color-black);
-  }
-
-  .nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: -1rem;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--color-primary);
-  }
-
-  .nav-icon {
-    font-size: 1.2rem;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .nav-text {
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-
-  .sidebar.collapsed .nav-text {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-
-  .sidebar.collapsed .nav-item {
-    margin: 0.25rem 0.5rem;
-    justify-content: center;
-  }
-
-  /* Sidebar Footer */
-  .sidebar-footer {
-    padding: 1rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .user-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    color: var(--color-black);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    flex-shrink: 0;
-  }
-
-  .user-details {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .user-name {
-    font-weight: 600;
-    color: var(--color-text);
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .user-email {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .logout-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    background: none;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-  }
-
-  .logout-btn:hover {
-    background: var(--color-error);
-    color: white;
-    border-color: var(--color-error);
-  }
-
-  .sidebar.collapsed .user-details,
-  .sidebar.collapsed .logout-text {
-    display: none;
-  }
-
-  .sidebar.collapsed .logout-btn {
-    justify-content: center;
-  }
-
-  /* Main Content */
-  .main-content {
-    flex: 1;
-    margin-left: 280px;
-    transition: all 0.3s ease;
-    overflow-y: auto;
-  }
-
-  .main-content.sidebar-collapsed {
-    margin-left: 80px;
-  }
-
-  /* Simple Layout for Non-authenticated */
-  .simple-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .nav-logo a {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--color-primary);
-    text-decoration: none;
-    text-shadow: 0 0 10px var(--color-primary-bright);
-  }
-
-  .nav-links a {
-    color: var(--color-primary);
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--color-primary);
-    border-radius: var(--radius-sm);
-    transition: all 0.3s ease;
-  }
-
-  .nav-links a:hover {
-    background: var(--color-primary);
-    color: var(--color-black);
-  }
-
-  .simple-main {
-    min-height: calc(100vh - 80px);
-  }
-
-  /* Mobile Responsive */
-  @media (max-width: 768px) {
-    .mobile-header {
-      display: flex;
-    }
-
-    .sidebar {
-      transform: translateX(-100%);
-      width: 280px;
-    }
-
-    .sidebar.mobile-open {
-      transform: translateX(0);
-    }
-
-    .mobile-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999;
-    }
-
-    .main-content {
-      margin-left: 0;
-      padding-top: 60px;
-    }
-
-    .main-content.sidebar-collapsed {
-      margin-left: 0;
-    }
-
-    .sidebar-toggle {
-      display: none;
-    }
-  }
-
-  @media (min-width: 769px) {
-    .mobile-header {
-      display: none;
-    }
-  }
-</style>

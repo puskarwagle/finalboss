@@ -17,113 +17,160 @@
   }
 </script>
 
-<style>
-  .app-container {
-    min-height: 80vh;
-  }
-
-  .welcome-section {
-    text-align: center;
-    margin-bottom: var(--space-xl);
-    padding: var(--space-xl) 0;
-    background: linear-gradient(45deg, var(--bg-primary), #001100);
-    border-radius: var(--radius-lg);
-  }
-
-  .user-greeting {
-    font-size: var(--font-size-xl);
-    color: var(--color-primary);
-    margin-bottom: var(--space-md);
-    font-weight: var(--font-weight-bold);
-  }
-
-  .user-email {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-lg);
-  }
-
-  .app-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .app-card {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-xl);
-    text-align: center;
-    transition: var(--transition-normal);
-    cursor: pointer;
-  }
-
-  .app-card:hover {
-    border-color: var(--color-primary);
-    box-shadow: var(--shadow-glow);
-    transform: translateY(-2px);
-  }
-
-  .app-icon {
-    font-size: 3rem;
-    margin-bottom: var(--space-md);
-    display: block;
-  }
-
-  .app-title {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-primary);
-    margin-bottom: var(--space-sm);
-  }
-
-  .app-description {
-    color: var(--color-text-secondary);
-    line-height: 1.5;
-  }
-</style>
-
-<main class="page app-container">
+<main class="container mx-auto p-6">
   {#if user}
-    <div class="app-grid">
-      <div class="app-card" on:click={() => navigateTo('/choose-bot')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/choose-bot')} role="button" tabindex="0">
-        <div class="app-icon">🤖</div>
-        <h2 class="app-title">Choose Bot</h2>
-        <p class="app-description">
-          Select and configure your automation bot for job searching across different platforms
-        </p>
+    <!-- Welcome Hero Section -->
+    <div class="hero bg-gradient-to-r from-primary to-secondary text-primary-content rounded-box mb-8">
+      <div class="hero-content text-center">
+        <div class="max-w-md">
+          <h1 class="text-5xl font-bold">Welcome Back!</h1>
+          <p class="py-6">
+            Hello {user.name || user.email.split('@')[0]}, ready to supercharge your job search?
+          </p>
+          <button class="btn btn-accent" on:click={() => navigateTo('/choose-bot')}>
+            Get Started
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Choose Bot Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer"
+           on:click={() => navigateTo('/choose-bot')}
+           on:keydown={(e) => e.key === 'Enter' && navigateTo('/choose-bot')}
+           role="button"
+           tabindex="0">
+        <figure class="px-10 pt-10">
+          <div class="text-6xl">🤖</div>
+        </figure>
+        <div class="card-body items-center text-center">
+          <h2 class="card-title">Choose Bot</h2>
+          <p>Select and configure your automation bot for job searching across different platforms</p>
+          <div class="card-actions">
+            <div class="badge badge-primary">Automation</div>
+            <div class="badge badge-outline">Essential</div>
+          </div>
+        </div>
       </div>
 
-      <div class="app-card" on:click={() => navigateTo('/frontend-form')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/frontend-form')} role="button" tabindex="0">
-        <div class="app-icon">⚙️</div>
-        <h2 class="app-title">Configuration</h2>
-        <p class="app-description">
-          Set up your preferences, filters, and automation settings for optimal job searching
-        </p>
+      <!-- Configuration Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer"
+           on:click={() => navigateTo('/frontend-form')}
+           on:keydown={(e) => e.key === 'Enter' && navigateTo('/frontend-form')}
+           role="button"
+           tabindex="0">
+        <figure class="px-10 pt-10">
+          <div class="text-6xl">⚙️</div>
+        </figure>
+        <div class="card-body items-center text-center">
+          <h2 class="card-title">Configuration</h2>
+          <p>Set up your preferences, filters, and automation settings for optimal job searching</p>
+          <div class="card-actions">
+            <div class="badge badge-secondary">Settings</div>
+            <div class="badge badge-outline">Customize</div>
+          </div>
+        </div>
       </div>
 
-      <div class="app-card" on:click={() => navigateTo('/backend-analytics')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/backend-analytics')} role="button" tabindex="0">
-        <div class="app-icon">📊</div>
-        <h2 class="app-title">Analytics</h2>
-        <p class="app-description">
-          View detailed reports on your job applications, success rates, and performance metrics
-        </p>
+      <!-- Analytics Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer"
+           on:click={() => navigateTo('/backend-analytics')}
+           on:keydown={(e) => e.key === 'Enter' && navigateTo('/backend-analytics')}
+           role="button"
+           tabindex="0">
+        <figure class="px-10 pt-10">
+          <div class="text-6xl">📊</div>
+        </figure>
+        <div class="card-body items-center text-center">
+          <h2 class="card-title">Analytics</h2>
+          <p>View detailed reports on your job applications, success rates, and performance metrics</p>
+          <div class="card-actions">
+            <div class="badge badge-accent">Insights</div>
+            <div class="badge badge-outline">Reports</div>
+          </div>
+        </div>
       </div>
 
-      <div class="app-card" on:click={() => navigateTo('/testfunctions')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/testfunctions')} role="button" tabindex="0">
-        <div class="app-icon">🧪</div>
-        <h2 class="app-title">Test Functions</h2>
-        <p class="app-description">
-          Test and debug your automation settings before running full job search campaigns
-        </p>
+      <!-- Test Functions Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer"
+           on:click={() => navigateTo('/testfunctions')}
+           on:keydown={(e) => e.key === 'Enter' && navigateTo('/testfunctions')}
+           role="button"
+           tabindex="0">
+        <figure class="px-10 pt-10">
+          <div class="text-6xl">🧪</div>
+        </figure>
+        <div class="card-body items-center text-center">
+          <h2 class="card-title">Test Functions</h2>
+          <p>Test and debug your automation settings before running full job search campaigns</p>
+          <div class="card-actions">
+            <div class="badge badge-warning">Testing</div>
+            <div class="badge badge-outline">Debug</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generic Questions Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer"
+           on:click={() => navigateTo('/generic-questions')}
+           on:keydown={(e) => e.key === 'Enter' && navigateTo('/generic-questions')}
+           role="button"
+           tabindex="0">
+        <figure class="px-10 pt-10">
+          <div class="text-6xl">❓</div>
+        </figure>
+        <div class="card-body items-center text-center">
+          <h2 class="card-title">Generic Questions</h2>
+          <p>Configure your answers to common screening questions for faster application processing</p>
+          <div class="card-actions">
+            <div class="badge badge-info">Q&A</div>
+            <div class="badge badge-outline">Smart</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats Card -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+            Quick Stats
+          </h2>
+          <div class="stats stats-vertical shadow">
+            <div class="stat">
+              <div class="stat-title">Applications</div>
+              <div class="stat-value text-primary">0</div>
+              <div class="stat-desc">Today</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-title">Success Rate</div>
+              <div class="stat-value text-secondary">0%</div>
+              <div class="stat-desc">All time</div>
+            </div>
+          </div>
+          <div class="card-actions justify-end">
+            <button class="btn btn-sm btn-outline" on:click={() => navigateTo('/backend-analytics')}>
+              View Details
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   {:else}
-    <div style="text-align: center; padding: var(--space-xl);">
-      <h2>Please log in to access the application</h2>
-      <a href="/login" class="btn btn--primary">Go to Login</a>
+    <!-- Not Authenticated -->
+    <div class="hero min-h-[50vh] bg-base-200">
+      <div class="hero-content text-center">
+        <div class="max-w-md">
+          <h1 class="text-5xl font-bold">Access Restricted</h1>
+          <p class="py-6">Please log in to access the Quest Bot dashboard and start automating your job search.</p>
+          <a href="/login" class="btn btn-primary">Go to Login</a>
+        </div>
+      </div>
     </div>
   {/if}
 </main>

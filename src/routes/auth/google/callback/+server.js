@@ -1,6 +1,6 @@
 import { json, redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
-import { isUserAuthorized } from '$lib/auth-check';
+import { isUserAuthorized } from '$lib/auth-check.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-client-id';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'test-client-secret';

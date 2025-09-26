@@ -229,138 +229,136 @@
   }
 </script>
 
-<div class="configuration-form">
-  <div class="form-container">
-    <div class="form-header">
-      <h2 class="section__title mb-0">⚙️ Configuration</h2>
-      <div class="header-controls">
-        <button type="button" class="btn btn--outline advanced-toggle" onclick={toggleAdvancedMode}>
-          🔧 {isAdvancedMode ? 'Basic' : 'Advanced'}
-        </button>
-      </div>
+<div class="container mx-auto p-6">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold text-primary">⚙️ Configuration</h1>
+      <button type="button" class="btn btn-outline" onclick={toggleAdvancedMode}>
+        🔧 {isAdvancedMode ? 'Basic' : 'Advanced'}
+      </button>
     </div>
 
-    <form onsubmit={handleSubmit} class="config-form">
+    <form onsubmit={handleSubmit} class="space-y-8">
       <!-- Job Preferences -->
-      <div class="card form-section">
-        <div class="section-header">🎯 Job Preferences</div>
-        <div class="section-content">
-          <div class="grid grid--2">
-            <div class="form-group">
-              <label class="form-label">
-                <span class="form-label__text">Keywords (comma separated)</span>
-                <span class="form-required">Required</span>
-                <input 
-                  type="text" 
-                  placeholder="python, backend, api, django" 
-                  bind:value={formData.keywords}
-                  class="form-input"
-                  required 
-                />
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title text-2xl mb-6">🎯 Job Preferences</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Keywords (comma separated)</span>
+                <span class="label-text-alt text-error">Required</span>
               </label>
+              <input
+                type="text"
+                placeholder="python, backend, api, django"
+                bind:value={formData.keywords}
+                class="input input-bordered w-full"
+                required
+              />
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="form-label__text">Locations (comma separated)</span>
-                <input 
-                  type="text" 
-                  placeholder="Sydney, Melbourne, Remote" 
-                  bind:value={formData.locations}
-                  class="form-input"
-                />
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Locations (comma separated)</span>
               </label>
+              <input
+                type="text"
+                placeholder="Sydney, Melbourne, Remote"
+                bind:value={formData.locations}
+                class="input input-bordered w-full"
+              />
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-text">Minimum Salary (AUD)</span>
-                <input 
-                  type="number" 
-                  placeholder="80000" 
-                  min="0"
-                  bind:value={formData.minSalary}
-                  class="form-input"
-                />
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Minimum Salary (AUD)</span>
               </label>
+              <input
+                type="number"
+                placeholder="80000"
+                min="0"
+                bind:value={formData.minSalary}
+                class="input input-bordered w-full"
+              />
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-text">Maximum Salary (AUD)</span>
-                <input 
-                  type="number" 
-                  placeholder="150000" 
-                  min="0"
-                  bind:value={formData.maxSalary}
-                  class="form-input"
-                />
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Maximum Salary (AUD)</span>
               </label>
+              <input
+                type="number"
+                placeholder="150000"
+                min="0"
+                bind:value={formData.maxSalary}
+                class="input input-bordered w-full"
+              />
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-text">Job Types</span>
-                <select bind:value={formData.jobType} class="form-select">
-                  <option value="any">Any</option>
-                  <option value="full-time">Full time</option>
-                  <option value="part-time">Part time</option>
-                  <option value="contract">Contract/Temp</option>
-                  <option value="casual">Casual/Vacation</option>
-                </select>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Job Types</span>
               </label>
+              <select bind:value={formData.jobType} class="select select-bordered w-full">
+                <option value="any">Any</option>
+                <option value="full-time">Full time</option>
+                <option value="part-time">Part time</option>
+                <option value="contract">Contract/Temp</option>
+                <option value="casual">Casual/Vacation</option>
+              </select>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-text">Experience Levels</span>
-                <select bind:value={formData.experienceLevel} class="form-select">
-                  <option value="any">Any</option>
-                  <option value="entry">Entry Level</option>
-                  <option value="mid">Mid Level</option>
-                  <option value="senior">Senior</option>
-                  <option value="lead">Lead</option>
-                  <option value="executive">Executive</option>
-                </select>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Experience Levels</span>
               </label>
+              <select bind:value={formData.experienceLevel} class="select select-bordered w-full">
+                <option value="any">Any</option>
+                <option value="entry">Entry Level</option>
+                <option value="mid">Mid Level</option>
+                <option value="senior">Senior</option>
+                <option value="lead">Lead</option>
+                <option value="executive">Executive</option>
+              </select>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-text">Industries</span>
-                <select bind:value={formData.industry} class="form-select">
-                  {#each industries as industry}
-                    <option value={industry.value} disabled={industry.value === ''}>{industry.label}</option>
-                  {/each}
-                </select>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Industries</span>
               </label>
+              <select bind:value={formData.industry} class="select select-bordered w-full">
+                {#each industries as industry}
+                  <option value={industry.value} disabled={industry.value === ''}>{industry.label}</option>
+                {/each}
+              </select>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-text">Job Listed On</span>
-                <select bind:value={formData.listedDate} class="form-select">
-                  <option value="" disabled selected>Select listing date range</option>
-                  <option value="any">Any time</option>
-                  <option value="today">Today</option>
-                  <option value="last_3_days">Last 3 days</option>
-                  <option value="last_7_days">Last 7 days</option>
-                  <option value="last_14_days">Last 14 days</option>
-                  <option value="last_30_days">Last 30 days</option>
-                </select>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Job Listed On</span>
               </label>
+              <select bind:value={formData.listedDate} class="select select-bordered w-full">
+                <option value="" disabled selected>Select listing date range</option>
+                <option value="any">Any time</option>
+                <option value="today">Today</option>
+                <option value="last_3_days">Last 3 days</option>
+                <option value="last_7_days">Last 7 days</option>
+                <option value="last_14_days">Last 14 days</option>
+                <option value="last_30_days">Last 30 days</option>
+              </select>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-text">Remote Preference</span>
-                <select bind:value={formData.remotePreference} class="form-select">
-                  <option value="any">Any</option>
-                  <option value="remote">Remote</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="on-site">On-site</option>
-                </select>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Remote Preference</span>
               </label>
+              <select bind:value={formData.remotePreference} class="select select-bordered w-full">
+                <option value="any">Any</option>
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="on-site">On-site</option>
+              </select>
             </div>
           </div>
         </div>
@@ -620,389 +618,3 @@
   </div>
 </div>
 
-<style>
-  .configuration-form {
-    min-height: 100vh;
-    padding-top: 120px;
-  }
-  
-  .form-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-2xl);
-    flex-wrap: wrap;
-    gap: var(--space-md);
-  }
-
-  .advanced-toggle:hover {
-    background: var(--gradient-primary);
-    color: var(--color-black);
-    box-shadow: var(--shadow-md);
-  }
-
-  .config-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xl);
-  }
-  
-  .form-section {
-    padding: var(--space-lg);
-    transition: var(--transition-normal);
-  }
-  
-  .form-section:hover {
-    box-shadow: var(--shadow-glow);
-  }
-  
-  .section-header {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-primary-bright);
-    margin-bottom: var(--space-lg);
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-normal);
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-  }
-
-  .section-header-collapsible {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #00ffff;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .section-header-collapsible:hover .section-title {
-    color: #00ff00;
-  }
-
-  .section-content {
-    padding-top: 0;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .form-label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .label-text {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #00ff00;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .helper-text {
-    font-size: 0.8rem;
-    color: #00cc00;
-    font-style: italic;
-  }
-
-  .required-indicator {
-    font-size: 0.8rem;
-    color: #ff6600;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .form-input,
-  .form-select {
-    background: rgba(0, 20, 0, 0.8);
-    border: 1px solid #00ff00;
-    border-radius: 6px;
-    padding: 0.75rem;
-    color: #00ff00;
-    font-family: 'Orbitron', monospace;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-  }
-
-  .form-input:focus,
-  .form-select:focus {
-    outline: none;
-    border-color: #00ffff;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-  }
-
-  .form-input::placeholder {
-    color: rgba(0, 255, 0, 0.6);
-  }
-
-  .checkbox-group {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .checkbox-text {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #00ff00;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .checkbox-input {
-    width: 20px;
-    height: 20px;
-    opacity: 0;
-    position: absolute;
-  }
-
-  .checkmark {
-    width: 20px;
-    height: 20px;
-    background: rgba(0, 20, 0, 0.8);
-    border: 2px solid #00ff00;
-    border-radius: 4px;
-    position: relative;
-    transition: all 0.3s ease;
-  }
-
-  .checkbox-input:checked ~ .checkmark {
-    background: #00ff00;
-    border-color: #00ff00;
-  }
-
-  .checkbox-input:checked ~ .checkmark::after {
-    content: '✓';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    color: #000;
-    font-weight: 900;
-    font-size: 14px;
-  }
-
-  .work-rights-group {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .work-rights-label {
-    font-size: 1rem;
-    color: #00ff00;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .work-rights-select-wrapper {
-    width: 100%;
-  }
-
-  .work-rights-select {
-    width: 100%;
-  }
-
-  .file-upload-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .file-input {
-    display: none;
-  }
-
-  .file-upload-label {
-    background: linear-gradient(135deg, #001100, #003300);
-    border: 1px solid #00ff00;
-    color: #00ff00;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
-    display: inline-block;
-  }
-
-  .file-upload-label:hover {
-    background: linear-gradient(45deg, #00ff00, #00ffff);
-    color: #000;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-  }
-
-  .file-upload-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .upload-success {
-    color: #00ffff;
-    font-weight: 700;
-  }
-
-  .collapsible {
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .legal-section {
-    background: linear-gradient(135deg, #110000, #330000);
-    border-color: #ff6600;
-  }
-
-  .legal-content {
-    margin-bottom: 1.5rem;
-  }
-
-  .legal-title {
-    font-size: 1.5rem;
-    color: #ff6600;
-    margin-bottom: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .legal-text {
-    color: #cc6600;
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-
-  .legal-agreement {
-    display: flex;
-    justify-content: center;
-  }
-
-  .legal-checkbox .checkmark {
-    border-color: #ff6600;
-  }
-
-  .legal-checkbox .checkbox-input:checked ~ .checkmark {
-    background: #ff6600;
-    border-color: #ff6600;
-  }
-
-  .legal-checkbox .checkbox-text {
-    color: #ff6600;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 2rem;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 2rem;
-  }
-
-  .submit-btn,
-  .reset-btn {
-    background: linear-gradient(45deg, #00ff00, #00ffff);
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    padding: 1.5rem 3rem;
-    font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 200px;
-  }
-
-  .reset-btn {
-    background: linear-gradient(45deg, #666, #999);
-  }
-
-  .submit-btn:hover:not(:disabled),
-  .reset-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 255, 255, 0.4);
-  }
-
-  .submit-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .btn-text {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  @media (max-width: 768px) {
-    .configuration-form {
-      padding: 1rem;
-      padding-top: 6rem;
-    }
-
-    .form-header {
-      flex-direction: column;
-      text-align: center;
-    }
-
-    .form-header h2 {
-      font-size: 2rem;
-    }
-
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .checkbox-group {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .work-rights-group {
-      gap: 0.5rem;
-    }
-
-    .form-actions {
-      flex-direction: column;
-    }
-
-    .submit-btn,
-    .reset-btn {
-      min-width: 100%;
-      padding: 1.2rem 2rem;
-    }
-  }
-</style>

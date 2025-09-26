@@ -30,7 +30,7 @@ function loadAuthorizedUsers() {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-export function isUserAuthorized(email: string) {
+export function isUserAuthorized(email) {
   if (!email) return false;
   const authorizedUsers = loadAuthorizedUsers();
   return authorizedUsers.authorized_emails.includes(email.toLowerCase());

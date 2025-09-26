@@ -1,7 +1,7 @@
 <script>
-  import { getPaymentMessage } from '$lib/auth-check';
+  export let data;
 
-  const paymentInfo = getPaymentMessage();
+  const paymentInfo = data.paymentInfo;
 </script>
 
 <style>

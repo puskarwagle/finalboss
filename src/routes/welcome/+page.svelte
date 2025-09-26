@@ -50,440 +50,128 @@
 
 </script>
 
-<div class="container">
-  <div class="hero-section">
-    <h1 class="title">🤖 Quest Bot</h1>
-    <h2 class="subtitle">Automated Job Application Assistant</h2>
-    <p class="description">
-      Advanced AI-powered job hunting automation for the Australian market. 
-      Configure once, apply everywhere, track everything.
-    </p>
-  </div>
-
-
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon">🔍</div>
-      <div class="stat-number">0</div>
-      <div class="stat-label">Jobs Discovered</div>
-    </div>
-    
-    <div class="stat-card">
-      <div class="stat-icon">📨</div>
-      <div class="stat-number">0</div>
-      <div class="stat-label">Applied Today</div>
-    </div>
-    
-    <div class="stat-card">
-      <div class="stat-icon">📈</div>
-      <div class="stat-number">0</div>
-      <div class="stat-label">Response Rate %</div>
-    </div>
-    
-    <div class="stat-card">
-      <div class="stat-icon">💰</div>
-      <div class="stat-number">0</div>
-      <div class="stat-label">Avg Salary (K)</div>
-    </div>
-  </div>
-
-  <div class="features-section">
-    <h3 class="features-title">🚀 Core Features</h3>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h4>Lightning Fast</h4>
-        <p>Automated job scraping and application submission across multiple platforms</p>
-      </div>
-      
-      <div class="feature-card">
-        <div class="feature-icon">🧠</div>
-        <h4>Smart Matching</h4>
-        <p>AI-powered job matching based on your skills, preferences, and career goals</p>
-      </div>
-      
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h4>Real-time Analytics</h4>
-        <p>Track applications, response rates, and optimize your job search strategy</p>
-      </div>
-      
-      <div class="feature-card">
-        <div class="feature-icon">🔒</div>
-        <h4>Secure & Private</h4>
-        <p>Your data stays on your machine. Enterprise-grade security and privacy</p>
+<div class="min-h-screen bg-base-200">
+  <div class="hero bg-gradient-to-br from-primary/20 to-secondary/20 py-32">
+    <div class="hero-content text-center">
+      <div class="max-w-4xl">
+        <h1 class="text-6xl md:text-8xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
+          🤖 Quest Bot
+        </h1>
+        <h2 class="text-2xl md:text-4xl font-bold text-primary mb-6">
+          Automated Job Application Assistant
+        </h2>
+        <p class="text-lg md:text-xl text-base-content/80 max-w-2xl mx-auto">
+          Advanced AI-powered job hunting automation for the Australian market.
+          Configure once, apply everywhere, track everything.
+        </p>
       </div>
     </div>
   </div>
 
-  <div class="cta-section">
-    <h3 class="cta-title">Ready to Supercharge Your Job Hunt?</h3>
-    <div class="cta-buttons">
-      <a href="/frontend-form" class="btn-primary">
-        ⚙️ Configure Bot
-      </a>
-      <a href="/control-bar" class="btn-secondary">
-        🎮 Control Panel
-      </a>
-      <a href="/backend-analytics" class="btn-secondary">
-        📊 View Analytics
-      </a>
-    </div>
-  </div>
+  <div class="container mx-auto px-4 py-16 max-w-7xl">
+    <div class="stats shadow mb-16 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div class="stat">
+        <div class="stat-figure text-4xl">🔍</div>
+        <div class="stat-title">Jobs Discovered</div>
+        <div class="stat-value stat-number text-primary">0</div>
+      </div>
 
-  <div class="platforms-section">
-    <h4 class="platforms-title">Supported Job Platforms</h4>
-    <div class="platforms-grid">
-      <div class="platform-card">
-        <img src="/finalseek.png" alt="Seek" class="platform-logo" />
-        <span class="platform-name">Seek</span>
+      <div class="stat">
+        <div class="stat-figure text-4xl">📨</div>
+        <div class="stat-title">Applied Today</div>
+        <div class="stat-value stat-number text-primary">0</div>
       </div>
-      <div class="platform-card">
-        <img src="/finallinkedin.png" alt="LinkedIn" class="platform-logo" />
-        <span class="platform-name">LinkedIn</span>
+
+      <div class="stat">
+        <div class="stat-figure text-4xl">📈</div>
+        <div class="stat-title">Response Rate %</div>
+        <div class="stat-value stat-number text-primary">0</div>
       </div>
-      <div class="platform-card">
-        <img src="/finalindeed.png" alt="Indeed" class="platform-logo" />
-        <span class="platform-name">Indeed</span>
+
+      <div class="stat">
+        <div class="stat-figure text-4xl">💰</div>
+        <div class="stat-title">Avg Salary (K)</div>
+        <div class="stat-value stat-number text-primary">0</div>
+      </div>
+    </div>
+
+    <div class="mb-16">
+      <h3 class="text-4xl font-bold text-primary text-center mb-12">🚀 Core Features</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+          <div class="card-body text-center">
+            <div class="text-6xl mb-4">⚡</div>
+            <h4 class="card-title text-primary justify-center">Lightning Fast</h4>
+            <p class="text-base-content/70">Automated job scraping and application submission across multiple platforms</p>
+          </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+          <div class="card-body text-center">
+            <div class="text-6xl mb-4">🧠</div>
+            <h4 class="card-title text-primary justify-center">Smart Matching</h4>
+            <p class="text-base-content/70">AI-powered job matching based on your skills, preferences, and career goals</p>
+          </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+          <div class="card-body text-center">
+            <div class="text-6xl mb-4">📊</div>
+            <h4 class="card-title text-primary justify-center">Real-time Analytics</h4>
+            <p class="text-base-content/70">Track applications, response rates, and optimize your job search strategy</p>
+          </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+          <div class="card-body text-center">
+            <div class="text-6xl mb-4">🔒</div>
+            <h4 class="card-title text-primary justify-center">Secure & Private</h4>
+            <p class="text-base-content/70">Your data stays on your machine. Enterprise-grade security and privacy</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-primary/10 shadow-2xl mb-16">
+      <div class="card-body text-center py-12">
+        <h3 class="text-3xl font-bold text-primary mb-8">Ready to Supercharge Your Job Hunt?</h3>
+        <div class="flex gap-4 justify-center flex-wrap">
+          <a href="/frontend-form" class="btn btn-primary btn-lg">
+            ⚙️ Configure Bot
+          </a>
+          <a href="/control-bar" class="btn btn-secondary btn-lg">
+            🎮 Control Panel
+          </a>
+          <a href="/backend-analytics" class="btn btn-accent btn-lg">
+            📊 View Analytics
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center">
+      <h4 class="text-2xl font-bold text-primary mb-8">Supported Job Platforms</h4>
+      <div class="flex justify-center gap-6 flex-wrap">
+        <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="card-body items-center p-6">
+            <img src="/finalseek.png" alt="Seek" class="w-16 h-16 object-contain mb-2" />
+            <span class="font-bold text-primary">Seek</span>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="card-body items-center p-6">
+            <img src="/finallinkedin.png" alt="LinkedIn" class="w-16 h-16 object-contain mb-2" />
+            <span class="font-bold text-primary">LinkedIn</span>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="card-body items-center p-6">
+            <img src="/finalindeed.png" alt="Indeed" class="w-16 h-16 object-contain mb-2" />
+            <span class="font-bold text-primary">Indeed</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-
-    :global(body) {
-        background: #000;
-        font-family: 'Orbitron', monospace;
-        color: #00ff00;
-        overflow-x: hidden;
-        min-height: 100vh;
-    }
-
-    .container {
-        padding: 2rem;
-        padding-top: 10rem;
-        max-width: 1400px;
-        margin: 0 auto;
-        position: relative;
-        z-index: 1;
-    }
-
-    .hero-section {
-        text-align: center;
-        margin-bottom: 4rem;
-    }
-
-    .title {
-        font-size: clamp(3rem, 8vw, 5rem);
-        font-weight: 900;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        background: linear-gradient(45deg, #00ff00, #00ffff, #ff00ff);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 20px #00ff0050;
-        animation: glow 2s ease-in-out infinite alternate;
-    }
-
-    .subtitle {
-        font-size: clamp(1.2rem, 3vw, 2rem);
-        font-weight: 700;
-        color: #00ffff;
-        margin-bottom: 2rem;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        text-shadow: 0 0 15px #00ffff50;
-    }
-
-    .description {
-        font-size: 1.2rem;
-        color: #00cc00;
-        line-height: 1.6;
-        max-width: 600px;
-        margin: 0 auto 3rem;
-    }
-
-    @keyframes glow {
-        from { filter: drop-shadow(0 0 5px #00ff00); }
-        to { filter: drop-shadow(0 0 20px #00ff00); }
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2rem;
-        margin-bottom: 4rem;
-    }
-
-    .stat-card {
-        background: linear-gradient(135deg, #001100, #003300);
-        border: 2px solid #00ff00;
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 255, 0, 0.3);
-        border-color: #00ffff;
-    }
-
-    .stat-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        display: block;
-    }
-
-    .stat-number {
-        font-size: 3rem;
-        font-weight: 900;
-        color: #00ffff;
-        text-shadow: 0 0 15px #00ffff;
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-
-    .stat-label {
-        font-size: 1rem;
-        color: #00cc00;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        font-weight: 700;
-    }
-
-    .features-section {
-        margin-bottom: 4rem;
-    }
-
-    .features-title {
-        font-size: 2.5rem;
-        font-weight: 900;
-        color: #00ff00;
-        text-align: center;
-        margin-bottom: 3rem;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        text-shadow: 0 0 20px #00ff0050;
-    }
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 2rem;
-        margin-bottom: 3rem;
-    }
-
-    .feature-card {
-        background: linear-gradient(135deg, #001100, #003300);
-        border: 1px solid #00ff00;
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-
-    .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 255, 0, 0.3);
-        border-color: #00ffff;
-    }
-
-    .feature-icon {
-        font-size: 4rem;
-        margin-bottom: 1.5rem;
-        display: block;
-    }
-
-    .feature-card h4 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #00ffff;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    .feature-card p {
-        color: #00cc00;
-        line-height: 1.5;
-        font-size: 1rem;
-    }
-
-    .cta-section {
-        text-align: center;
-        margin-bottom: 4rem;
-        padding: 3rem;
-        background: linear-gradient(135deg, #001100, #003300);
-        border: 2px solid #00ff00;
-        border-radius: 16px;
-        box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
-    }
-
-    .cta-title {
-        font-size: 2rem;
-        font-weight: 900;
-        color: #00ff00;
-        margin-bottom: 2rem;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        text-shadow: 0 0 15px #00ff0050;
-    }
-
-    .cta-buttons {
-        display: flex;
-        gap: 1.5rem;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-        background: linear-gradient(45deg, #00ff00, #00ffff);
-        color: #000;
-        border: none;
-        border-radius: 8px;
-        padding: 1.2rem 2rem;
-        font-family: 'Orbitron', monospace;
-        font-size: 1.1rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        min-width: 180px;
-        justify-content: center;
-    }
-
-    .btn-secondary {
-        background: linear-gradient(45deg, #003300, #006600);
-        color: #00ff00;
-        border: 2px solid #00ff00;
-    }
-
-    .btn-primary:hover,
-    .btn-secondary:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0, 255, 255, 0.4);
-    }
-
-    .btn-secondary:hover {
-        background: linear-gradient(45deg, #00ff00, #00ffff);
-        color: #000;
-    }
-
-    .platforms-section {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    .platforms-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #00ff00;
-        margin-bottom: 2rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    .platforms-grid {
-        display: flex;
-        justify-content: center;
-        gap: 2rem;
-        flex-wrap: wrap;
-    }
-
-    .platform-card {
-        background: linear-gradient(135deg, #001100, #003300);
-        border: 1px solid #00ff00;
-        border-radius: 12px;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-        transition: all 0.3s ease;
-        min-width: 150px;
-    }
-
-    .platform-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
-        border-color: #00ffff;
-    }
-
-    .platform-logo {
-        width: 60px;
-        height: 60px;
-        object-fit: contain;
-        filter: brightness(0) invert(1);
-        transition: filter 0.3s ease;
-    }
-
-    .platform-card:hover .platform-logo {
-        filter: brightness(0) saturate(100%) invert(64%) sepia(96%) saturate(459%) hue-rotate(79deg) brightness(119%) contrast(119%);
-    }
-
-    .platform-name {
-        font-family: 'Orbitron', monospace;
-        font-weight: 700;
-        color: #00ff00;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    @media (max-width: 768px) {
-        .container {
-            padding: 1rem;
-            padding-top: 8rem;
-        }
-
-        .title {
-            font-size: 2.5rem;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-        }
-
-        .description {
-            font-size: 1rem;
-        }
-
-        .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
-        .features-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .cta-buttons {
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .btn-primary,
-        .btn-secondary {
-            width: 100%;
-            max-width: 300px;
-        }
-
-        .platforms-grid {
-            flex-direction: column;
-            align-items: center;
-        }
-    }
-</style>
