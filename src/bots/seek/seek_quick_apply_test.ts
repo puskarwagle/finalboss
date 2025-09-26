@@ -3,7 +3,7 @@ import { setupChromeDriver } from '../core/browser_manager';
 import { HumanBehavior, StealthFeatures, DEFAULT_HUMANIZATION } from '../core/humanization';
 import { UniversalSessionManager, SessionConfigs } from '../core/sessionManager';
 import type { WorkflowContext } from '../core/workflow_engine';
-import { getCurrentStep, clickContinueButton } from './seek_impl';
+import { getCurrentStep } from './seek_impl';
 import { handleResumeSelection } from './resume_handler';
 import { handleCoverLetter } from './cover_letter_handler';
 import { handleEmployerQuestions } from './employer_questions_handler';
@@ -113,66 +113,24 @@ async function runQuickApplyFlowSteps(ctx: WorkflowContext): Promise<void> {
         break; // Take first result
       }
 
-      // Click continue button
-      printLog("\n--- Step 4: Clicking continue button ---");
-      for await (const continueResult of clickContinueButton(ctx)) {
-        printLog(`Continue button result: ${continueResult}`);
-        break; // Take first result
-      }
+      // PAUSE FOR COVER LETTER INSPECTION
+      printLog("\n--- PAUSING TO READ COVER LETTER ---");
+      printLog("📄 COVER LETTER FILLED - Take 5 minutes to read the generated content");
+      printLog("⏸️  Waiting 5 minutes for you to review the cover letter...");
+      printLog("🔍 Check the cover letter quality and personalization");
 
-      // Wait and check new step
-      await ctx.driver.sleep(3000);
+      // Wait 5 minutes for cover letter inspection
+      printLog("\n⏳ Starting 5-minute inspection period...");
+      await ctx.driver.sleep(300000); // 5 minutes = 300,000 ms
 
-      // Check for error panel first
-      printLog("\n--- Step 5A: Checking for validation errors ---");
-      const errorCheck = await ctx.driver.executeScript(`
-        const errorPanel = document.querySelector('#errorPanel[role="alert"]');
-        if (errorPanel && errorPanel.offsetParent !== null) {
-          const errorText = errorPanel.textContent || '';
-          const coverLetterError = errorText.includes('Cover letter') && errorText.includes('Required field');
+      printLog("⏰ 5-minute inspection complete!");
+      printLog("🛑 Press Ctrl+C to exit or let it continue indefinitely...");
 
-          // Get all error details
-          const errorItems = Array.from(errorPanel.querySelectorAll('li')).map(li => li.textContent.trim());
+      // Stay put indefinitely for further manual inspection
+      printLog("\n⏳ Now waiting indefinitely for manual inspection...");
 
-          return {
-            hasErrors: true,
-            errorText: errorText,
-            coverLetterError: coverLetterError,
-            errorItems: errorItems
-          };
-        }
-        return { hasErrors: false };
-      `);
-
-      if (errorCheck.hasErrors) {
-        printLog(`🔥 VALIDATION ERRORS DETECTED:`);
-        printLog(`🔥 Full error text: ${errorCheck.errorText}`);
-        printLog(`🔥 Cover letter error: ${errorCheck.coverLetterError}`);
-        printLog(`🔥 Individual errors: ${errorCheck.errorItems.join(', ')}`);
-
-        if (errorCheck.coverLetterError) {
-          printLog(`🔥 COVER LETTER VALIDATION FAILED - even though we filled it!`);
-          printLog(`🔍 This suggests the cover letter filling strategy needs improvement`);
-        }
-      } else {
-        printLog(`✅ No validation errors found`);
-      }
-
-      printLog("\n--- Step 5B: Checking step after continue ---");
-      for await (const newStepResult of getCurrentStep(ctx)) {
-        printLog(`New step result: ${newStepResult}`);
-
-        if (newStepResult === "current_step_employer_questions") {
-          printLog("\n--- Step 6: Handling employer questions ---");
-          for await (const questionsResult of handleEmployerQuestions(ctx)) {
-            printLog(`Employer questions result: ${questionsResult}`);
-            break; // Take first result
-          }
-        } else if (newStepResult === "current_step_choose_documents" && errorCheck.hasErrors) {
-          printLog(`🔥 STUCK ON CHOOSE DOCUMENTS DUE TO VALIDATION ERRORS`);
-        }
-        break; // Take first result
-      }
+      // Keep the process alive but don't proceed
+      return;
 
     } else if (result === "current_step_employer_questions") {
       printLog("Already on Employer Questions step");
@@ -196,4 +154,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { runQuickApplyTests, testQuickApplyFlow };
+export { runQuickApplyTests };

@@ -6,14 +6,16 @@ function createAuthStore() {
     user: null,
     token: null,
     isLoggedIn: false,
-    loading: false
+    loading: false,
+    session: null
   });
 
   return {
     subscribe,
+    // Traditional email/password login (keep for compatibility)
     login: async (email, password) => {
       update(state => ({ ...state, loading: true }));
-      
+
       try {
         const response = await fetch('/api/auth?endpoint=login', {
           method: 'POST',
@@ -31,14 +33,15 @@ function createAuthStore() {
             localStorage.setItem('auth_token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
           }
-          
+
           set({
             user: data.user,
             token: data.token,
             isLoggedIn: true,
-            loading: false
+            loading: false,
+            session: null
           });
-          
+
           return { success: true, data };
         } else {
           update(state => ({ ...state, loading: false }));
@@ -49,10 +52,46 @@ function createAuthStore() {
         return { success: false, error: 'Network error. Please try again.' };
       }
     },
+
+    // Google OAuth login
+    loginWithGoogle: async () => {
+      update(state => ({ ...state, loading: true }));
+      try {
+        // Redirect to our custom Google OAuth handler
+        if (browser) {
+          window.location.href = '/auth/google/signin';
+        }
+      } catch (error) {
+        update(state => ({ ...state, loading: false }));
+        return { success: false, error: 'Google login failed' };
+      }
+    },
+
+    // Update session from page data
+    updateSession: (session) => {
+      if (session?.user) {
+        set({
+          user: session.user,
+          token: session.accessToken || null,
+          isLoggedIn: true,
+          loading: false,
+          session: session
+        });
+      } else {
+        set({
+          user: null,
+          token: null,
+          isLoggedIn: false,
+          loading: false,
+          session: null
+        });
+      }
+    },
     
     logout: async () => {
       const token = browser ? localStorage.getItem('auth_token') : null;
-      
+
+      // Handle traditional auth logout
       if (token) {
         try {
           await fetch('/api/auth?endpoint=logout', {
@@ -68,16 +107,27 @@ function createAuthStore() {
         }
       }
 
+      // Handle Google OAuth logout
+      try {
+        // Use our custom Google logout endpoint
+        if (browser) {
+          window.location.href = '/auth/google/logout';
+        }
+      } catch (error) {
+        console.error('Google logout failed:', error);
+      }
+
       if (browser) {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
       }
-      
+
       set({
         user: null,
         token: null,
         isLoggedIn: false,
-        loading: false
+        loading: false,
+        session: null
       });
     },
     
@@ -92,7 +142,8 @@ function createAuthStore() {
           user: null,
           token: null,
           isLoggedIn: false,
-          loading: false
+          loading: false,
+          session: null
         });
         return;
       }
@@ -112,7 +163,8 @@ function createAuthStore() {
             user: userData,
             token,
             isLoggedIn: true,
-            loading: false
+            loading: false,
+            session: null
           });
         } else {
           localStorage.removeItem('auth_token');
@@ -121,7 +173,8 @@ function createAuthStore() {
             user: null,
             token: null,
             isLoggedIn: false,
-            loading: false
+            loading: false,
+            session: null
           });
         }
       } catch (error) {
@@ -130,7 +183,8 @@ function createAuthStore() {
           user: null,
           token: null,
           isLoggedIn: false,
-          loading: false
+          loading: false,
+          session: null
         });
       }
     }

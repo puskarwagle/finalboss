@@ -473,7 +473,7 @@
     font-size: 2.5rem;
     font-weight: 900;
     color: #00ff00;
-    text-shadow: 0 0 20px #00ff0050;
+    text-shadow: 0 0 20px #00ff00;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.2em;

@@ -13,3 +13,6 @@ sessions/
 # Bot job data - exclude all except template
 src/bots/jobs/*
 !src/bots/jobs/job_template.json
+
+# User configuration files
+src/lib/authorized-users.json

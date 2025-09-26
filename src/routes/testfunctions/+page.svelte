@@ -135,10 +135,11 @@
     .container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 2rem;
+        padding: 1rem 2rem 2rem 2rem;
         font-family: 'Orbitron', monospace;
         color: #00ff00;
-        min-height: calc(100vh - 120px);
+        min-height: calc(100vh - 140px);
+        padding-top: 140px;
     }
 
     .title {
@@ -149,13 +150,13 @@
         margin-bottom: 3rem;
         text-transform: uppercase;
         letter-spacing: 0.2em;
-        text-shadow: 0 0 20px #00ff0050;
+        text-shadow: 0 0 20px #00ff00;
     }
 
     .test-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
         margin-bottom: 3rem;
     }
 
@@ -163,8 +164,10 @@
         background: linear-gradient(135deg, #001100, #003300);
         border: 2px solid #00ff00;
         border-radius: 12px;
-        padding: 2rem;
+        padding: 1.5rem;
         transition: all 0.3s ease;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .test-card:hover {
@@ -218,7 +221,7 @@
         font-family: 'Orbitron', monospace;
         font-size: 0.9rem;
         resize: vertical;
-        min-height: 1200px;
+        min-height: 120px;
     }
 
     input::placeholder,

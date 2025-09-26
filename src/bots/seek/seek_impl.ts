@@ -225,31 +225,62 @@ export async function* detectApplyType(ctx: WorkflowContext): AsyncGenerator<str
   try {
     const result = await ctx.driver.executeScript(`
       const container = document.querySelector('[data-automation="jobDetailsPage"]') || document.body;
-      const hasText = (el, txt) => (el.textContent || '').toLowerCase().includes(String(txt).toLowerCase());
 
-      const quickApplyElements = Array.from(container.querySelectorAll('*')).filter(el => hasText(el, 'quick apply'));
-      const quickApplyAttr = Array.from(container.querySelectorAll('[data-automation="job-detail-apply"]'));
-      const regularApplyElements = Array.from(container.querySelectorAll('*')).filter(el => {
-        const txt = (el.textContent || '').trim();
-        if (!txt) return false;
-        const lower = txt.toLowerCase();
-        return lower === 'apply' || (lower.includes('apply') && !lower.includes('quick'));
+      // Look for buttons/links with apply text
+      const applyButtons = Array.from(container.querySelectorAll('button, a, [role="button"]')).filter(el => {
+        return el.offsetParent !== null && !el.disabled;
       });
 
-      const hasQuick = quickApplyElements.length > 0 || quickApplyAttr.length > 0;
-      const hasRegular = regularApplyElements.length > 0;
+      let foundQuickApply = false;
+      let foundRegularApply = false;
+      const buttonDetails = [];
 
-      return { hasQuickApply: hasQuick, hasRegularApply: hasRegular };
+      for (const button of applyButtons) {
+        const text = (button.textContent || '').trim();
+        const lowerText = text.toLowerCase();
+
+        buttonDetails.push({
+          text: text,
+          lowerText: lowerText,
+          tagName: button.tagName
+        });
+
+        // ONLY Quick Apply if it contains the word "quick"
+        if (lowerText.includes('quick') && lowerText.includes('apply')) {
+          foundQuickApply = true;
+          console.log('✓ QUICK APPLY found:', text);
+          break; // Stop at first Quick Apply
+        }
+        // Regular Apply if it's exactly "Apply" or "Apply Now" but NO "quick"
+        else if ((lowerText === 'apply' || lowerText === 'apply now') && !lowerText.includes('quick')) {
+          foundRegularApply = true;
+          console.log('✓ REGULAR APPLY found:', text);
+        }
+      }
+
+      console.log('=== APPLY DETECTION DEBUG ===');
+      console.log('All button texts:', buttonDetails);
+      console.log('Found Quick Apply:', foundQuickApply);
+      console.log('Found Regular Apply:', foundRegularApply);
+      console.log('============================');
+
+      return { hasQuickApply: foundQuickApply, hasRegularApply: foundRegularApply };
     `);
 
+    printLog(`Apply detection result: Quick=${result.hasQuickApply}, Regular=${result.hasRegularApply}`);
+
     if (result.hasQuickApply) {
+      printLog("🚀 QUICK APPLY detected - proceeding with application");
       yield "quick_apply_found";
     } else if (result.hasRegularApply) {
+      printLog("⏭️ REGULAR APPLY detected - skipping to next job card");
       yield "regular_apply_found";
     } else {
+      printLog("❌ NO APPLY BUTTON detected - skipping to next job card");
       yield "no_apply_found";
     }
-  } catch {
+  } catch (error) {
+    printLog(`Apply detection error: ${error}`);
     yield "detect_apply_failed";
   }
 }
@@ -785,6 +816,22 @@ export async function* closeQuickApplyAndContinueSearch(ctx: WorkflowContext): A
   }
 }
 
+// Pause for Cover Letter Review
+export async function* pauseForCoverLetterReview(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("📄 COVER LETTER REVIEW TIME");
+  printLog("🔍 Take 5 minutes to read and review the AI-generated cover letter");
+  printLog("📋 Check the personalization, tone, and relevance to the job posting");
+  printLog("⏳ Pausing for 5 minutes...");
+
+  // Wait 5 minutes (300 seconds)
+  await ctx.driver.sleep(300000);
+
+  printLog("⏰ 5-minute review period complete");
+  printLog("▶️ Continuing with resume selection...");
+
+  yield "review_complete";
+}
+
 // Stay Put for Manual Inspection
 export async function* stayPutForInspection(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   printLog("🔍 STAYING PUT FOR MANUAL INSPECTION - Still on Choose Documents tab");
@@ -799,8 +846,21 @@ export async function* stayPutForInspection(ctx: WorkflowContext): AsyncGenerato
 }
 
 // Skip to Next Card
-export async function* skipToNextCard(_ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("Regular Apply job found - skipping to next card...");
+export async function* skipToNextCard(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("Regular Apply job found - skipping job details parsing and moving to next card...");
+
+  // Update progress counter if overlay exists
+  if (ctx.overlay && ctx.total_jobs) {
+    const skippedJobs = (ctx.skipped_jobs || 0) + 1;
+    ctx.skipped_jobs = skippedJobs;
+    await ctx.overlay.updateJobProgress(
+      ctx.applied_jobs || 0,
+      ctx.total_jobs,
+      "Regular apply job skipped",
+      8
+    );
+  }
+
   yield "card_skipped";
 }
 
@@ -827,6 +887,7 @@ export const seekStepFunctions = {
   clickContinueButton,
   closeQuickApplyAndContinueSearch,
   stayPutForInspection,
+  pauseForCoverLetterReview,
   skipToNextCard
 };
 

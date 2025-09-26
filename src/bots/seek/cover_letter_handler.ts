@@ -4,6 +4,107 @@ const printLog = (message: string) => {
   console.log(message);
 };
 
+// Get user session and API key
+async function getUserApiKey(): Promise<{apiKey: string, userId: string}> {
+  try {
+    printLog("🔑 Getting user API key from session...");
+
+    const response = await fetch('http://localhost:3000/api/session');
+
+    if (!response.ok) {
+      throw new Error(`Session API failed: ${response.status}`);
+    }
+
+    const sessionData = await response.json();
+    printLog(`🔑 Session response:`, JSON.stringify(sessionData, null, 2));
+
+    if (!sessionData.success || !sessionData.data?.apiKey) {
+      throw new Error(`No API key found in session: ${sessionData.error || 'Unknown error'}`);
+    }
+
+    // For userId, we'll need to get it from the authenticated user
+    // For now, using the authorized email from the system
+    const userId = 'puskarwagle17@gmail.com'; // This should come from the actual session
+
+    return {
+      apiKey: sessionData.data.apiKey,
+      userId: userId
+    };
+
+  } catch (error) {
+    printLog(`❌ Failed to get API key: ${error}`);
+    throw error;
+  }
+}
+
+// Generate AI-powered cover letter using the RAG API with proper authentication
+async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  // Read job data from the current job file
+  let jobDescription = '';
+  if (ctx.currentJobFile) {
+    const jobData = JSON.parse(fs.readFileSync(ctx.currentJobFile, 'utf8'));
+    jobDescription = `${jobData.title} at ${jobData.company}\n\n${jobData.details}`;
+  }
+
+  if (!jobDescription.trim()) {
+    throw new Error("No job description available - cannot generate cover letter");
+  }
+
+  // Read prompt from file
+  const promptPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'cover_letter_prompt.txt');
+  const promptTemplate = fs.readFileSync(promptPath, 'utf8').trim();
+  const finalPrompt = promptTemplate.replace('{jobDescription}', jobDescription);
+
+  printLog("Generating AI cover letter with proper authentication...");
+  printLog(`📝 Using prompt from: ${promptPath}`);
+
+  // Get user's API key and ID
+  const { apiKey, userId } = await getUserApiKey();
+
+  printLog(`📡 Making authenticated API request to: http://localhost:3000/api/rag/query`);
+  printLog(`📝 Job description length: ${jobDescription.length} chars`);
+  printLog(`👤 Using userId: ${userId}`);
+
+  const response = await fetch('http://localhost:3000/api/rag/query', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      userId: userId,
+      question: finalPrompt
+    })
+  });
+
+  printLog(`📡 API Response Status: ${response.status} ${response.statusText}`);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    printLog(`❌ API Error Response Body: ${errorText}`);
+    throw new Error(`AI API request failed: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  printLog(`📡 API Response Data Structure:`, JSON.stringify(data, null, 2));
+
+  if (data.success && data.data?.answer) {
+    printLog("✅ AI cover letter generated successfully");
+    printLog(`📄 Cover letter length: ${data.data.answer.length} chars`);
+    return data.data.answer;
+  } else {
+    printLog(`❌ AI API returned unsuccessful response:`);
+    printLog(`   - Success: ${data.success}`);
+    printLog(`   - Error: ${data.error || 'No error message'}`);
+    printLog(`   - Data: ${JSON.stringify(data.data)}`);
+    throw new Error(data.error || 'No answer returned from AI');
+  }
+}
+
 // Handle Cover Letter (part of Choose Documents step) - Improved from Python version
 export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   try {
@@ -48,21 +149,36 @@ export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<s
     let textareaResult;
 
     try {
+      printLog("🔍 Step 1: Finding textarea element...");
       const textarea = await ctx.driver.findElement({ css: 'textarea[data-testid="coverLetterTextInput"]' });
+      printLog("✅ Step 1: Textarea found successfully");
 
       // Clear any existing content
+      printLog("🔍 Step 2: Clearing existing content...");
       await textarea.clear();
+      printLog("✅ Step 2: Content cleared successfully");
 
-      const coverLetterText = "Dear Hiring Manager,\n\nI am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.\n\nI am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.\n\nThank you for your consideration.\n\nBest regards";
+      // Generate AI-powered cover letter based on job description
+      printLog("🔍 Step 3: Generating AI cover letter - this MUST succeed, no fallbacks!");
+      const coverLetterText = await generateAICoverLetter(ctx);
+      printLog("✅ Step 3: AI cover letter generated successfully");
+
+      if (!coverLetterText || coverLetterText.trim().length < 50) {
+        throw new Error(`Generated cover letter is too short: ${coverLetterText?.length || 0} chars`);
+      }
 
       // Use sendKeys to simulate human typing - this triggers proper events
-      printLog("Typing cover letter text using sendKeys...");
+      printLog("🔍 Step 4: Typing AI-generated cover letter text using sendKeys...");
       await textarea.sendKeys(coverLetterText);
+      printLog("✅ Step 4: Text typed successfully");
 
       // Give it a moment to process
+      printLog("🔍 Step 5: Waiting for form processing...");
       await ctx.driver.sleep(1000);
+      printLog("✅ Step 5: Processing wait complete");
 
       // Verify the content was set
+      printLog("🔍 Step 6: Verifying content was set and checking validation...");
       textareaResult = await ctx.driver.executeScript(`
         const textarea = document.querySelector('textarea[data-testid="coverLetterTextInput"]');
         if (textarea) {
@@ -95,40 +211,19 @@ export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<s
 
     } catch (seleniumError) {
       printLog(`❌ Selenium sendKeys failed: ${seleniumError}`);
-      // Fallback to JavaScript method
-      textareaResult = await ctx.driver.executeScript(`
-        const textarea = document.querySelector('textarea[data-testid="coverLetterTextInput"]');
-        if (textarea) {
-          const defaultText = "Dear Hiring Manager,\\n\\nI am writing to express my interest in this position. Based on my experience and skills outlined in my resume, I believe I would be a valuable addition to your team.\\n\\nI am excited about the opportunity to contribute to your organization and look forward to discussing how my background aligns with your needs.\\n\\nThank you for your consideration.\\n\\nBest regards";
-
-          textarea.focus();
-          textarea.value = defaultText;
-
-          // Dispatch events
-          textarea.dispatchEvent(new Event('input', { bubbles: true }));
-          textarea.dispatchEvent(new Event('change', { bubbles: true }));
-
-          const finalValue = textarea.value;
-          return {
-            success: finalValue.length > 0,
-            length: finalValue.length,
-            actualValue: finalValue.substring(0, 50) + '...',
-            hasErrors: false,
-            errorMessages: []
-          };
-        }
-        return { success: false, error: 'textarea_not_found' };
-      `);
+      throw new Error(`Both AI generation and form filling failed: ${seleniumError}`);
     }
 
+    printLog("🔍 Step 7: Evaluating final result...");
     if (textareaResult.success) {
-      printLog(`✅ Cover letter filled - Length: ${textareaResult.length}, Value: ${textareaResult.actualValue}`);
+      printLog(`✅ Step 7: SUCCESS! Cover letter filled - Length: ${textareaResult.length}, Value: ${textareaResult.actualValue}`);
       if (textareaResult.hasErrors) {
         printLog(`⚠️ VALIDATION WARNINGS: ${textareaResult.errorMessages.join(', ')}`);
       }
+      printLog("🎉 YIELDING: cover_letter_filled");
       yield "cover_letter_filled";
     } else {
-      printLog(`❌ Cover letter filling failed: ${textareaResult.error || 'Unknown error'}`);
+      printLog(`❌ Step 7: FAILURE! Cover letter filling failed: ${textareaResult.error || 'Unknown error'}`);
       if (textareaResult.errorMessages && textareaResult.errorMessages.length > 0) {
         printLog(`🔥 Error messages: ${textareaResult.errorMessages.join(', ')}`);
       }
@@ -139,11 +234,16 @@ export async function* handleCoverLetter(ctx: WorkflowContext): AsyncGenerator<s
         printLog(`🔥 Textarea is required but empty`);
       }
       printLog(`📋 Length: ${textareaResult.length}, Invalid: ${textareaResult.textareaInvalid}, Required: ${textareaResult.textareaRequired}`);
+      printLog("💥 YIELDING: cover_letter_error");
       yield "cover_letter_error";
     }
 
   } catch (error) {
-    printLog(`Cover letter error: ${error}`);
+    printLog(`💥 COVER LETTER HANDLER CRASH: ${error}`);
+    if (error instanceof Error) {
+      printLog(`💥 Error stack: ${error.stack}`);
+    }
+    printLog(`🛑 STAYING PUT FOR MANUAL INSPECTION - Cover letter handler failed`);
     yield "cover_letter_error";
   }
 }

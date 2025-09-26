@@ -152,11 +152,19 @@ steps_config:
     step: 12
     func: "handleCoverLetter"
     transitions:
-      cover_letter_filled: "handle_resume_selection"
+      cover_letter_filled: "pause_for_cover_letter_review"
       cover_letter_not_required: "handle_resume_selection"
-      cover_letter_error: "close_quick_apply_and_continue_search"
+      cover_letter_error: "stay_put_for_inspection"
     timeout: 15
     on_timeout_event: "cover_letter_error"
+
+  pause_for_cover_letter_review:
+    step: 12.5
+    func: "pauseForCoverLetterReview"
+    transitions:
+      review_complete: "handle_resume_selection"
+    timeout: 300
+    on_timeout_event: "review_complete"
 
   handle_resume_selection:
     step: 13
@@ -172,8 +180,8 @@ steps_config:
     step: 13.5
     func: "handleEmployerQuestions"
     transitions:
-      employer_questions_saved: "click_continue_button"
-      no_employer_questions: "click_continue_button"
+      employer_questions_saved: "close_quick_apply_and_continue_search"
+      no_employer_questions: "close_quick_apply_and_continue_search"
       employer_questions_error: "close_quick_apply_and_continue_search"
     timeout: 20
     on_timeout_event: "employer_questions_error"
