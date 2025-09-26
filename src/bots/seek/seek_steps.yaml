@@ -152,19 +152,11 @@ steps_config:
     step: 12
     func: "handleCoverLetter"
     transitions:
-      cover_letter_filled: "pause_for_cover_letter_review"
+      cover_letter_filled: "handle_resume_selection"
       cover_letter_not_required: "handle_resume_selection"
       cover_letter_error: "stay_put_for_inspection"
-    timeout: 15
+    timeout: 60
     on_timeout_event: "cover_letter_error"
-
-  pause_for_cover_letter_review:
-    step: 12.5
-    func: "pauseForCoverLetterReview"
-    transitions:
-      review_complete: "handle_resume_selection"
-    timeout: 300
-    on_timeout_event: "review_complete"
 
   handle_resume_selection:
     step: 13
@@ -175,16 +167,6 @@ steps_config:
       resume_selection_error: "close_quick_apply_and_continue_search"
     timeout: 15
     on_timeout_event: "resume_selection_error"
-
-  handle_employer_questions:
-    step: 13.5
-    func: "handleEmployerQuestions"
-    transitions:
-      employer_questions_saved: "close_quick_apply_and_continue_search"
-      no_employer_questions: "close_quick_apply_and_continue_search"
-      employer_questions_error: "close_quick_apply_and_continue_search"
-    timeout: 20
-    on_timeout_event: "employer_questions_error"
 
   click_continue_button:
     step: 14
@@ -201,7 +183,7 @@ steps_config:
     func: "getCurrentStep"
     transitions:
       current_step_choose_documents: "stay_put_for_inspection"
-      current_step_employer_questions: "handle_employer_questions"
+      current_step_employer_questions: "extract_employer_questions"
       current_step_update_profile: "close_quick_apply_and_continue_search"
       current_step_review_submit: "close_quick_apply_and_continue_search"
       current_step_unknown: "close_quick_apply_and_continue_search"
@@ -209,6 +191,27 @@ steps_config:
       progress_bar_evaluation_error: "close_quick_apply_and_continue_search"
     timeout: 10
     on_timeout_event: "progress_bar_evaluation_error"
+
+  extract_employer_questions:
+    step: 13.4
+    func: "extractEmployerQuestions"
+    transitions:
+      employer_questions_saved: "handle_employer_questions"
+      no_employer_questions: "close_quick_apply_and_continue_search"
+      employer_questions_error: "close_quick_apply_and_continue_search"
+    timeout: 30
+    on_timeout_event: "employer_questions_error"
+
+  handle_employer_questions:
+    step: 13.5
+    func: "handleEmployerQuestions"
+    transitions:
+      employer_questions_saved: "stay_put_for_inspection"
+      no_questions: "stay_put_for_inspection"
+      no_job_data: "close_quick_apply_and_continue_search"
+      employer_questions_error: "stay_put_for_inspection"
+    timeout: 20
+    on_timeout_event: "employer_questions_error"
 
   stay_put_for_inspection:
     step: 14.6

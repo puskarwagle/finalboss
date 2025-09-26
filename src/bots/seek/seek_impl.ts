@@ -6,7 +6,8 @@ import { UniversalOverlay } from '../core/universal_overlay';
 import type { WorkflowContext } from '../core/workflow_engine';
 import { handleResumeSelection } from './resume_handler';
 import { handleCoverLetter } from './cover_letter_handler';
-import { handleEmployerQuestions } from './enhanced_employer_questions_handler';
+import { answerEmployerQuestions as handleEmployerQuestions } from './answer_employer_questions';
+import { extractEmployerQuestions } from './extract_employer_questions';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -349,8 +350,9 @@ export async function* parseJobDetails(ctx: WorkflowContext): AsyncGenerator<str
 
         // Extract full content using DOM walker for details
         const texts = [];
+        const detailsContainer = container.querySelector('[data-automation="jobAdDetails"]');
         const walker = document.createTreeWalker(
-          container,
+          detailsContainer || container,
           NodeFilter.SHOW_TEXT,
           {
             acceptNode: function(node) {
@@ -380,7 +382,7 @@ export async function* parseJobDetails(ctx: WorkflowContext): AsyncGenerator<str
 
         const unwantedLines = [
           'View all jobs', 'Quick apply', 'Apply', 'Save', 'Report this job advert',
-          'Be careful', "Don't provide your bank or credit card details when applying for jobs.",
+          'Be careful', "Don\'t provide your bank or credit card details when applying for jobs.",
           'Learn how to protect yourself', 'Report this job ad', 'Career Advice'
         ];
 
@@ -746,7 +748,7 @@ export async function* clickContinueButton(ctx: WorkflowContext): AsyncGenerator
       for (const selector of continueSelectors) {
         let button;
         if (selector.includes(':contains')) {
-          const text = selector.match(/contains\\("([^"]+)"\\)/)[1];
+          const text = selector.match(/contains\\(\"([^\"]+)\"\\)/)[1];
           const buttons = Array.from(document.querySelectorAll('button')).filter(btn =>
             btn.textContent.toLowerCase().includes(text.toLowerCase())
           );
@@ -864,7 +866,6 @@ export async function* skipToNextCard(ctx: WorkflowContext): AsyncGenerator<stri
   yield "card_skipped";
 }
 
-// Export all step functions for the workflow engine
 export const seekStepFunctions = {
   step0,
   openHomepage,
@@ -883,6 +884,7 @@ export const seekStepFunctions = {
   getCurrentStep,
   handleResumeSelection,
   handleCoverLetter,
+  extractEmployerQuestions,
   handleEmployerQuestions,
   clickContinueButton,
   closeQuickApplyAndContinueSearch,
@@ -890,6 +892,3 @@ export const seekStepFunctions = {
   pauseForCoverLetterReview,
   skipToNextCard
 };
-
-
-

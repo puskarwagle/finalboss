@@ -1,195 +1,48 @@
 {
-  "description": "Generic employer questions with user-configurable answers. Users can update these through the UI.",
   "lastUpdated": "2025-09-26T09:30:00.000Z",
   "questions": [
     {
-      "id": "work_rights_australia",
-      "patterns": [
-        "right to work in australia",
-        "work authorization",
-        "visa status",
-        "work eligibility"
-      ],
-      "questionType": "select",
-      "userAnswer": {
-        "preferredOptions": [
-          "australian citizen",
-          "i'm an australian citizen",
-          "permanent resident",
-          "nz citizen"
-        ],
-        "fallbackIndex": 0,
-        "notes": "Most jobs require Australian work rights. Update this based on your actual status."
-      },
-      "frequency": 10,
-      "description": "Work authorization in Australia - appears in 83% of jobs"
+      "id": 1,
+      "match_keywords": ["right to work in Australia"],
+      "answer": ["I have a graduate temporary work visa"]
     },
     {
-      "id": "software_development_experience",
-      "patterns": [
-        "how many years.*experience.*(software|developer|engineer)",
-        "years.*experience.*software",
-        "experience.*software development"
-      ],
-      "questionType": "select",
-      "userAnswer": {
-        "preferredOptions": [
-          "more than 5 years",
-          "5+ years",
-          "over 5",
-          "5 years"
-        ],
-        "fallbackToLast": true,
-        "notes": "Experience level - update based on your actual years of experience."
-      },
-      "frequency": 6,
-      "description": "Years of software development experience - appears in 50% of jobs"
+      "id": 2,
+      "match_keywords": ["years of experience", "years' experience"],
+      "answer": ["5+ years", "5 years", "More than 5 years"]
     },
     {
-      "id": "frontend_frameworks",
-      "patterns": [
-        "front.*end.*development.*libraries.*frameworks.*proficient",
-        "frontend.*frameworks",
-        "javascript.*frameworks"
-      ],
-      "questionType": "checkbox",
-      "userAnswer": {
-        "preferredTechnologies": [
-          "react.js",
-          "react",
-          "javascript",
-          "typescript",
-          "node.js",
-          "angular",
-          "vue.js",
-          "bootstrap",
-          "sass",
-          "less",
-          "d3.js",
-          "jquery"
-        ],
-        "maxSelections": 8,
-        "notes": "Select technologies you're proficient in. System will match these against available options."
-      },
-      "frequency": 2,
-      "description": "Frontend framework proficiency - checkbox selection"
+      "id": 3,
+      "match_keywords": ["frontend frameworks", "frontend libraries", "javascript frameworks"],
+      "answer": ["React", "Vue", "Angular"]
     },
     {
-      "id": "programming_languages",
-      "patterns": [
-        "programming languages.*experienced",
-        "languages.*proficient",
-        "coding languages"
-      ],
-      "questionType": "checkbox",
-      "userAnswer": {
-        "preferredLanguages": [
-          "javascript",
-          "typescript",
-          "python",
-          "java",
-          "node.js",
-          "react",
-          "angular",
-          "vue",
-          "c#",
-          "php",
-          "go",
-          "rust",
-          "swift",
-          "kotlin"
-        ],
-        "maxSelections": 6,
-        "notes": "Programming languages you know. System will match against available options."
-      },
-      "frequency": 2,
-      "description": "Programming language experience - checkbox selection"
+      "id": 4,
+      "match_keywords": ["programming languages", "coding languages", "languages proficient"],
+      "answer": ["JavaScript", "Python", "Go"]
     },
     {
-      "id": "notice_period",
-      "patterns": [
-        "notice period",
-        "how much notice",
-        "availability to start"
-      ],
-      "questionType": "select",
-      "userAnswer": {
-        "preferredOptions": [
-          "2 weeks",
-          "immediate",
-          "1 month",
-          "available immediately"
-        ],
-        "customText": "2 weeks notice",
-        "notes": "How soon you can start. Update based on your current employment status."
-      },
-      "frequency": 1,
-      "description": "Notice period for starting new job"
+      "id": 5,
+      "match_keywords": ["notice period", "availability", "start date"],
+      "answer": ["2 weeks"]
     },
     {
-      "id": "salary_expectation",
-      "patterns": [
-        "salary expectation",
-        "expected salary",
-        "compensation expectation"
-      ],
-      "questionType": "text",
-      "userAnswer": {
-        "textValue": "Negotiable based on role and benefits package",
-        "numericValue": null,
-        "notes": "Salary expectation - update based on your requirements and market rates."
-      },
-      "frequency": 1,
-      "description": "Expected salary or compensation"
+      "id": 6,
+      "match_keywords": ["salary", "expected salary", "compensation"],
+      "answer": ["70000", "$70k"]
     },
     {
-      "id": "remote_work_preference",
-      "patterns": [
-        "remote work",
-        "work from home",
-        "hybrid.*preference",
-        "location preference"
-      ],
-      "questionType": "select",
-      "userAnswer": {
-        "preferredOptions": [
-          "hybrid",
-          "remote",
-          "flexible",
-          "open to all"
-        ],
-        "customText": "Hybrid or remote preferred",
-        "notes": "Work location preference - update based on your preferences."
-      },
-      "frequency": 1,
-      "description": "Work location and remote work preferences"
+      "id": 7,
+      "match_keywords": ["work preference"],
+      "answer": ["Remote"]
     },
     {
-      "id": "security_clearance",
-      "patterns": [
-        "security clearance",
-        "australian.*security.*clearance",
-        "government clearance"
-      ],
-      "questionType": "select",
-      "userAnswer": {
-        "preferredOptions": [
-          "no",
-          "not currently",
-          "willing to obtain"
-        ],
-        "fallbackIndex": 0,
-        "notes": "Whether you hold Australian security clearance. Update if you have clearance."
-      },
-      "frequency": 1,
-      "description": "Australian security clearance status"
+      "id": 8,
+      "match_keywords": ["security clearance", "government clearance"],
+      "answer": ["Yes"]
     }
   ],
-  "userSettings": {
-    "autoAnswerEnabled": true,
-    "requireConfirmation": false,
-    "skipAIForGeneric": true,
-    "logAnswers": true,
-    "notes": "Global settings for generic question handling. Can be modified through UI."
+  "settings": {
+    "autoAnswer": true
   }
 }
