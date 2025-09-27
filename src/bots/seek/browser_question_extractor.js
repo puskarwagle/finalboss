@@ -3,82 +3,163 @@
 
 function extractEmployerQuestions() {
   var questions = [];
+  var questionCounter = 0;
 
-  // Helper function to generate a unique selector for an element
-  function getUniqueSelector(el) {
-    if (!el) return '';
-    let selector = '';
-    const automationId = el.getAttribute('data-automation');
-    if (automationId) {
-      selector = `[data-automation="${automationId}"]`;
-      if (document.querySelectorAll(selector).length === 1) return selector;
-    }
-    const testId = el.getAttribute('data-testid');
-    if (testId) {
-      selector = `[data-testid="${testId}"]`;
-      if (document.querySelectorAll(selector).length === 1) return selector;
-    }
-    if (el.id) {
-      selector = '#' + el.id;
-      if (document.querySelectorAll(selector).length === 1) return selector;
-    }
-    return ''; // Return empty if no good unique selector is found
-  }
+  // Strategy 1: Find all potential question containers and process them
+  var containers = document.querySelectorAll('[data-automation*="question"], fieldset, .form-group, .form-field, .question-container');
 
-  // Strategy 1: Look for strong tags that contain questions
-  document.querySelectorAll('strong').forEach(function(strong) {
-    var questionText = strong.textContent.trim();
+  containers.forEach(function(container) {
+    let questionText = '';
+    const questionEl = container.querySelector('strong, legend, h3, label, .question-text');
+    if (questionEl) {
+      questionText = questionEl.textContent.trim();
+    }
+
     if (!questionText || !questionText.includes('?')) return;
 
-    var container = strong.closest('div, fieldset, section');
-    if (!container) return;
+    // --- Assign a unique ID and use it as the selector ---
+    const uniqueId = `gemini-q-container-${questionCounter++}`;
+    container.id = uniqueId;
+    const containerSelector = `#${uniqueId}`;
 
-    var containerSelector = getUniqueSelector(container);
+    // Determine question type and extract options
+    const select = container.querySelector('select');
+    const radioButtons = container.querySelectorAll('input[type="radio"]');
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    const textInput = container.querySelector('input[type="text"], textarea');
 
-    // Find selects, radios, checkboxes etc. within this container
-    var select = container.querySelector('select');
     if (select) {
-      var options = Array.from(select.options).map(opt => ({ text: opt.textContent.trim() }));
+      const options = Array.from(select.options).map(opt => opt.textContent.trim()).filter(opt => opt);
       questions.push({
         type: 'select',
         question: questionText,
         options: options,
         containerSelector: containerSelector
       });
-    }
-  });
-
-  // Strategy 2: Look for labels associated with inputs
-  document.querySelectorAll('label').forEach(function(label) {
-    var questionText = label.textContent.trim();
-    if (!questionText) return;
-
-    var inputElement = document.getElementById(label.getAttribute('for')) || label.querySelector('input, select, textarea');
-    if (!inputElement) return;
-    
-    var container = label.closest('div, fieldset, section');
-    if (!container) return;
-
-    var containerSelector = getUniqueSelector(container);
-
-    if (inputElement.tagName === 'SELECT') {
-      var options = Array.from(inputElement.options).map(opt => ({ text: opt.textContent.trim() }));
+    } else if (radioButtons.length > 0) {
+      const options = Array.from(radioButtons).map(radio => {
+        const label = container.querySelector(`label[for="${radio.id}"]`) ||
+                     radio.closest('label') ||
+                     radio.nextElementSibling;
+        return label ? label.textContent.trim() : radio.value;
+      }).filter(opt => opt);
       questions.push({
-        type: 'select',
+        type: 'radio',
         question: questionText,
         options: options,
+        containerSelector: containerSelector
+      });
+    } else if (checkboxes.length > 0) {
+      const options = Array.from(checkboxes).map(checkbox => {
+        const label = container.querySelector(`label[for="${checkbox.id}"]`) ||
+                     checkbox.closest('label') ||
+                     checkbox.nextElementSibling;
+        return label ? label.textContent.trim() : checkbox.value;
+      }).filter(opt => opt);
+      questions.push({
+        type: 'checkbox',
+        question: questionText,
+        options: options,
+        containerSelector: containerSelector
+      });
+    } else if (textInput) {
+      questions.push({
+        type: 'text',
+        question: questionText,
+        options: [],
         containerSelector: containerSelector
       });
     }
   });
 
-  // Remove duplicates
+  // Strategy 2: Fallback - look for standalone form fields if no containers found
+  if (questions.length === 0) {
+    const allSelects = document.querySelectorAll('select');
+    const allRadioGroups = new Map();
+    const allCheckboxGroups = new Map();
+    const allTextInputs = document.querySelectorAll('input[type="text"], textarea');
+
+    // Process selects
+    allSelects.forEach(function(select) {
+      const label = document.querySelector(`label[for="${select.id}"]`) ||
+                   select.closest('label') ||
+                   select.previousElementSibling;
+      const questionText = label ? label.textContent.trim() : '';
+
+      if (questionText && questionText.includes('?')) {
+        const uniqueId = `gemini-q-standalone-${questionCounter++}`;
+
+        // Try to find a parent container first, otherwise use the select itself
+        const container = select.closest('fieldset') || select.closest('.form-group') || select.closest('div') || select;
+        container.id = uniqueId;
+
+        const options = Array.from(select.options).map(opt => opt.textContent.trim()).filter(opt => opt);
+        questions.push({
+          type: 'select',
+          question: questionText,
+          options: options,
+          containerSelector: `#${uniqueId}`
+        });
+      }
+    });
+
+    // Process radio buttons (group by name)
+    document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
+      if (!allRadioGroups.has(radio.name)) {
+        const label = document.querySelector(`label[for="${radio.id}"]`) ||
+                     radio.closest('label') ||
+                     radio.closest('fieldset')?.querySelector('legend');
+        const questionText = label ? label.textContent.trim() : '';
+
+        if (questionText && questionText.includes('?')) {
+          const groupRadios = document.querySelectorAll(`input[type="radio"][name="${radio.name}"]`);
+          const options = Array.from(groupRadios).map(r => {
+            const rLabel = document.querySelector(`label[for="${r.id}"]`) ||
+                          r.closest('label') ||
+                          r.nextElementSibling;
+            return rLabel ? rLabel.textContent.trim() : r.value;
+          }).filter(opt => opt);
+
+          const uniqueId = `gemini-q-radio-${questionCounter++}`;
+          radio.closest('fieldset')?.setAttribute('id', uniqueId) || radio.parentElement?.setAttribute('id', uniqueId);
+
+          questions.push({
+            type: 'radio',
+            question: questionText,
+            options: options,
+            containerSelector: `#${uniqueId}`
+          });
+          allRadioGroups.set(radio.name, true);
+        }
+      }
+    });
+
+    // Process text inputs
+    allTextInputs.forEach(function(input) {
+      const label = document.querySelector(`label[for="${input.id}"]`) ||
+                   input.closest('label') ||
+                   input.previousElementSibling;
+      const questionText = label ? label.textContent.trim() : '';
+
+      if (questionText && questionText.includes('?')) {
+        const uniqueId = `gemini-q-text-${questionCounter++}`;
+        input.id = uniqueId;
+        questions.push({
+          type: 'text',
+          question: questionText,
+          options: [],
+          containerSelector: `#${uniqueId}`
+        });
+      }
+    });
+  }
+
+  // Remove duplicates based on question text
   var uniqueQuestions = [];
   var seen = new Set();
   questions.forEach(function(q) {
-    var key = q.question + (q.containerSelector || '');
-    if (!seen.has(key)) {
-      seen.add(key);
+    if (!seen.has(q.question)) {
+      seen.add(q.question);
       uniqueQuestions.push(q);
     }
   });

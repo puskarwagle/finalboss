@@ -6,7 +6,7 @@ const printLog = (message: string) => {
 };
 
 // Refactored to use the robust containerSelector from the extraction step
-async function fillQuestionField(
+export async function fillQuestionField(
   ctx: WorkflowContext,
   containerSelector: string, // The robust selector for the question's container
   questionType: string,
@@ -22,9 +22,22 @@ async function fillQuestionField(
       case 'select':
         const selectResult = await ctx.driver.executeScript(`
           const container = document.querySelector(arguments[0]);
-          if (!container) return { success: false, error: 'Container not found' };
+          if (!container) return { success: false, error: 'Container not found: ' + arguments[0] };
 
-          const select = container.querySelector('select');
+          // Debug: what's actually in the container
+          console.log('Container HTML:', container.outerHTML);
+          console.log('Container tagName:', container.tagName);
+
+          // Try multiple ways to find the select element
+          let select = container.querySelector('select');
+          if (!select && container.tagName === 'SELECT') {
+            select = container; // The container itself is the select
+          }
+          if (!select) {
+            // Also check if there's a select as a direct child or sibling
+            select = container.parentElement?.querySelector('select');
+          }
+
           const answerIndex = arguments[1];
 
           if (select && select.options && select.options[answerIndex]) {
@@ -32,7 +45,13 @@ async function fillQuestionField(
             select.dispatchEvent(new Event('change', { bubbles: true }));
             return { success: true };
           }
-          return { success: false, error: 'Select element or option not found' };
+          return {
+            success: false,
+            error: 'Select element or option not found. Found select: ' + !!select +
+                   ', container tagName: ' + container.tagName +
+                   ', has options: ' + (select ? select.options.length : 0) +
+                   ', container id: ' + container.id
+          };
         `, containerSelector, answer);
 
         if (!selectResult.success) {
@@ -40,7 +59,26 @@ async function fillQuestionField(
         }
         return selectResult.success;
 
-      // Cases for radio, checkbox, etc. would be updated similarly
+      case 'radio':
+        const radioResult = await ctx.driver.executeScript(`
+          const container = document.querySelector(arguments[0]);
+          if (!container) return { success: false, error: 'Container not found: ' + arguments[0] };
+
+          const radioButtons = container.querySelectorAll('input[type="radio"]');
+          const answerIndex = arguments[1];
+
+          if (radioButtons && radioButtons[answerIndex]) {
+            radioButtons[answerIndex].checked = true;
+            radioButtons[answerIndex].dispatchEvent(new Event('change', { bubbles: true }));
+            return { success: true };
+          }
+          return { success: false, error: 'Radio button not found. Found radios: ' + radioButtons.length + ', requested index: ' + answerIndex };
+        `, containerSelector, answer);
+
+        if (!radioResult.success) {
+          printLog(`Failed to fill radio: ${radioResult.error}`);
+        }
+        return radioResult.success;
 
       default:
         printLog(`⚠️ Unknown question type: ${questionType}`);

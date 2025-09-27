@@ -187,6 +187,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   const bot_name = args[0];
   const is_test_mode = args.includes('test');
+  const is_quicktest_mode = args.includes('quicktest');
   const headless = args.includes('--headless');
   const no_keep_open = args.includes('--close');
 
@@ -198,6 +199,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         await runQuickApplyTests();
       } catch (error) {
         console.error('Test execution failed:', error);
+        process.exit(1);
+      }
+    })();
+  } else if (is_quicktest_mode && bot_name === 'seek') {
+    (async () => {
+      try {
+        const { runQuickApplyE2ETest } = await import('./seek/seek_quick_apply_e2e_test');
+        await runQuickApplyE2ETest('https://www.seek.com.au/job/87348280/apply');
+      } catch (error) {
+        console.error('Quick Apply E2E test execution failed:', error);
         process.exit(1);
       }
     })();
