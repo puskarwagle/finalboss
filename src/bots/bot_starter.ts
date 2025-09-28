@@ -206,7 +206,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     (async () => {
       try {
         const { runQuickApplyE2ETest } = await import('./seek/seek_quick_apply_e2e_test');
-        await runQuickApplyE2ETest('https://www.seek.com.au/job/87057769');
+        // await runQuickApplyE2ETest('https://www.seek.com.au/job/87057769');
+        await runQuickApplyE2ETest('https://www.seek.com.au/job/87457750');
       } catch (error) {
         console.error('Quick Apply E2E test execution failed:', error);
         process.exit(1);

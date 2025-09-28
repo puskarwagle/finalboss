@@ -16,8 +16,7 @@ function extractEmployerQuestions() {
 
     if (!formElement) return;
 
-    // Skip individual checkbox labels - we'll handle checkbox groups separately
-    if (formElement.type === 'checkbox') return;
+    // Handle checkbox groups using the label-driven approach
 
     // Get question text from the label
     const strongEl = label.querySelector('strong');
