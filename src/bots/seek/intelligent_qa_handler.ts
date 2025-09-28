@@ -56,7 +56,7 @@ export async function getIntelligentAnswers(questions: any[], ctx: WorkflowConte
             q: question.question,
             opts: question.options || []
           }],
-          userEmail: 'dynamic@session.email', // Will be replaced by session
+          userEmail: 'puskarwagle17@gmail.com', // Will be replaced by session
           jobDetails: {
             title: jobDetails.title || 'Java Developer',
             company: jobDetails.company || 'Tech Company',
@@ -70,12 +70,13 @@ export async function getIntelligentAnswers(questions: any[], ctx: WorkflowConte
         // Save request to JSON file for test debugging (only in test mode)
         const isTestMode = (globalThis as any).API_TEST_MODE;
         if (isTestMode) {
-          fs.writeFileSync('apitestjsons/api_request.json', JSON.stringify({
+          fs.writeFileSync('/home/wagle/finalboss/apitestjsons/api_request.json', JSON.stringify({
             url: API_URLS.QUESTION_ANSWERS(),
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Accept': 'application/json'
+              'Accept': 'application/json',
+              'Authorization': 'Bearer rag_fca49fc84e52dca593582748bca7bdf4_69df6f622b39cad3fe6229a2530a31a3d03c6a5bb47ec702497613d56b309409'
             },
             body: requestPayload,
             timestamp: new Date().toISOString()
@@ -88,7 +89,7 @@ export async function getIntelligentAnswers(questions: any[], ctx: WorkflowConte
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': 'Bearer rag_15817ebd3daef06781d8baaa243ccbaa_898ee85644b365e0a0ccd65bd6756af58313219f841a29b2a7b9ac9ad20d7fb7'
+            'Authorization': 'Bearer rag_fca49fc84e52dca593582748bca7bdf4_69df6f622b39cad3fe6229a2530a31a3d03c6a5bb47ec702497613d56b309409'
           },
           body: JSON.stringify(requestPayload)
         });
@@ -106,7 +107,7 @@ export async function getIntelligentAnswers(questions: any[], ctx: WorkflowConte
 
         // Save response to JSON file for test debugging (only in test mode)
         if (isTestMode) {
-          fs.writeFileSync('apitestjsons/api_response.json', JSON.stringify({
+          fs.writeFileSync('/home/wagle/finalboss/apitestjsons/api_response.json', JSON.stringify({
             status: qnaResponse.status,
             statusText: qnaResponse.statusText,
             ok: qnaResponse.ok,
