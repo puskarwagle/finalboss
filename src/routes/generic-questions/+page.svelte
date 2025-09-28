@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { API_URLS } from '$lib/api-config.js';
 
   let questionsData = null;
   let stats = null;
@@ -27,8 +28,8 @@
 
       // Load questions and stats in parallel
       const [questionsResponse, statsResponse] = await Promise.all([
-        fetch('/api/generic-questions'),
-        fetch('/api/generic-questions/stats')
+        fetch(API_URLS.GENERIC_QUESTIONS()),
+        fetch(API_URLS.GENERIC_QUESTIONS_STATS())
       ]);
 
       const questionsResult = await questionsResponse.json();
@@ -57,7 +58,7 @@
     try {
       saving = true;
 
-      const response = await fetch(`/api/generic-questions/${questionId}`, {
+      const response = await fetch(`${API_URLS.GENERIC_QUESTIONS()}/${questionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -87,7 +88,7 @@
     try {
       saving = true;
 
-      const response = await fetch('/api/generic-questions', {
+      const response = await fetch(API_URLS.GENERIC_QUESTIONS(), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

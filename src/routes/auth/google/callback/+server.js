@@ -1,10 +1,11 @@
 import { json, redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import { isUserAuthorized } from '$lib/auth-check.js';
+import { API_CONFIG } from '$lib/api-config.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-client-id';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'test-client-secret';
-const BASE_URL = dev ? 'http://localhost:1420' : 'https://yourdomain.com';
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export async function GET({ url, cookies }) {
   const code = url.searchParams.get('code');

@@ -71,6 +71,28 @@ export function updateGenericQuestionsConfig(config: GenericQuestionsConfig): bo
   }
 }
 
+export function updateQuestionAnswer(questionId: string, newAnswer: any): boolean {
+  try {
+    const config = loadGenericQuestionsConfig();
+    const question = config.questions.find(q => q.id.toString() === questionId);
+
+    if (!question) {
+      return false;
+    }
+
+    // Update the answer array with the new answer
+    if (newAnswer.textValue || newAnswer.customText) {
+      question.answer = [newAnswer.textValue || newAnswer.customText];
+    }
+
+    saveGenericQuestionsConfig(config);
+    return true;
+  } catch (error) {
+    printLog(`❌ Failed to update question answer: ${error}`);
+    return false;
+  }
+}
+
 // Check if a question can be answered generically
 export function isGenericQuestion(questionText: string): boolean {
   const config = loadGenericQuestionsConfig();

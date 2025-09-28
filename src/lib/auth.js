@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
+import { API_URLS } from './api-config.js';
 
 function createAuthStore() {
   const { subscribe, set, update } = writable({
@@ -17,7 +18,7 @@ function createAuthStore() {
       update(state => ({ ...state, loading: true }));
 
       try {
-        const response = await fetch('/api/auth?endpoint=login', {
+        const response = await fetch(`${API_URLS.AUTH_ME().replace('/me', '')}?endpoint=login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ function createAuthStore() {
       // Handle traditional auth logout
       if (token) {
         try {
-          await fetch('/api/auth?endpoint=logout', {
+          await fetch(`${API_URLS.AUTH_ME().replace('/me', '')}?endpoint=logout`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -149,7 +150,7 @@ function createAuthStore() {
       }
 
       try {
-        const response = await fetch('/api/auth?endpoint=me', {
+        const response = await fetch(API_URLS.AUTH_ME(), {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

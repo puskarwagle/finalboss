@@ -31,14 +31,17 @@ export function handleGetGenericQuestions() {
       data: {
         questions: config.questions.map(q => ({
           id: q.id,
-          description: q.description,
-          patterns: q.patterns,
-          questionType: q.questionType,
-          frequency: q.frequency,
-          currentAnswer: q.userAnswer,
-          notes: q.userAnswer.notes || ''
+          description: `Question ${q.id}`, // Simple description since it's not in the config
+          patterns: q.match_keywords,
+          questionType: 'text', // Default type since it's not in the config
+          frequency: 1, // Default frequency since it's not in the config
+          currentAnswer: {
+            textValue: q.answer[0] || '',
+            notes: ''
+          },
+          notes: ''
         })),
-        settings: config.userSettings,
+        settings: config.settings,
         lastUpdated: config.lastUpdated
       },
       timestamp: new Date().toISOString()
@@ -94,14 +97,14 @@ export function handleUpdateQuestionAnswer(questionId, newAnswer) {
 export function handleUpdateSettings(newSettings) {
   try {
     const config = getGenericQuestionsConfig();
-    config.userSettings = { ...config.userSettings, ...newSettings };
+    config.settings = { ...config.settings, ...newSettings };
 
     const success = updateGenericQuestionsConfig(config);
 
     if (success) {
       return {
         success: true,
-        data: { settings: config.userSettings },
+        data: { settings: config.settings },
         timestamp: new Date().toISOString()
       };
     } else {
@@ -132,16 +135,17 @@ export function handleGetStats() {
     const stats = {
       totalQuestions: config.questions.length,
       enabledQuestions: config.questions.length, // All are enabled by patterns
-      autoAnswerEnabled: config.userSettings.autoAnswerEnabled,
-      mostFrequentQuestion: config.questions.reduce((max, q) =>
-        q.frequency > max.frequency ? q : max,
-        config.questions[0]
-      ),
+      autoAnswerEnabled: config.settings.autoAnswer,
+      mostFrequentQuestion: config.questions.length > 0 ? {
+        ...config.questions[0],
+        description: `Question ${config.questions[0].id}`,
+        frequency: 1
+      } : null,
       questionTypes: config.questions.reduce((acc, q) => {
-        acc[q.questionType] = (acc[q.questionType] || 0) + 1;
+        acc.text = (acc.text || 0) + 1; // Default to text type
         return acc;
-      }, {}),
-      totalFrequency: config.questions.reduce((sum, q) => sum + q.frequency, 0)
+      }, { text: 0 }),
+      totalFrequency: config.questions.length // Since we don't have actual frequency data
     };
 
     return {

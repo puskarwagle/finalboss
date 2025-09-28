@@ -1,45 +1,126 @@
 {
-  "lastUpdated": "2025-09-26T09:30:00.000Z",
+  "lastUpdated": "2025-09-27T16:37:30.518Z",
   "questions": [
     {
       "id": 1,
-      "match_keywords": ["right to work in Australia"],
-      "answer": ["I have a graduate temporary work visa"]
+      "match_keywords": [
+        "right to work in Australia"
+      ],
+      "answer": [
+        "I have a graduate temporary work visa"
+      ]
     },
     {
       "id": 2,
-      "match_keywords": ["years of experience", "years' experience"],
-      "answer": ["5+ years", "5 years", "More than 5 years"]
+      "match_keywords": [
+        "years of experience",
+        "years' experience"
+      ],
+      "answer": [
+        "5+ years",
+        "5 years",
+        "More than 5 years"
+      ]
     },
     {
       "id": 3,
-      "match_keywords": ["frontend frameworks", "frontend libraries", "javascript frameworks"],
-      "answer": ["React", "Vue", "Angular"]
+      "match_keywords": [
+        "frontend frameworks",
+        "frontend libraries",
+        "javascript frameworks"
+      ],
+      "answer": [
+        "React",
+        "Vue",
+        "Angular"
+      ]
     },
     {
       "id": 4,
-      "match_keywords": ["programming languages", "coding languages", "languages proficient"],
-      "answer": ["JavaScript", "Python", "Go"]
+      "match_keywords": [
+        "programming languages",
+        "coding languages",
+        "languages proficient"
+      ],
+      "answer": [
+        "JavaScript",
+        "Python",
+        "Go"
+      ]
     },
     {
       "id": 5,
-      "match_keywords": ["notice period", "availability", "start date"],
-      "answer": ["2 weeks"]
+      "match_keywords": [
+        "notice period",
+        "availability",
+        "start date"
+      ],
+      "answer": [
+        "14 days"
+      ]
     },
     {
       "id": 6,
-      "match_keywords": ["salary", "expected salary", "compensation"],
-      "answer": ["70000", "$70k"]
+      "match_keywords": [
+        "current salary",
+        "current rate"
+      ],
+      "answer": [
+        "70000"
+      ]
     },
     {
       "id": 7,
-      "match_keywords": ["work preference"],
-      "answer": ["Remote"]
+      "match_keywords": [
+        "expected salary",
+        "expected rate"
+      ],
+      "answer": [
+        "70000"
+      ]
     },
     {
       "id": 8,
-      "match_keywords": ["security clearance", "government clearance"],
-      "answer": ["Yes"]
+      "match_keywords": [
+        "salary",
+        "compensation"
+      ],
+      "answer": [
+        "70000",
+        "$70k"
+      ]
+    },
+    {
+      "id": 9,
+      "match_keywords": [
+        "work preference"
+      ],
+      "answer": [
+        "Remote"
+      ]
+    },
+    {
+      "id": 10,
+      "match_keywords": [
+        "security clearance",
+        "government clearance"
+      ],
+      "answer": [
+        "Yes"
+      ]
+    },
+    {
+      "id": 11,
+      "match_keywords": [
+        "programming languages",
+        "languages experienced",
+        "following programming languages"
+      ],
+      "answer": [
+        "JavaScript",
+        "Python",
+        "Java"
+      ]
     }
   ],
   "settings": {

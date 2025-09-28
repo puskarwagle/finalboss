@@ -1,4 +1,5 @@
 import type { WorkflowContext } from '../core/workflow_engine';
+import { API_URLS, createAuthHeaders } from '../../lib/api-config.js';
 
 const printLog = (message: string) => {
   console.log(message);
@@ -9,22 +10,25 @@ async function getUserApiKey(): Promise<{apiKey: string, userId: string}> {
   try {
     printLog("🔑 Getting user API key from session...");
 
-    const response = await fetch('http://localhost:3000/api/session');
+    const sessionUrl = API_URLS.SESSION();
+    const response = await fetch(sessionUrl);
 
     if (!response.ok) {
       throw new Error(`Session API failed: ${response.status}`);
     }
 
     const sessionData = await response.json();
-    printLog(`🔑 Session response:`, JSON.stringify(sessionData, null, 2));
+    printLog(`🔑 Session response: ${JSON.stringify(sessionData, null, 2)}`);
 
     if (!sessionData.success || !sessionData.data?.apiKey) {
       throw new Error(`No API key found in session: ${sessionData.error || 'Unknown error'}`);
     }
 
-    // For userId, we'll need to get it from the authenticated user
-    // For now, using the authorized email from the system
-    const userId = 'puskarwagle17@gmail.com'; // This should come from the actual session
+    // Extract user email from the authenticated session
+    const userId = sessionData.data.user?.email;
+    if (!userId) {
+      throw new Error('No user email found in session data');
+    }
 
     return {
       apiKey: sessionData.data.apiKey,
@@ -154,16 +158,13 @@ async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
   // Get user's API key and ID
   const { apiKey, userId } = await getUserApiKey();
 
-  printLog(`📡 Making authenticated API request to: http://localhost:3000/api/cover_letter`);
+  const coverLetterUrl = API_URLS.COVER_LETTER();
+  printLog(`📡 Making authenticated API request to: ${coverLetterUrl}`);
   printLog(`👤 Using userEmail: ${userId}`);
 
-  const response = await fetch('http://localhost:3000/api/cover_letter', {
+  const response = await fetch(coverLetterUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
+    headers: createAuthHeaders(apiKey),
     body: JSON.stringify({
       jobDetails: jobDetails,
       userEmail: userId

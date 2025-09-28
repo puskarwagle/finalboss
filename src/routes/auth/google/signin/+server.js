@@ -1,8 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
+import { API_CONFIG } from '$lib/api-config.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-client-id';
-const BASE_URL = dev ? 'http://localhost:1420' : 'https://yourdomain.com';
+const BASE_URL = API_CONFIG.BASE_URL;
 
 export async function GET() {
   // Generate state for security

@@ -18,6 +18,9 @@ export async function* extractEmployerQuestions(ctx: WorkflowContext): AsyncGene
     const scriptPath = path.join(__dirname, 'browser_question_extractor.js');
     const browserScript = fs.readFileSync(scriptPath, 'utf8');
 
+    // Wait for dynamic content to load
+    await ctx.driver.sleep(3000);
+
     const questionsData = await ctx.driver.executeScript(browserScript);
 
     if (questionsData && questionsData.questionsFound > 0) {
@@ -33,13 +36,13 @@ export async function* extractEmployerQuestions(ctx: WorkflowContext): AsyncGene
         }
       }
 
-      // Create a clean format for questions, now including the container selector
+      // Create a clean format for questions
       const cleanQuestions = questionsData.questions.map((q: any, index: number) => ({
         id: index,
         q: q.question,
         type: q.type,
-        opts: (q.options || []).map((opt: any) => (opt.text || '').trim()),
-        containerSelector: q.containerSelector // Save the new selector
+        opts: q.options || [], // Browser script already returns a clean string array
+        containerSelector: q.containerSelector
       }));
 
       const updatedJobData = {
