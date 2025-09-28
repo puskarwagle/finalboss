@@ -133,73 +133,99 @@ export async function fillQuestionField(
 
       case 'checkbox':
         try {
-          // Handle multi-select checkbox questions
-          // Answer should be an array of option texts to select
           const checkboxAnswers = Array.isArray(answer) ? answer : [answer];
+          printLog(`[DEBUG] Checkbox - attempting to select: ${checkboxAnswers.join(', ')}`);
 
-          printLog(`Checkbox question - looking for options: ${checkboxAnswers.join(', ')}`);
-
-          // Find all checkboxes in the container
-          const checkboxResult = await ctx.driver.executeScript(`
+          // New approach: Use Selenium WebDriver's click() instead of JavaScript
+          const checkboxData = await ctx.driver.executeScript(`
             const container = document.querySelector(arguments[0]);
-            if (!container) return { success: false, error: 'Container not found: ' + arguments[0] };
+            if (!container) {
+              return { success: false, error: 'Container not found' };
+            }
 
-            // Find all checkboxes (look in container and parent containers)
-            const checkboxes = container.querySelectorAll('input[type="checkbox"]') ||
-                             container.parentElement?.querySelectorAll('input[type="checkbox"]') ||
-                             document.querySelectorAll('input[type="checkbox"]');
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            if (checkboxes.length === 0) {
+              return { success: false, error: 'No checkboxes found' };
+            }
 
             const answersToSelect = arguments[1];
-            let selectedCount = 0;
-            const debugInfo = [];
+            const checkboxesToClick = [];
 
-            for (const checkbox of checkboxes) {
-              // Get label text for this checkbox
-              const label = document.querySelector('label[for="' + checkbox.id + '"]');
-              const optionText = label ? label.textContent.trim() : checkbox.value;
+            for (const answerText of answersToSelect) {
+              for (const checkbox of checkboxes) {
+                const label = document.querySelector('label[for="' + checkbox.id + '"]');
+                const optionText = label ? label.textContent.trim() : '';
 
-              debugInfo.push({
-                id: checkbox.id,
-                text: optionText,
-                checked: checkbox.checked
-              });
-
-              // Check if this option should be selected
-              const shouldSelect = answersToSelect.some(answer =>
-                optionText.toLowerCase().includes(answer.toLowerCase()) ||
-                answer.toLowerCase().includes(optionText.toLowerCase())
-              );
-
-              if (shouldSelect && !checkbox.checked) {
-                checkbox.checked = true;
-                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-                checkbox.dispatchEvent(new Event('click', { bubbles: true }));
-                selectedCount++;
-                console.log('✓ Selected checkbox:', optionText);
+                if (optionText.toLowerCase() === answerText.toLowerCase()) {
+                  checkboxesToClick.push({
+                    id: checkbox.id,
+                    optionText: optionText,
+                    checked: checkbox.checked
+                  });
+                  break;
+                }
               }
             }
 
             return {
-              success: selectedCount > 0,
-              selectedCount: selectedCount,
-              totalCheckboxes: checkboxes.length,
-              debugInfo: debugInfo
+              success: true,
+              checkboxesToClick: checkboxesToClick
             };
           `, containerSelector, checkboxAnswers);
 
-          if (checkboxResult.success) {
-            printLog(`✅ Successfully selected ${checkboxResult.selectedCount} checkboxes out of ${checkboxResult.totalCheckboxes}`);
-            return true;
-          } else {
-            printLog(`❌ Failed to select checkboxes: ${checkboxResult.error || 'No matches found'}`);
-            if (checkboxResult.debugInfo) {
-              printLog(`Available options: ${checkboxResult.debugInfo.map(cb => cb.text).join(', ')}`);
-            }
+          if (!checkboxData.success) {
+            printLog(`❌ Failed to find checkboxes: ${checkboxData.error}`);
             return false;
           }
 
+          // Click each checkbox using Selenium WebDriver
+          let successCount = 0;
+          for (const checkboxInfo of checkboxData.checkboxesToClick) {
+            try {
+              printLog(`[DEBUG] Clicking checkbox for "${checkboxInfo.optionText}" (ID: ${checkboxInfo.id})`);
+
+              // Find the checkbox element using Selenium
+              const checkboxElement = await ctx.driver.findElement({ css: `input[id="${checkboxInfo.id}"]` });
+
+              // Click it using Selenium (this should properly trigger React/framework events)
+              await checkboxElement.click();
+
+              successCount++;
+              printLog(`✅ Successfully clicked checkbox for "${checkboxInfo.optionText}"`);
+
+              // Small delay between clicks
+              await ctx.driver.sleep(100);
+            } catch (error) {
+              printLog(`❌ Failed to click checkbox for "${checkboxInfo.optionText}": ${error}`);
+            }
+          }
+
+          // Verify final state
+          const finalState = await ctx.driver.executeScript(`
+            const container = document.querySelector(arguments[0]);
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            const state = [];
+            for (const checkbox of checkboxes) {
+              const label = document.querySelector('label[for="' + checkbox.id + '"]');
+              state.push({
+                option: label ? label.textContent.trim() : 'N/A',
+                checked: checkbox.checked
+              });
+            }
+            return state;
+          `, containerSelector);
+
+          console.log('[DEBUG] Final checkbox state:', JSON.stringify(finalState, null, 2));
+
+          if (successCount > 0) {
+            printLog(`✅ Successfully clicked ${successCount} checkboxes using Selenium`);
+            return true;
+          } else {
+            printLog(`❌ Failed to click any checkboxes`);
+            return false;
+          }
         } catch (error) {
-          printLog(`❌ Failed to fill checkbox field: ${error}`);
+          printLog(`❌ CRASH in checkbox field logic: ${error}`);
           return false;
         }
 
@@ -245,13 +271,37 @@ export async function* answerEmployerQuestions(ctx: WorkflowContext): AsyncGener
     for (let i = 0; i < answeredQuestions.length; i++) {
       const question = answeredQuestions[i];
       try {
-        printLog(`🎯 Filling Q${i + 1} [${question.answerSource}]: "${question.question.substring(0, 50)}..."`);
+        printLog(`[DEBUG] Processing question ${i + 1}: ${JSON.stringify(question, null, 2)}`);
+        printLog(`🎯 Filling Q${i + 1} [${question.answerSource}]: "${question.question.substring(0, 50)}"...`);
 
         let answer;
         if (question.type === 'select') {
           answer = question.selectedAnswer;
         } else if (question.type === 'text') {
           answer = question.textAnswer;
+        } else if (question.type === 'checkbox') {
+          if (question.selectedAnswer && Array.isArray(question.selectedAnswer)) {
+            // Check if selectedAnswer contains strings (option text) or numbers (indices)
+            if (typeof question.selectedAnswer[0] === 'string') {
+              // selectedAnswer contains option text
+              answer = question.selectedAnswer;
+              printLog(`📝 Using generic checkbox answers (text): ${answer.join(', ')}`);
+            } else {
+              // selectedAnswer contains indices - convert to option text
+              const options = question.options || [];
+              answer = question.selectedAnswer.map((index: number) => options[index]).filter(Boolean);
+              printLog(`📝 Using generic checkbox answers (indices ${question.selectedAnswer}): ${answer.join(', ')}`);
+            }
+          } else {
+            const options = question.opts || [];
+            if (options.length > 0) {
+              // Fallback: Select 2 random options, or fewer if not enough are available
+              const numToSelect = Math.min(2, options.length);
+              const shuffled = options.sort(() => 0.5 - Math.random());
+              answer = shuffled.slice(0, numToSelect);
+              printLog(`📝 Randomly selected checkbox answers: ${answer.join(', ')}`);
+            }
+          }
         }
 
         if (answer !== undefined && answer !== null && question.answerSource !== 'No Answer') {
