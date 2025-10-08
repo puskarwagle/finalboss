@@ -1,10 +1,10 @@
-import { setupChromeDriver } from '../core/browser_manager';
+import { setupChromeDriver } from '../../core/browser_manager';
 import { By } from 'selenium-webdriver';
-import { fillQuestionField } from './answer_employer_questions';
-import type { WorkflowContext } from '../core/workflow_engine';
-import { seekStepFunctions } from './seek_impl';
-import { extractEmployerQuestions } from './extract_employer_questions';
-import { getIntelligentAnswers, extractQuestionsFromPage } from './intelligent_qa_handler';
+import { fillQuestionField } from '../handlers/answer_employer_questions';
+import type { WorkflowContext } from '../../core/workflow_engine';
+import { seekStepFunctions } from '../seek_impl';
+import { extractEmployerQuestions } from '../handlers/extract_employer_questions';
+import { getIntelligentAnswers, extractQuestionsFromPage } from '../handlers/intelligent_qa_handler';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';

@@ -1,4 +1,4 @@
-import type { WorkflowContext } from '../core/workflow_engine';
+import type { WorkflowContext } from '../../core/workflow_engine';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -28,7 +28,7 @@ interface GenericQuestionsConfig {
 // Load configuration from JSON file
 function loadGenericQuestionsConfig(): GenericQuestionsConfig {
   try {
-    const configPath = path.join(__dirname, 'generic_questions_config.json');
+    const configPath = path.join(__dirname, '../config/generic_questions_config.json');
     const configData = fs.readFileSync(configPath, 'utf8');
     return JSON.parse(configData);
   } catch (error) {
@@ -47,7 +47,7 @@ function loadGenericQuestionsConfig(): GenericQuestionsConfig {
 // Save updated configuration
 function saveGenericQuestionsConfig(config: GenericQuestionsConfig): void {
   try {
-    const configPath = path.join(__dirname, 'generic_questions_config.json');
+    const configPath = path.join(__dirname, '../config/generic_questions_config.json');
     config.lastUpdated = new Date().toISOString();
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     printLog(`✅ Generic questions config saved successfully`);

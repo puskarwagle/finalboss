@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-09-27T16:37:30.518Z",
+  "lastUpdated": "2025-10-08T19:06:59.165Z",
   "questions": [
     {
       "id": 1,
@@ -53,7 +53,8 @@
       "match_keywords": [
         "notice period",
         "availability",
-        "start date"
+        "start date",
+        "How much notice are you required to give your current employer?"
       ],
       "answer": [
         "14 days"

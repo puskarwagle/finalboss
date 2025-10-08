@@ -92,9 +92,18 @@ steps_config:
     transitions:
       job_card_clicked: "detect_apply_type"
       job_card_skipped: "click_job_card"
-      job_cards_finished: "done"
+      job_cards_finished: "click_next_page"
     timeout: 10
     on_timeout_event: "job_card_skipped"
+
+  click_next_page:
+    step: 7.5
+    func: "clickNextPage"
+    transitions:
+      next_page_clicked: "collect_job_cards"
+      no_more_pages: "done"
+    timeout: 15
+    on_timeout_event: "no_more_pages"
 
   detect_apply_type:
     step: 8
@@ -149,7 +158,7 @@ steps_config:
     on_timeout_event: "progress_bar_evaluation_error"
 
   handle_cover_letter:
-    step: 12
+    step: 11.5
     func: "handleCoverLetter"
     transitions:
       cover_letter_filled: "handle_resume_selection"
@@ -206,7 +215,7 @@ steps_config:
     step: 13.5
     func: "handleEmployerQuestions"
     transitions:
-      employer_questions_saved: "stay_put_for_inspection"
+      employer_questions_saved: "close_quick_apply_and_continue_search"
       no_questions: "stay_put_for_inspection"
       no_job_data: "close_quick_apply_and_continue_search"
       employer_questions_error: "stay_put_for_inspection"

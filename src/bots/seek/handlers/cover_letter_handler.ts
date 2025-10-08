@@ -1,45 +1,8 @@
-import type { WorkflowContext } from '../core/workflow_engine';
-import { API_URLS, createAuthHeaders } from '../../lib/api-config.js';
+import type { WorkflowContext } from '../../core/workflow_engine';
 
 const printLog = (message: string) => {
   console.log(message);
 };
-
-// Get user session and API key
-async function getUserApiKey(): Promise<{apiKey: string, userId: string}> {
-  try {
-    printLog("🔑 Getting user API key from session...");
-
-    const sessionUrl = API_URLS.SESSION();
-    const response = await fetch(sessionUrl);
-
-    if (!response.ok) {
-      throw new Error(`Session API failed: ${response.status}`);
-    }
-
-    const sessionData = await response.json();
-    printLog(`🔑 Session response: ${JSON.stringify(sessionData, null, 2)}`);
-
-    if (!sessionData.success || !sessionData.data?.apiKey) {
-      throw new Error(`No API key found in session: ${sessionData.error || 'Unknown error'}`);
-    }
-
-    // Extract user email from the authenticated session
-    const userId = sessionData.data.user?.email;
-    if (!userId) {
-      throw new Error('No user email found in session data');
-    }
-
-    return {
-      apiKey: sessionData.data.apiKey,
-      userId: userId
-    };
-
-  } catch (error) {
-    printLog(`❌ Failed to get API key: ${error}`);
-    throw error;
-  }
-}
 
 // Extract categorized information from job details
 interface JobInfo {
@@ -126,11 +89,10 @@ function extractJobInfo(details: string): JobInfo {
   };
 }
 
-// Generate AI-powered cover letter using the new /api/cover_letter endpoint
 async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
   const fs = await import('fs');
+  const path = await import('path');
 
-  // Read job data from the current job file
   let jobData: any = {};
   if (ctx.currentJobFile) {
     jobData = JSON.parse(fs.readFileSync(ctx.currentJobFile, 'utf8'));
@@ -140,58 +102,57 @@ async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
     throw new Error("No job data available - cannot generate cover letter");
   }
 
-  // Extract structured information from job details
-  const jobInfo = extractJobInfo(jobData.details || '');
+  const jobId = jobData.jobId || 'unknown';
+  printLog("Generating AI cover letter...");
+  printLog(`📝 Job: ${jobData.title} at ${jobData.company}`);
 
-  // Structure job details for the new API
-  const jobDetails = {
-    title: jobData.title || '',
-    company: jobData.company || '',
-    description: jobInfo.description || jobData.details || '',
-    requirements: jobInfo.requirements
+  const resumePath = path.join(process.cwd(), 'src/bots/all-resumes/software_engineer.txt');
+  const resumeText = fs.existsSync(resumePath)
+    ? fs.readFileSync(resumePath, 'utf8')
+    : "Experienced software developer";
+
+  const requestBody = {
+    job_id: jobId,
+    job_details: jobData.details || `${jobData.title} at ${jobData.company}`,
+    resume_text: resumeText,
+    useAi: "deepseek-chat",
+    additional_data: `Title: ${jobData.title}\nCompany: ${jobData.company}\nLocation: ${jobData.location || 'N/A'}`
   };
 
-  printLog("Generating AI cover letter using new /api/cover_letter endpoint...");
-  printLog(`📝 Job: ${jobDetails.title} at ${jobDetails.company}`);
-  printLog(`🔧 Requirements found: ${jobDetails.requirements.join(', ')}`);
+  const jobDir = path.join(__dirname, '../../jobs', jobId);
+  if (!fs.existsSync(jobDir)) {
+    fs.mkdirSync(jobDir, { recursive: true });
+  }
 
-  // Get user's API key and ID
-  const { apiKey, userId } = await getUserApiKey();
+  fs.writeFileSync(
+    path.join(jobDir, 'cover_letter_request.json'),
+    JSON.stringify(requestBody, null, 2)
+  );
 
-  const coverLetterUrl = API_URLS.COVER_LETTER();
-  printLog(`📡 Making authenticated API request to: ${coverLetterUrl}`);
-  printLog(`👤 Using userEmail: ${userId}`);
-
-  const response = await fetch(coverLetterUrl, {
+  const response = await fetch('http://localhost:3000/api/cover_letter', {
     method: 'POST',
-    headers: createAuthHeaders(apiKey),
-    body: JSON.stringify({
-      jobDetails: jobDetails,
-      userEmail: userId
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody)
   });
-
-  printLog(`📡 API Response Status: ${response.status} ${response.statusText}`);
 
   if (!response.ok) {
     const errorText = await response.text();
-    printLog(`❌ API Error Response Body: ${errorText}`);
-    throw new Error(`Cover Letter API request failed: ${response.status} - ${errorText}`);
+    throw new Error(`Cover Letter API failed: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
-  printLog(`📡 API Response Data Structure: ${JSON.stringify(data, null, 2)}`);
 
-  if (data.success && data.data?.coverLetter) {
-    printLog("✅ AI cover letter generated successfully");
-    printLog(`📄 Cover letter length: ${data.data.coverLetter.length} chars`);
-    return data.data.coverLetter;
+  fs.writeFileSync(
+    path.join(jobDir, 'cover_letter_response.json'),
+    JSON.stringify(data, null, 2)
+  );
+
+  if (data.cover_letter) {
+    printLog("✅ AI cover letter generated");
+    printLog(`📄 Length: ${data.cover_letter.length} chars`);
+    return data.cover_letter;
   } else {
-    printLog(`❌ Cover Letter API returned unsuccessful response:`);
-    printLog(`   - Success: ${data.success}`);
-    printLog(`   - Error: ${data.error || 'No error message'}`);
-    printLog(`   - Data: ${JSON.stringify(data.data)}`);
-    throw new Error(data.error || 'No cover letter returned from API');
+    throw new Error('No cover_letter field returned from API');
   }
 }
 

@@ -53,10 +53,10 @@ export class BotRegistry {
   private validate_bot_structure(bot_name: string, bot_path: string): boolean {
     const required_files = [
       `${bot_name}_steps.yaml`,
-      `${bot_name}_impl.ts`,
-      `${bot_name}_selectors.json`
+      `${bot_name}_impl.ts`
     ];
 
+    // Check for files in root of bot directory
     for (const file of required_files) {
       const file_path = path.join(bot_path, file);
       if (!fs.existsSync(file_path)) {
@@ -65,11 +65,24 @@ export class BotRegistry {
       }
     }
 
+    // Check for selectors.json either in root or config/ subdirectory
+    const selectors_root = path.join(bot_path, `${bot_name}_selectors.json`);
+    const selectors_config = path.join(bot_path, 'config', `${bot_name}_selectors.json`);
+    if (!fs.existsSync(selectors_root) && !fs.existsSync(selectors_config)) {
+      console.warn(`[Registry] Bot '${bot_name}' missing required file: ${bot_name}_selectors.json (checked root and config/)`);
+      return false;
+    }
+
     return true;
   }
 
   // Create bot info object
   private create_bot_info(bot_name: string, bot_path: string): BotInfo {
+    // Check if selectors file is in config/ subdirectory
+    const selectors_root = path.join(bot_path, `${bot_name}_selectors.json`);
+    const selectors_config = path.join(bot_path, 'config', `${bot_name}_selectors.json`);
+    const selectors_path = fs.existsSync(selectors_config) ? selectors_config : selectors_root;
+
     return {
       name: bot_name,
       display_name: this.format_display_name(bot_name),
@@ -77,7 +90,7 @@ export class BotRegistry {
       yaml_path: path.join(bot_path, `${bot_name}_steps.yaml`),
       impl_path: path.join(bot_path, `${bot_name}_impl.ts`),
       config_path: path.join(bot_path, `${bot_name}_configuration.ts`),
-      selectors_path: path.join(bot_path, `${bot_name}_selectors.json`)
+      selectors_path: selectors_path
     };
   }
 

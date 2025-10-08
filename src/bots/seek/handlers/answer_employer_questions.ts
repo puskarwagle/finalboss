@@ -1,4 +1,4 @@
-import type { WorkflowContext } from '../core/workflow_engine';
+import type { WorkflowContext } from '../../core/workflow_engine';
 import { isGenericQuestion, getGenericAnswer } from './generic_question_handler';
 import { getIntelligentAnswers, extractQuestionsFromPage } from './intelligent_qa_handler';
 
@@ -244,7 +244,6 @@ export async function* answerEmployerQuestions(ctx: WorkflowContext): AsyncGener
   try {
     printLog("🔍 Starting intelligent employer questions handling...");
 
-    // Step 1: Extract questions directly from the current page
     const questions = await extractQuestionsFromPage(ctx);
 
     if (questions.length === 0) {
@@ -255,18 +254,16 @@ export async function* answerEmployerQuestions(ctx: WorkflowContext): AsyncGener
 
     printLog(`📋 Found ${questions.length} employer questions to answer`);
 
-    // Step 2: Get intelligent answers (generic config + AI)
     const answeredQuestions = await getIntelligentAnswers(questions, ctx);
 
-    // Step 3: Display the Q&A plan
     printLog("\n📋 Question answering plan:");
     answeredQuestions.forEach((q: any, index: number) => {
       printLog(`   ${index + 1}. [${q.answerSource}] ${q.question.substring(0, 60)}...`);
     });
 
-    // Step 4: Fill all the questions
     let successCount = 0;
     let errorCount = 0;
+    const qnaResults: any[] = [];
 
     for (let i = 0; i < answeredQuestions.length; i++) {
       const question = answeredQuestions[i];
@@ -310,21 +307,64 @@ export async function* answerEmployerQuestions(ctx: WorkflowContext): AsyncGener
           if (filled) {
             printLog(`✅ Question ${i + 1} answered successfully`);
             successCount++;
+            qnaResults.push({
+              question: question.question,
+              type: question.type,
+              answer: answer,
+              answerSource: question.answerSource,
+              status: 'success'
+            });
           } else {
             printLog(`⚠️ Failed to fill form field for question ${i + 1}`);
             errorCount++;
+            qnaResults.push({
+              question: question.question,
+              type: question.type,
+              answer: answer,
+              answerSource: question.answerSource,
+              status: 'failed'
+            });
           }
         } else {
           printLog(`⏭️ Skipping question ${i + 1} - no answer available`);
-          // Don't count as error, just skip
+          qnaResults.push({
+            question: question.question,
+            type: question.type,
+            answer: null,
+            answerSource: 'No Answer',
+            status: 'skipped'
+          });
         }
 
         await ctx.driver.sleep(500);
       } catch (error) {
         printLog(`❌ Error answering question ${i + 1}: ${error}`);
         errorCount++;
+        qnaResults.push({
+          question: question.question,
+          type: question.type,
+          error: String(error),
+          status: 'error'
+        });
       }
     }
+
+    const fs = await import('fs');
+    const path = await import('path');
+    let jobData: any = {};
+    if (ctx.currentJobFile) {
+      jobData = JSON.parse(fs.readFileSync(ctx.currentJobFile, 'utf8'));
+    }
+    const jobId = jobData.jobId || 'unknown';
+    const jobDir = path.join(__dirname, '../../jobs', jobId);
+    if (!fs.existsSync(jobDir)) {
+      fs.mkdirSync(jobDir, { recursive: true });
+    }
+    fs.writeFileSync(
+      path.join(jobDir, 'qna.json'),
+      JSON.stringify({ questions: qnaResults, summary: { total: answeredQuestions.length, success: successCount, errors: errorCount } }, null, 2)
+    );
+    printLog(`💾 QNA saved to qna.json`);
 
     printLog(`📊 Results: ${successCount}/${answeredQuestions.length} questions answered, ${errorCount} errors`);
 

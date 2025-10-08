@@ -1,12 +1,12 @@
 import { WebDriver } from 'selenium-webdriver';
-import { setupChromeDriver } from '../core/browser_manager';
-import { HumanBehavior, StealthFeatures, DEFAULT_HUMANIZATION } from '../core/humanization';
-import { UniversalSessionManager, SessionConfigs } from '../core/sessionManager';
-import type { WorkflowContext } from '../core/workflow_engine';
-import { getCurrentStep } from './seek_impl';
-import { handleResumeSelection } from './resume_handler';
-import { handleCoverLetter } from './cover_letter_handler';
-import { handleEmployerQuestions } from './employer_questions_handler';
+import { setupChromeDriver } from '../../core/browser_manager';
+import { HumanBehavior, StealthFeatures, DEFAULT_HUMANIZATION } from '../../core/humanization';
+import { UniversalSessionManager, SessionConfigs } from '../../core/sessionManager';
+import type { WorkflowContext } from '../../core/workflow_engine';
+import { getCurrentStep } from '../seek_impl';
+import { handleResumeSelection } from '../handlers/resume_handler';
+import { handleCoverLetter } from '../handlers/cover_letter_handler';
+import { handleEmployerQuestions } from '../handlers/answer_employer_questions';
 
 const printLog = (message: string) => {
   console.log(`[QUICK APPLY TEST] ${message}`);

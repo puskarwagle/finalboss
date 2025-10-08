@@ -4,10 +4,10 @@ import { HumanBehavior, StealthFeatures, DEFAULT_HUMANIZATION } from '../core/hu
 import { UniversalSessionManager, SessionConfigs } from '../core/sessionManager';
 import { UniversalOverlay } from '../core/universal_overlay';
 import type { WorkflowContext } from '../core/workflow_engine';
-import { handleResumeSelection } from './resume_handler';
-import { handleCoverLetter } from './cover_letter_handler';
-import { answerEmployerQuestions as handleEmployerQuestions } from './answer_employer_questions';
-import { extractEmployerQuestions } from './extract_employer_questions';
+import { handleResumeSelection } from './handlers/resume_handler';
+import { handleCoverLetter } from './handlers/cover_letter_handler';
+import { answerEmployerQuestions as handleEmployerQuestions } from './handlers/answer_employer_questions';
+import { extractEmployerQuestions } from './handlers/extract_employer_questions';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -45,7 +45,7 @@ function build_search_url(base_url: string, keywords: string, location: string):
 
 // Step 0: Initialize Context
 export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  const selectors = JSON.parse(fs.readFileSync(path.join(__dirname, 'seek_selectors.json'), 'utf8'));
+  const selectors = JSON.parse(fs.readFileSync(path.join(__dirname, 'config/seek_selectors.json'), 'utf8'));
   const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../core/user-bots-config.json'), 'utf8'));
 
   ctx.selectors = selectors;
@@ -866,6 +866,88 @@ export async function* skipToNextCard(ctx: WorkflowContext): AsyncGenerator<stri
   yield "card_skipped";
 }
 
+// Click Next Page
+export async function* clickNextPage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Checking for next page button...");
+
+    const nextButton = await ctx.driver.executeScript(`
+      const nextButton = document.querySelector('a[rel=\"nofollow next\"]');
+      if (nextButton && !nextButton.hasAttribute('disabled')) {
+        nextButton.click();
+        return true;
+      }
+      return false;
+    `);
+
+    if (nextButton) {
+      printLog("Next page button clicked.");
+      await ctx.driver.sleep(3000); // Wait for page to load
+      yield "next_page_clicked";
+    } else {
+      printLog("No more pages found.");
+      yield "no_more_pages";
+    }
+  } catch (error) {
+    printLog(`Error clicking next page: ${error}`);
+    yield "no_more_pages";
+  }
+}
+
+// Skip resume only
+export async function* skipResume(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Skipping resume selection...");
+
+    // Handle resume selection - click "Don't include a resumé"
+    try {
+      const noResumeRadio = await ctx.driver.findElement(By.xpath("//label[contains(., \"Don't include a resumé\")]"));
+      await noResumeRadio.click();
+      printLog('✅ Selected "Don\'t include a resumé"');
+      await ctx.driver.sleep(1000);
+      yield "resume_skipped";
+    } catch (e) {
+      printLog('⚠️ Could not find "Don\'t include a resumé" option');
+      yield "resume_skip_failed";
+    }
+  } catch (error) {
+    printLog(`Error skipping resume: ${error}`);
+    yield "resume_skip_failed";
+  }
+}
+
+// Skip documents (both resume and cover letter)
+export async function* skipDocuments(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  try {
+    printLog("Skipping resume and cover letter selection...");
+
+    // Handle resume selection - click "Don't include a resumé"
+    try {
+      const noResumeRadio = await ctx.driver.findElement(By.xpath("//label[contains(., \"Don't include a resumé\")]"));
+      await noResumeRadio.click();
+      printLog('✅ Selected "Don\'t include a resumé"');
+      await ctx.driver.sleep(1000);
+    } catch (e) {
+      printLog('⚠️ Could not find "Don\'t include a resumé" option');
+    }
+
+    // Handle cover letter selection - click "Don't include a cover letter"
+    try {
+      const noCoverLetterRadio = await ctx.driver.findElement(By.xpath("//label[contains(., \"Don't include a cover letter\")]"));
+      await noCoverLetterRadio.click();
+      printLog('✅ Selected "Don\'t include a cover letter"');
+      await ctx.driver.sleep(1000);
+    } catch (e) {
+      printLog('⚠️ Could not find "Don\'t include a cover letter" option');
+    }
+
+    yield "documents_skipped";
+  } catch (error) {
+    printLog(`Error skipping documents: ${error}`);
+    yield "documents_skip_failed";
+  }
+}
+
 export const seekStepFunctions = {
   step0,
   openHomepage,
@@ -890,5 +972,8 @@ export const seekStepFunctions = {
   closeQuickApplyAndContinueSearch,
   stayPutForInspection,
   pauseForCoverLetterReview,
-  skipToNextCard
+  skipToNextCard,
+  skipResume,
+  skipDocuments,
+  clickNextPage
 };

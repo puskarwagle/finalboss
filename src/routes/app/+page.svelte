@@ -11,28 +11,41 @@
   });
 
   $: user = $page.data?.session?.user;
+  let showWelcome = true;
 
   function navigateTo(path) {
     goto(path);
+  }
+
+  function closeWelcome() {
+    showWelcome = false;
   }
 </script>
 
 <main class="container mx-auto p-6">
   {#if user}
     <!-- Welcome Hero Section -->
-    <div class="hero bg-gradient-to-r from-primary to-secondary text-primary-content rounded-box mb-8">
-      <div class="hero-content text-center">
-        <div class="max-w-md">
-          <h1 class="text-5xl font-bold">Welcome Back!</h1>
-          <p class="py-6">
-            Hello {user.name || user.email.split('@')[0]}, ready to supercharge your job search?
-          </p>
-          <button class="btn btn-accent" on:click={() => navigateTo('/choose-bot')}>
-            Get Started
-          </button>
+    {#if showWelcome}
+      <div class="alert bg-base-100 shadow-xl mb-8 relative">
+        <div class="flex-1">
+          <div>
+            <h1 class="text-3xl font-bold mb-2">Welcome Back!</h1>
+            <p class="text-base-content/70">
+              Hello {user.name || user.email.split('@')[0]}, ready to supercharge your job search?
+            </p>
+          </div>
         </div>
+        <button
+          class="btn btn-ghost btn-sm btn-circle absolute top-2 right-2"
+          on:click={closeWelcome}
+          aria-label="Close welcome message"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-    </div>
+    {/if}
 
     <!-- Dashboard Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

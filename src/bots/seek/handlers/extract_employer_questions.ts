@@ -1,4 +1,4 @@
-import type { WorkflowContext } from '../core/workflow_engine';
+import type { WorkflowContext } from '../../core/workflow_engine';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -15,7 +15,7 @@ export async function* extractEmployerQuestions(ctx: WorkflowContext): AsyncGene
   try {
     printLog("Scanning for employer questions...");
 
-    const scriptPath = path.join(__dirname, 'browser_question_extractor.js');
+    const scriptPath = path.join(__dirname, '../scripts/browser_question_extractor.js');
     const browserScript = fs.readFileSync(scriptPath, 'utf8');
 
     // Wait for dynamic content to load

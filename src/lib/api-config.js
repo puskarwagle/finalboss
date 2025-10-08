@@ -13,7 +13,7 @@ function getBaseUrl() {
 
   // In server-side/Node.js, use environment variable or default
   // For production, set API_BASE_URL environment variable
-  return process.env.API_BASE_URL || 'http://localhost:3000';
+  return process.env.API_BASE_URL || 'http://localhost:1420';
 }
 
 export const API_CONFIG = {

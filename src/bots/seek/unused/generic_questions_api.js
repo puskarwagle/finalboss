@@ -31,15 +31,8 @@ export function handleGetGenericQuestions() {
       data: {
         questions: config.questions.map(q => ({
           id: q.id,
-          description: `Question ${q.id}`, // Simple description since it's not in the config
-          patterns: q.match_keywords,
-          questionType: 'text', // Default type since it's not in the config
-          frequency: 1, // Default frequency since it's not in the config
-          currentAnswer: {
-            textValue: q.answer[0] || '',
-            notes: ''
-          },
-          notes: ''
+          match_keywords: q.match_keywords,
+          answer: q.answer
         })),
         settings: config.settings,
         lastUpdated: config.lastUpdated
@@ -56,33 +49,142 @@ export function handleGetGenericQuestions() {
 }
 
 /**
- * Update a specific question's answer
+ * Update a specific question's answer and keywords
  * PUT /api/generic-questions/:questionId
  * @param {string} questionId
- * @param {any} newAnswer
+ * @param {any} updateData
  * @returns {ApiResponse}
  */
-export function handleUpdateQuestionAnswer(questionId, newAnswer) {
+export function handleUpdateQuestionAnswer(questionId, updateData) {
   try {
-    const success = updateQuestionAnswer(questionId, newAnswer);
+    const config = getGenericQuestionsConfig();
+    const question = config.questions.find(q => q.id.toString() === questionId);
 
-    if (success) {
-      return {
-        success: true,
-        data: { questionId, updatedAnswer: newAnswer },
-        timestamp: new Date().toISOString()
-      };
-    } else {
+    if (!question) {
       return {
         success: false,
         error: `Question with ID '${questionId}' not found`,
         timestamp: new Date().toISOString()
       };
     }
+
+    // Update match_keywords if provided
+    if (updateData.match_keywords) {
+      question.match_keywords = updateData.match_keywords;
+    }
+
+    // Update answer if provided
+    if (updateData.answer) {
+      question.answer = updateData.answer;
+    }
+
+    const success = updateGenericQuestionsConfig(config);
+
+    if (success) {
+      return {
+        success: true,
+        data: { questionId, updated: updateData },
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Failed to save configuration',
+        timestamp: new Date().toISOString()
+      };
+    }
   } catch (error) {
     return {
       success: false,
-      error: `Failed to update question answer: ${error}`,
+      error: `Failed to update question: ${error}`,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+/**
+ * Add a new question
+ * POST /api/generic-questions
+ * @param {any} questionData
+ * @returns {ApiResponse}
+ */
+export function handleAddQuestion(questionData) {
+  try {
+    const config = getGenericQuestionsConfig();
+
+    // Find the highest ID and add 1
+    const maxId = config.questions.reduce((max, q) => Math.max(max, q.id), 0);
+    const newQuestion = {
+      id: maxId + 1,
+      match_keywords: questionData.match_keywords || [''],
+      answer: questionData.answer || ['']
+    };
+
+    config.questions.push(newQuestion);
+    const success = updateGenericQuestionsConfig(config);
+
+    if (success) {
+      return {
+        success: true,
+        data: { question: newQuestion },
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Failed to save configuration',
+        timestamp: new Date().toISOString()
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to add question: ${error}`,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+/**
+ * Delete a question
+ * DELETE /api/generic-questions/:questionId
+ * @param {string} questionId
+ * @returns {ApiResponse}
+ */
+export function handleDeleteQuestion(questionId) {
+  try {
+    const config = getGenericQuestionsConfig();
+    const initialLength = config.questions.length;
+
+    config.questions = config.questions.filter(q => q.id.toString() !== questionId);
+
+    if (config.questions.length === initialLength) {
+      return {
+        success: false,
+        error: `Question with ID '${questionId}' not found`,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    const success = updateGenericQuestionsConfig(config);
+
+    if (success) {
+      return {
+        success: true,
+        data: { questionId },
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Failed to save configuration',
+        timestamp: new Date().toISOString()
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to delete question: ${error}`,
       timestamp: new Date().toISOString()
     };
   }
