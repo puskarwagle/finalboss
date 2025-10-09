@@ -1,7 +1,7 @@
 import {
   handleUpdateQuestionAnswer,
   handleDeleteQuestion
-} from '../../../../bots/seek/generic_questions_api.js';
+} from '../../../../bots/seek/handlers/generic_questions_api.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function PUT({ params, request }) {

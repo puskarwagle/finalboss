@@ -1,4 +1,4 @@
-import { handleGetStats } from '../../../../bots/seek/generic_questions_api.js';
+import { handleGetStats } from '../../../../bots/seek/handlers/generic_questions_api.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET() {

@@ -7,7 +7,7 @@ import {
   getGenericQuestionsConfig,
   updateGenericQuestionsConfig,
   updateQuestionAnswer
-} from './generic_question_handler';
+} from './generic_question_handler.ts';
 
 /**
  * @typedef {Object} ApiResponse
