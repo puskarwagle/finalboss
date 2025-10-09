@@ -2,7 +2,7 @@ import {
   handleGetGenericQuestions,
   handleUpdateSettings,
   handleAddQuestion
-} from '../../../bots/seek/generic_questions_api.js';
+} from '../../../bots/seek/unused/generic_questions_api.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET() {
