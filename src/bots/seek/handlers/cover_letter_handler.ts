@@ -129,7 +129,8 @@ async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
     JSON.stringify(requestBody, null, 2)
   );
 
-  const response = await fetch('http://localhost:3000/api/cover_letter', {
+  const apiBase = process.env.API_BASE || 'http://localhost:3000';
+  const response = await fetch(`${apiBase}/api/cover_letter`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requestBody)

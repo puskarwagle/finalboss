@@ -174,7 +174,7 @@ steps_config:
       resume_selected: "click_continue_button"
       resume_not_required: "click_continue_button"
       resume_selection_error: "close_quick_apply_and_continue_search"
-    timeout: 15
+    timeout: 60
     on_timeout_event: "resume_selection_error"
 
   click_continue_button:

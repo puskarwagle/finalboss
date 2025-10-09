@@ -91,7 +91,8 @@ export async function getIntelligentAnswers(questions: any[], ctx: WorkflowConte
         JSON.stringify(requestBody, null, 2)
       );
 
-      const response = await fetch('http://localhost:3000/api/questionAndAnswers', {
+      const apiBase = process.env.API_BASE || 'http://localhost:3000';
+      const response = await fetch(`${apiBase}/api/questionAndAnswers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)

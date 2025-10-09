@@ -94,7 +94,8 @@ async function generateAIResume(ctx: WorkflowContext): Promise<string> {
     JSON.stringify(requestBody, null, 2)
   );
 
-  const response = await fetch('http://localhost:3000/api/resume', {
+  const apiBase = process.env.API_BASE || 'http://localhost:3000';
+  const response = await fetch(`${apiBase}/api/resume`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requestBody)
