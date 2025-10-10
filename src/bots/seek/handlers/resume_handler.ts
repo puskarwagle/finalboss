@@ -77,11 +77,22 @@ async function generateAIResume(ctx: WorkflowContext): Promise<string> {
     : "Experienced software developer with full stack expertise";
 
   const requestBody = {
-    job_id: jobId,
+    job_id: `seek_${jobId}`,
     job_details: jobData.details || `${jobData.title} at ${jobData.company}`,
     resume_text: resumeText,
     useAi: "deepseek-chat",
-    additional_data: `Title: ${jobData.title}\nCompany: ${jobData.company}\nLocation: ${jobData.location || 'N/A'}`
+
+    // Required tracking fields per API docs
+    platform: "seek",
+    platform_job_id: jobId,
+    job_title: jobData.title || '',
+    company: jobData.company || '',
+
+    // Custom prompt for better AI results
+    prompt: `Tailor this resume for the Seek job posting.
+Optimize for ATS (Applicant Tracking Systems) by including relevant keywords from the job description.
+Highlight experience and skills that directly match the job requirements.
+Keep formatting clean and professional. Focus on quantifiable achievements.`
   };
 
   const jobDir = path.join(__dirname, '../../jobs', jobId);
@@ -94,19 +105,9 @@ async function generateAIResume(ctx: WorkflowContext): Promise<string> {
     JSON.stringify(requestBody, null, 2)
   );
 
-  const apiBase = process.env.API_BASE || 'http://localhost:3000';
-  const response = await fetch(`${apiBase}/api/resume`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Resume API failed: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
+  // Use apiRequest helper for authenticated calls
+  const { apiRequest } = await import('../../core/api_client');
+  const data = await apiRequest('/api/resume', 'POST', requestBody);
 
   fs.writeFileSync(
     path.join(jobDir, 'resume_response.json'),

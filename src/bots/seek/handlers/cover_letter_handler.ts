@@ -4,91 +4,6 @@ const printLog = (message: string) => {
   console.log(message);
 };
 
-// Extract categorized information from job details
-interface JobInfo {
-  requirements: string[];
-  description: string;
-  responsibilities: string;
-  benefits: string;
-}
-
-function extractJobInfo(details: string): JobInfo {
-  const requirements: string[] = [];
-  let description = '';
-  let responsibilities = '';
-  let benefits = '';
-
-  // Common tech keywords to look for
-  const techKeywords = [
-    'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java', 'C#', 'PHP',
-    'Angular', 'Vue', 'AWS', 'Azure', 'Docker', 'Kubernetes', 'Git', 'SQL',
-    'MongoDB', 'PostgreSQL', 'Express', 'API', 'REST', 'GraphQL', 'DevOps',
-    'CI/CD', 'Spring Boot', 'Microservices', 'Agile', 'Scrum', 'Redis', 'Kafka',
-    'Terraform', 'Jenkins', 'Helm', 'Elasticsearch', 'RabbitMQ', 'Selenium'
-  ];
-
-  // Find mentioned technologies
-  techKeywords.forEach(tech => {
-    if (details.toLowerCase().includes(tech.toLowerCase())) {
-      requirements.push(tech);
-    }
-  });
-
-  // Extract sections based on common patterns
-  const lines = details.split('\n');
-  let currentSection = '';
-
-  for (const line of lines) {
-    const lowerLine = line.toLowerCase().trim();
-
-    // Identify section headers
-    if (lowerLine.includes('what you\'ll do') || lowerLine.includes('responsibilities') ||
-        lowerLine.includes('key duties') || lowerLine.includes('your role')) {
-      currentSection = 'responsibilities';
-    } else if (lowerLine.includes('about you') || lowerLine.includes('what you\'ll bring') ||
-               lowerLine.includes('requirements') || lowerLine.includes('skills') ||
-               lowerLine.includes('experience')) {
-      currentSection = 'requirements';
-    } else if (lowerLine.includes('what you\'ll enjoy') || lowerLine.includes('benefits') ||
-               lowerLine.includes('perks') || lowerLine.includes('we offer')) {
-      currentSection = 'benefits';
-    } else if (lowerLine.includes('about the role') || lowerLine.includes('opportunity') ||
-               lowerLine.includes('position')) {
-      currentSection = 'description';
-    }
-
-    // Add content to appropriate section
-    if (currentSection && line.trim() && !lowerLine.includes('what you\'ll') &&
-        !lowerLine.includes('about you') && !lowerLine.includes('benefits') &&
-        !lowerLine.includes('requirements')) {
-      switch (currentSection) {
-        case 'responsibilities':
-          responsibilities += line + '\n';
-          break;
-        case 'benefits':
-          benefits += line + '\n';
-          break;
-        case 'description':
-          description += line + '\n';
-          break;
-      }
-    }
-  }
-
-  // If no structured sections found, use first part as description
-  if (!description && !responsibilities) {
-    const paragraphs = details.split('\n\n');
-    description = paragraphs.slice(0, 3).join('\n\n'); // First 3 paragraphs
-  }
-
-  return {
-    requirements: [...new Set(requirements)], // Remove duplicates
-    description: description.trim(),
-    responsibilities: responsibilities.trim(),
-    benefits: benefits.trim()
-  };
-}
-
 async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
@@ -112,11 +27,22 @@ async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
     : "Experienced software developer";
 
   const requestBody = {
-    job_id: jobId,
+    job_id: `seek_${jobId}`,
     job_details: jobData.details || `${jobData.title} at ${jobData.company}`,
     resume_text: resumeText,
     useAi: "deepseek-chat",
-    additional_data: `Title: ${jobData.title}\nCompany: ${jobData.company}\nLocation: ${jobData.location || 'N/A'}`
+
+    // Required tracking fields per API docs
+    platform: "seek",
+    platform_job_id: jobId,
+    job_title: jobData.title || '',
+    company: jobData.company || '',
+
+    // Custom prompt for better AI results
+    prompt: `Write a compelling, professional cover letter for this Seek job posting.
+Highlight relevant experience and skills that match the job requirements.
+Keep it concise (300-400 words) and personalized to ${jobData.company || 'the company'}.
+Focus on demonstrating value and enthusiasm for the role.`
   };
 
   const jobDir = path.join(__dirname, '../../jobs', jobId);
@@ -129,19 +55,9 @@ async function generateAICoverLetter(ctx: WorkflowContext): Promise<string> {
     JSON.stringify(requestBody, null, 2)
   );
 
-  const apiBase = process.env.API_BASE || 'http://localhost:3000';
-  const response = await fetch(`${apiBase}/api/cover_letter`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Cover Letter API failed: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
+  // Use apiRequest helper for authenticated calls
+  const { apiRequest } = await import('../../core/api_client');
+  const data = await apiRequest('/api/cover_letter', 'POST', requestBody);
 
   fs.writeFileSync(
     path.join(jobDir, 'cover_letter_response.json'),

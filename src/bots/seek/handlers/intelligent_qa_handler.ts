@@ -73,12 +73,23 @@ export async function getIntelligentAnswers(questions: any[], ctx: WorkflowConte
         : "Experienced software developer";
 
       const requestBody = {
-        job_id: jobId,
+        job_id: `seek_${jobId}`,
         questions: aiQuestions,
         resume_text: resumeText,
         useAi: "deepseek-chat",
         job_details: jobData.details || `${jobData.title} at ${jobData.company}`,
-        additional_data: `Title: ${jobData.title}\nCompany: ${jobData.company}`
+
+        // Required tracking fields per API docs
+        platform: "seek",
+        platform_job_id: jobId,
+        job_title: jobData.title || '',
+        company: jobData.company || '',
+
+        // Custom prompt for better AI results
+        prompt: `Answer these employer screening questions professionally and honestly based on the provided resume.
+For multiple choice questions, select the most appropriate option that matches the candidate's experience.
+For text questions, provide clear, concise answers (1-2 sentences).
+Be truthful - if the candidate doesn't have a specific qualification, indicate that politely while highlighting related experience.`
       };
 
       const jobDir = path.join(__dirname, '../../jobs', jobId);
@@ -91,18 +102,9 @@ export async function getIntelligentAnswers(questions: any[], ctx: WorkflowConte
         JSON.stringify(requestBody, null, 2)
       );
 
-      const apiBase = process.env.API_BASE || 'http://localhost:3000';
-      const response = await fetch(`${apiBase}/api/questionAndAnswers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        throw new Error(`API failed: ${response.status}`);
-      }
-
-      const data = await response.json();
+      // Use apiRequest helper for authenticated calls
+      const { apiRequest } = await import('../../core/api_client');
+      const data = await apiRequest('/api/questionAndAnswers', 'POST', requestBody);
 
       fs.writeFileSync(
         path.join(jobDir, 'qna_response.json'),
