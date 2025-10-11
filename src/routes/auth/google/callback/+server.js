@@ -71,9 +71,9 @@ export async function GET({ url, cookies }) {
       timestamp: Date.now()
     }));
 
-    // Set session cookie
+    // Set session cookie (removed HttpOnly so JavaScript can access it for API calls)
     const headers = new Headers();
-    headers.append('Set-Cookie', `session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
+    headers.append('Set-Cookie', `session_token=${sessionToken}; Path=/; SameSite=Lax; Max-Age=86400`);
     headers.append('Set-Cookie', `oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`); // Clear state
     headers.append('Location', '/app');
 
