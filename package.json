@@ -4,7 +4,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "~/.bun/bin/bun --bun vite dev",
+    "dev": "./dev-with-env.sh",
+    "dev:original": "~/.bun/bin/bun --bun vite dev",
     "build": "~/.bun/bin/bun --bun vite build",
     "preview": "~/.bun/bin/bun --bun vite preview",
     "check": "~/.bun/bin/bun --bun svelte-kit sync && ~/.bun/bin/bun --bun svelte-check --tsconfig ./tsconfig.json",

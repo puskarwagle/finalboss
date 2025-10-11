@@ -83,6 +83,11 @@ export async function GET({ url, cookies }) {
     });
 
   } catch (error) {
+    // SvelteKit's redirect() throws an error - we need to re-throw it
+    if (error?.status >= 300 && error?.status < 400) {
+      throw error;
+    }
+    
     console.error('OAuth callback error:', error);
     return redirect(302, '/login?error=oauth_failed');
   }
