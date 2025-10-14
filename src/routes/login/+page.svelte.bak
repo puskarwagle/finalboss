@@ -1,23 +1,40 @@
 <script>
+  import { onMount } from 'svelte';
   import { authService } from '$lib/authService.js';
 
-  let email = '';
   let error = '';
   let loading = false;
+  // Get the Google Client ID from environment variables
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-  async function handleLogin(e) {
-    e.preventDefault();
+  onMount(() => {
+    // If the Client ID is missing, the Google library will handle the error gracefully
+    // by logging it to the console, which is preferable to showing a confusing
+    // error message to the end-user.
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleLogin,
+    });
 
-    if (!email || !email.includes('@')) {
-      error = 'Please enter a valid email address';
-      return;
+    // Render the Google Sign-In button
+    window.google.accounts.id.renderButton(
+      document.getElementById('google-signin-button'),
+      { theme: 'outline', size: 'large', width: '100%' } // Customization options
+    );
+
+    // Check for errors in URL params (e.g., from previous failed attempts)
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('error')) {
+      error = 'An authentication error occurred. Please try again.';
     }
+  });
 
+  async function handleGoogleLogin(response) {
     loading = true;
     error = '';
-
-    const result = await authService.loginWithEmail(email);
-
+    
+    const result = await authService.loginWithGoogleCredential(response.credential);
+    
     if (!result.success) {
       error = result.error || 'Login failed. Please try again.';
       loading = false;
@@ -52,36 +69,15 @@
           </div>
         {/if}
 
-        <!-- Email Login Form -->
-        <form on:submit={handleLogin} class="space-y-4">
-          <div class="form-control">
-            <label class="label" for="email">
-              <span class="label-text">Email Address</span>
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="your.email@example.com"
-              class="input input-bordered w-full"
-              bind:value={email}
-              disabled={loading}
-              required
-            />
-          </div>
+        <!-- Google Login Button Container -->
+        <div id="google-signin-button" class="w-full flex justify-center my-4"></div>
 
-          <button
-            type="submit"
-            class="btn btn-primary w-full"
-            disabled={loading}
-          >
-            {#if loading}
-              <span class="loading loading-spinner loading-sm"></span>
-              Signing in...
-            {:else}
-              Sign In
-            {/if}
-          </button>
-        </form>
+        {#if loading}
+          <div class="flex justify-center items-center">
+            <span class="loading loading-spinner loading-md"></span>
+            <span class="ml-2">Authenticating...</span>
+          </div>
+        {/if}
 
         <!-- Info Box -->
         <div class="bg-base-200 rounded-lg p-4 text-sm mt-4">
@@ -90,9 +86,9 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p class="font-semibold mb-1">Simple & Secure Login</p>
+              <p class="font-semibold mb-1">Secure & Easy Login</p>
               <p class="text-base-content/70">
-                Enter your email to sign in. No password required for development.
+                Use your Google account to securely sign in. We only use your basic profile information for authentication.
               </p>
             </div>
           </div>

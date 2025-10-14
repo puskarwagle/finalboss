@@ -1,15 +1,15 @@
 <script>
   import { onMount } from 'svelte';
-  import { auth } from '$lib/auth.js';
+  import { authService } from '$lib/authService.js';
   import { page } from '$app/stores';
   import '../app.css';
 
   onMount(() => {
-    auth.checkAuth();
+    authService.initialize();
   });
 </script>
 
-{#if $page.data?.session?.user}
+{#if $authService.isLoggedIn && $authService.user}
   <!-- Authenticated Layout with DaisyUI Drawer -->
   <div class="drawer lg:drawer-open">
     <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
@@ -32,12 +32,12 @@
           <div class="dropdown dropdown-end">
             <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
               <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
-                {($page.data.session.user.name || $page.data.session.user.email).charAt(0).toUpperCase()}
+                {($authService.user.name || $authService.user.email).charAt(0).toUpperCase()}
               </div>
             </div>
             <ul tabindex="-1" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
               <li><a href="/profile">Profile</a></li>
-              <li><button on:click={() => auth.logout()}>Logout</button></li>
+              <li><button on:click={() => authService.logout()}>Logout</button></li>
             </ul>
           </div>
         </div>
@@ -126,19 +126,19 @@
           <div class="flex items-center gap-3 mb-3">
             <div class="avatar">
               <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
-                {($page.data.session.user.name || $page.data.session.user.email).charAt(0).toUpperCase()}
+                {($authService.user.name || $authService.user.email).charAt(0).toUpperCase()}
               </div>
             </div>
             <div class="flex-1 min-w-0">
               <div class="font-semibold text-sm truncate">
-                {$page.data.session.user.name || $page.data.session.user.email.split('@')[0]}
+                {$authService.user.name || $authService.user.email.split('@')[0]}
               </div>
               <div class="text-xs text-base-content/70 truncate">
-                {$page.data.session.user.email}
+                {$authService.user.email}
               </div>
             </div>
           </div>
-          <button class="btn btn-outline btn-sm w-full" on:click={() => auth.logout()}>
+          <button class="btn btn-outline btn-sm w-full" on:click={() => authService.logout()}>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
             </svg>

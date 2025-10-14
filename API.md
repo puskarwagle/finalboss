@@ -1,424 +1,459 @@
-# RAG System API Documentation
+# Job Application Assistant API
 
-## How the API Works
+AI-powered API for automating job application tasks: cover letters, resume tailoring, and employer question answering.
 
-Your RAG system provides a REST API that other applications can use to:
-- Upload and manage files
-- Query your document corpus using AI
-- Manage user data and authentication
-- Monitor system health
+**Base URL**: `http://localhost:3000`
 
-## API Key Generation
+---
 
-The API uses **API keys** for authentication because:
-1. **Security**: No passwords sent over HTTP
-2. **Granular permissions**: Each key has specific scopes (read files, write files, query RAG, etc.)
-3. **Easy revocation**: Disable keys without changing passwords
-4. **Rate limiting**: Track usage per key
+## 🚀 Quick Start
 
-### Available Scopes:
-- `files:read` - Read user files
-- `files:write` - Upload and manage files
-- `files:delete` - Delete files
-- `corpus:read` - Read corpus information
-- `corpus:write` - Manage corpus
-- `rag:query` - Query the RAG system
-- `rag:import` - Import files to RAG
-- `system:status` - Read system status
-- `admin` - Full administrative access
+### Web UI Access
+1. Start the server: `npm run dev`
+2. Navigate to `http://localhost:3000`
+3. Enter your email to login (no password required)
+4. Access the admin dashboard and API documentation
 
-## Using the API from Another App
+### API Access
+- **Interactive Testing**: Visit `http://localhost:3000/api-docs` (Swagger UI)
+- **Programmatic Access**: Use JWT authentication (see below)
 
-### 1. Deploy Your RAG System
-```bash
-# Build and deploy to your server
-npm run build
-# Deploy to your domain: https://your-rag-domain.com
-```
+---
 
-### 2. Generate API Key
-- Visit your deployed app's UI
-- Go to API key generation page
-- Create key with required scopes
-- **Save the key** - it's only shown once!
+## 🔐 Authentication
 
-### 3. Use from External App
+### For Web UI (Simple Email Login)
 
-#### JavaScript Example:
-```javascript
-class RAGClient {
-  constructor(apiKey, baseURL = 'https://your-rag-domain.com/api') {
-    this.apiKey = apiKey;
-    this.baseURL = baseURL;
-  }
+The web interface uses session-based authentication with a simple email login.
 
-  async request(method, endpoint, data = null) {
-    const config = {
-      method,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    };
+**Endpoint**: `POST /api/auth/email-login`
 
-    if (data) config.body = JSON.stringify(data);
-
-    const response = await fetch(`${this.baseURL}${endpoint}`, config);
-    return await response.json();
-  }
-
-  // Upload a file
-  async uploadFile(file, userId) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', userId);
-
-    const response = await fetch(`${this.baseURL}/files`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${this.apiKey}` },
-      body: formData
-    });
-
-    return await response.json();
-  }
-
-  // Query the RAG system
-  async query(userId, question) {
-    return await this.request('POST', '/rag/query', {
-      userId,
-      question
-    });
-  }
-}
-
-// Usage in your external app
-const rag = new RAGClient('rag_abc123_your-secret-key');
-
-// Upload user's resume
-const fileResult = await rag.uploadFile(resumeFile, 'user@company.com');
-
-// Ask questions about the resume
-const answer = await rag.query('user@company.com', 'What skills does this person have?');
-console.log(answer.data.answer);
-```
-
-#### Python Example:
-```python
-import requests
-
-class RAGClient:
-    def __init__(self, api_key, base_url='https://your-rag-domain.com/api'):
-        self.api_key = api_key
-        self.base_url = base_url
-        self.headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json'
-        }
-
-    def query(self, user_id, question):
-        response = requests.post(
-            f'{self.base_url}/rag/query',
-            headers=self.headers,
-            json={'userId': user_id, 'question': question}
-        )
-        return response.json()
-
-    def upload_file(self, file_path, user_id):
-        with open(file_path, 'rb') as f:
-            files = {'file': f}
-            data = {'userId': user_id}
-            headers = {'Authorization': f'Bearer {self.api_key}'}
-
-            response = requests.post(
-                f'{self.base_url}/files',
-                headers=headers,
-                files=files,
-                data=data
-            )
-        return response.json()
-
-# Usage
-rag = RAGClient('rag_abc123_your-secret-key')
-result = rag.query('user@company.com', 'Summarize this resume')
-```
-
-## Dedicated AI Generation API Endpoints
-
-### Cover Letter API
-**POST** `/api/cover_letter`
-
-Generate professional cover letters tailored to specific job postings.
-
-**Request:**
+**Request**:
 ```json
 {
-  "jobDetails": {
-    "title": "Software Engineer",
-    "company": "Company Name",
-    "description": "Job description text...",
-    "requirements": ["React", "Node.js", "TypeScript"]
-  },
-  "userEmail": "user@example.com",
-  "customPrompt": "Optional custom prompt override"
+  "email": "user@example.com"
 }
 ```
 
-**Response:**
+**Response**:
+```json
+{
+  "success": true,
+  "token": "session_token_here",
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "name": "user",
+    "userType": "user"
+  }
+}
+```
+
+Use the `session_token` in `Authorization: Bearer <token>` header or store it in cookies.
+
+---
+
+### For API Access (JWT)
+
+The API uses JWT-based authentication with access tokens and refresh tokens.
+
+#### Option 1: User Authentication
+
+**Endpoint**: `POST /api/auth/login-jwt`
+
+**Request**:
+```json
+{
+  "credential": "google_oauth_token"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 900,
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "userType": "user"
+  }
+}
+```
+
+#### Option 2: Service Accounts (Machine-to-Machine)
+
+Service accounts are for third-party apps, bots, and automation scripts.
+
+**Step 1: Create Service Account**
+
+**Endpoint**: `POST /api/service-accounts`
+
+**Request**:
+```json
+{
+  "name": "Job Application Bot",
+  "scopes": ["cover_letter", "resume", "questionAndAnswers"],
+  "rateLimit": {
+    "requestsPerHour": 5000,
+    "requestsPerDay": 50000
+  }
+}
+```
+
+**Response**:
 ```json
 {
   "success": true,
   "data": {
-    "coverLetter": "Dear Hiring Manager...",
-    "prompt": "Write a compelling cover letter for this position..."
+    "serviceAccount": {
+      "id": "sa_id",
+      "name": "Job Application Bot",
+      "clientId": "sa_1a2b3c4d5e6f7g8h",
+      "clientSecret": "sas_9i8h7g6f5e4d3c2b1a0z9y8x7w6v5u4t",
+      "scopes": ["cover_letter", "resume", "questionAndAnswers"]
+    },
+    "warning": "⚠️ Save the client_secret - it's only shown once!"
   }
 }
 ```
 
-**Required scopes:** `rag:query`
+**Step 2: Get Access Token**
 
-### Resume API
-**POST** `/api/resume`
+**Endpoint**: `POST /api/auth/token`
 
-Generate tailored resumes optimized for specific job requirements.
-
-**Request:**
+**Request** (OAuth 2.0 Client Credentials):
 ```json
 {
-  "jobDetails": {
-    "title": "Senior Software Engineer",
-    "company": "TechCorp",
-    "description": "Job description...",
-    "requirements": ["React", "Node.js", "TypeScript", "AWS"]
-  },
-  "userEmail": "user@example.com",
-  "resumeType": "tailored",
-  "customPrompt": "Optional custom prompt override"
+  "grant_type": "client_credentials",
+  "client_id": "sa_1a2b3c4d5e6f7g8h",
+  "client_secret": "sas_9i8h7g6f5e4d3c2b1a0z9y8x7w6v5u4t"
 }
 ```
 
-**Response:**
+**Response**:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "scope": "cover_letter resume questionAndAnswers"
+}
+```
+
+#### Token Refresh
+
+When your access token expires (15 minutes), use the refresh token.
+
+**Endpoint**: `POST /api/auth/refresh`
+
+**Request**:
+```json
+{
+  "refreshToken": "your_refresh_token"
+}
+```
+
+**Response**:
 ```json
 {
   "success": true,
-  "data": {
-    "resume": "JOHN DOE\nSoftware Engineer\n...",
-    "resumeType": "tailored",
-    "prompt": "Create a tailored resume for this position..."
-  }
+  "accessToken": "new_access_token",
+  "refreshToken": "new_refresh_token",
+  "expiresIn": 900
 }
 ```
 
-**Required scopes:** `rag:query`
+**Note**: Refresh tokens are rotated for security. Always save the new `refreshToken`.
 
-### Question & Answers API
-**POST** `/api/questionAndAnswers`
+---
 
-Generate optimal answers for employer questionnaires and application forms.
+## 📚 API Endpoints
 
-**Request:**
+All endpoints require `Authorization: Bearer <access_token>` header.
 
-The `questions` array contains objects for each question. The API is flexible with the key names for these objects:
-- The question text can use the key `q`, `question`, or `text`.
-- The options array can use the key `opts` or `options`.
+### AI Generation
 
+#### Generate Cover Letter
+
+**Endpoint**: `POST /api/cover_letter`
+
+**Request**:
 ```json
 {
+  "job_id": "job_001",
+  "job_details": "We are seeking a Senior Full Stack Developer...",
+  "resume_text": "John Doe\nSenior Software Engineer\n...",
+  "useAi": "deepseek-chat",
+  "company": "TechStart Inc",
+  "job_title": "Senior Full Stack Developer",
+  "platform": "linkedin",
+  "platform_job_id": "3845729103"
+}
+```
+
+**Response**:
+```json
+{
+  "cover_letter": "Dear Hiring Manager,\n\nI am writing to express...",
+  "job_id": "job_001"
+}
+```
+
+**Required Fields**: `job_id`, `job_details`, `resume_text`, `useAi`
+
+#### Tailor Resume
+
+**Endpoint**: `POST /api/resume`
+
+**Request**:
+```json
+{
+  "job_id": "job_002",
+  "job_details": "Looking for a Frontend Engineer with React expertise...",
+  "resume_text": "Jane Smith\nSoftware Developer\n...",
+  "useAi": "deepseek-chat",
+  "company": "WebTech Solutions",
+  "job_title": "Frontend Engineer",
+  "platform": "indeed"
+}
+```
+
+**Response**:
+```json
+{
+  "resume": "Jane Smith\nSoftware Developer\n\nProfessional Summary...",
+  "job_id": "job_002"
+}
+```
+
+**Required Fields**: `job_id`, `job_details`, `resume_text`, `useAi`
+
+#### Generate Q&A Responses
+
+**Endpoint**: `POST /api/questionAndAnswers`
+
+**Request**:
+```json
+{
+  "job_id": "job_003",
   "questions": [
     {
-      "q": "What is your experience level with React?",
-      "opts": ["Beginner", "Intermediate", "Advanced", "Expert"]
+      "q": "Why do you want to work for our company?",
+      "opts": ["Career growth", "Company culture", "Technical challenges", "All of the above"],
+      "type": "radio"
     },
     {
-      "question": "Are you willing to work remotely?",
-      "options": ["Yes", "No", "Hybrid preferred"]
+      "q": "How many years of experience do you have?",
+      "opts": ["0-2 years", "3-5 years", "6-10 years", "10+ years"],
+      "type": "radio"
     }
   ],
-  "userEmail": "user@example.com",
-  "jobDetails": {
-    "title": "Frontend Developer",
-    "company": "WebCorp"
-  },
-  "customPrompt": "Optional custom prompt override"
+  "resume_text": "Sarah Johnson\nProduct Manager\n...",
+  "useAi": "deepseek-chat",
+  "job_details": "Seeking a Product Manager to lead our mobile app initiative...",
+  "company": "MobileApp Inc",
+  "job_title": "Product Manager"
 }
 ```
 
-**Response:**
+**Response**:
+```json
+{
+  "answers": "Question 1: Recommended answer is 'All of the above'...",
+  "job_id": "job_003",
+  "questions_count": 2
+}
+```
+
+**Required Fields**: `job_id`, `questions`, `resume_text`, `useAi`
+
+### User & Authentication
+
+#### Get Current User
+
+**Endpoint**: `GET /api/auth/me`
+
+**Response**:
 ```json
 {
   "success": true,
   "data": {
-    "answers": "Question 1 → Recommended Answer: Advanced → Rationale: Based on your portfolio...",
-    "questionsCount": 2,
-    "prompt": "For each of these employer questions..."
+    "user": {
+      "id": "user_id",
+      "email": "user@example.com",
+      "type": "user",
+      "userType": "user",
+      "scopes": ["cover_letter", "resume", "questionAndAnswers"]
+    },
+    "token": {
+      "type": "access",
+      "expiresAt": "2025-10-15T19:15:00.000Z"
+    },
+    "rateLimit": {
+      "remaining": 498,
+      "resetTime": "2025-10-15T19:00:00.000Z"
+    }
   }
 }
 ```
 
-**Required scopes:** `rag:query`
+### Service Account Management
 
-## Complete API Endpoints
+#### List Service Accounts
 
-### Authentication APIs
-- `GET /api/auth/me` - Get current user info
-- `GET /api/auth/keys` - List API keys (admin only)
-- `POST /api/auth/keys` - Create API key (admin only)
-- `DELETE /api/auth/keys/:keyId` - Revoke API key (admin only)
-- `GET /api/auth/test-key` - Generate test key (dev only)
-- `POST /api/auth/exchange-code` - OAuth token exchange
+**Endpoint**: `GET /api/service-accounts`
 
-### Corpus Management APIs
-- `GET /api/corpus` - Get/create user corpus with files
-- `POST /api/corpus` - Manage corpus (create/cleanup)
-- `POST /api/corpus/cleanup` - Clean duplicate corpora
-- `POST /api/corpus/create` - Create new corpus
-- `GET /api/corpus/files` - List corpus files
-- `GET /api/corpus/get` - Get/create corpus (legacy)
-- `POST /api/corpus/get` - Get/create corpus (legacy)
-- `GET /api/corpus/list` - List all corpora
-
-### RAG (AI Query) APIs
-- `POST /api/rag/import` - Import files to RAG system
-- `GET /api/rag/operations/[operationId]` - Check import status
-- `POST /api/rag/query` - Query AI with RAG context
-
-### File Storage APIs
-- `GET /api/storage/browse-all` - Browse all storage files
-- `DELETE /api/storage/delete` - Delete user file
-- `POST /api/storage/create-folder` - Create user folder
-- `GET /api/storage/list` - List user files
-- `POST /api/storage/sync` - Sync files to Vertex AI
-- `POST /api/storage/upload` - Upload with RAG sync
-
-### Files API (Consolidated)
-- `GET /api/files` - List user files
-- `POST /api/files` - Upload file
-- `GET /api/files/[filename]` - Get file details
-- `DELETE /api/files/[filename]` - Delete file
-- `PATCH /api/files/[filename]` - Update file content
-
-### System APIs
-- `GET /api/system/stats` - Usage statistics
-- `GET /api/system/status` - System health check
-
-### Vertex AI APIs
-- `GET /api/vertex/files` - List RAG corpus files
-- `GET /api/vertex/operations` - Check operation status
-
-### Job Management APIs
-- `GET /api/jobs` - List job files
-- `GET /api/jobs/[filename]` - Get job file content
-
-### AI Generation APIs
-- `POST /api/generate` - Generate cover letters/employer answers (legacy)
-- `POST /api/cover_letter` - Generate cover letters
-- `POST /api/resume` - Generate tailored resumes
-- `POST /api/questionAndAnswers` - Generate employer question answers
-
-### Session & Debug APIs
-- `GET /api/session` - Get session API key
-- `POST /api/debug/test-import` - Test RAG import
-- `GET /api/debug/vertex-config` - Debug Vertex config
-
-## Example Use Cases
-
-### 1. Job Application System
-```javascript
-// When user uploads resume
-const uploadResult = await rag.uploadFile(resumeFile, applicant.email);
-
-// Extract skills automatically
-const skills = await rag.query(applicant.email, 'List all technical skills mentioned');
-
-// Generate interview questions
-const questions = await rag.query(applicant.email, 'Generate 5 interview questions based on their experience');
-```
-
-### 2. Document Analysis Tool
-```javascript
-// Upload contract/document
-await rag.uploadFile(document, client.id);
-
-// Extract key information
-const summary = await rag.query(client.id, 'Summarize the main terms and conditions');
-const risks = await rag.query(client.id, 'What are the potential risks or red flags?');
-```
-
-### 3. Customer Support Bot
-```javascript
-// Upload product manuals, FAQs
-await rag.uploadFile(manual, 'support-docs');
-
-// Answer customer questions
-const answer = await rag.query('support-docs', customerQuestion);
-```
-
-### 4. Job Application Assistant
-```javascript
-// Generate cover letter for job application
-const coverLetter = await rag.request('POST', '/cover_letter', {
-  jobDetails: {
-    title: 'Senior Software Engineer',
-    company: 'TechCorp',
-    description: 'We are looking for an experienced developer...',
-    requirements: ['React', 'Node.js', 'TypeScript']
-  },
-  userEmail: 'candidate@email.com'
-});
-
-// Generate tailored resume
-const resume = await rag.request('POST', '/resume', {
-  jobDetails: {
-    title: 'Senior Software Engineer',
-    company: 'TechCorp',
-    requirements: ['React', 'Node.js', 'TypeScript']
-  },
-  userEmail: 'candidate@email.com',
-  resumeType: 'tailored'
-});
-
-// Get answers for employer questions
-const answers = await rag.request('POST', '/questionAndAnswers', {
-  questions: [
-    { q: 'What is your experience level?', opts: ['Entry', 'Mid', 'Senior'] },
-    { q: 'Are you willing to relocate?', opts: ['Yes', 'No', 'Maybe'] }
-  ],
-  userEmail: 'candidate@email.com',
-  jobDetails: { title: 'Senior Software Engineer', company: 'TechCorp' }
-});
-```
-
-## Rate Limiting
-
-- **100 requests per hour** per API key
-- Rate limit headers in responses:
-  - `X-RateLimit-Remaining`
-  - `X-RateLimit-Reset`
-
-## Response Format
-
-All responses follow this structure:
+**Response**:
 ```json
 {
-  "success": boolean,
-  "data": object | null,
-  "error": string | null,
-  "timestamp": "2024-01-01T00:00:00.000Z"
+  "success": true,
+  "data": {
+    "serviceAccounts": [
+      {
+        "id": "sa_id",
+        "name": "Job Application Bot",
+        "clientId": "sa_1a2b3c4d5e6f7g8h",
+        "scopes": ["cover_letter", "resume"],
+        "isActive": true,
+        "createdAt": "2025-10-15T10:00:00.000Z",
+        "rateLimit": {
+          "requestsPerHour": 5000,
+          "requestsPerDay": 50000
+        }
+      }
+    ]
+  }
 }
 ```
 
-## Error Codes
+#### Revoke Service Account
 
-- `400` - Bad Request
-- `401` - Unauthorized (invalid API key)
-- `403` - Forbidden (insufficient scopes)
+**Endpoint**: `DELETE /api/service-accounts`
+
+**Request**:
+```json
+{
+  "accountId": "674f8a1b2c3d4e5f6a7b8c9d"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true
+}
+```
+
+---
+
+## 🎯 Available Scopes
+
+When creating service accounts, you can grant these permissions:
+
+- `cover_letter` - Generate cover letters
+- `resume` - Tailor resumes
+- `questionAndAnswers` - Answer employer questions
+- `upload` - Upload documents
+- `jobs` - Manage job listings
+- `admin` - Full administrative access
+
+---
+
+## 🔧 AI Providers
+
+Supported AI providers for the `useAi` parameter:
+
+- `deepseek-chat` - DeepSeek Chat (recommended)
+- `gemini-pro` - Google Gemini Pro
+- `claude-3` - Anthropic Claude 3
+- `openai` - OpenAI GPT-4
+
+---
+
+## ⚠️ Error Responses
+
+All error responses follow this format:
+
+```json
+{
+  "success": false,
+  "error": "Error message description"
+}
+```
+
+**Common Status Codes**:
+- `400` - Bad Request (missing required fields)
+- `401` - Unauthorized (missing or invalid token)
+- `403` - Forbidden (insufficient permissions/scopes)
 - `404` - Not Found
-- `429` - Rate limit exceeded
-- `500` - Server error
+- `500` - Internal Server Error
 
-## Security Notes
+---
 
-- API keys are **only shown once** during creation
-- Use HTTPS in production
-- Store API keys securely (environment variables, secrets manager)
-- Revoke unused keys immediately
-- Use minimal scopes per key (principle of least privilege)
+## 📖 Interactive Documentation
+
+Visit `http://localhost:3000/api-docs` for Swagger UI with:
+- Live API testing
+- Request/response examples
+- Authentication setup
+- Service account creation
+
+---
+
+## 🛠️ Setup
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Configure environment** (`.env`):
+   ```bash
+   # AI Provider API Keys
+   CLAUDE_API_KEY=your-claude-api-key
+   DEEPSEEK_API_KEY=your-deepseek-api-key
+   GEMINI_API_KEY=your-gemini-api-key
+
+   # JWT Authentication
+   JWT_SECRET=your-super-secret-jwt-key-min-32-characters-long
+   JWT_ACCESS_EXPIRY=15m
+   JWT_REFRESH_EXPIRY=30d
+   JWT_ISSUER=corpus-rag-api
+
+   # MongoDB
+   MONGODB_URI=mongodb://localhost:27017/job-assistant
+   ```
+
+3. **Initialize JWT database**:
+   ```bash
+   npm run init-jwt
+   ```
+
+4. **Start server**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Access**:
+   - Web UI: `http://localhost:3000`
+   - API Docs: `http://localhost:3000/api-docs`
+
+---
+
+## 📝 Notes
+
+- Access tokens expire after 15 minutes
+- Refresh tokens expire after 30 days
+- Service account tokens expire after 15 minutes (no refresh)
+- Rate limits are enforced per user/service account
+- All API requests must include `Authorization: Bearer <token>` header
+
+---
+
+## 🤝 Support
+
+For issues, feature requests, or questions, please open an issue on GitHub.

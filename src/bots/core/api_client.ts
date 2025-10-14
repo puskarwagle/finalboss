@@ -8,7 +8,6 @@ import * as path from 'path';
 
 interface ApiConfig {
   baseUrl: string;
-  userEmail: string;
 }
 
 /**
@@ -17,43 +16,25 @@ interface ApiConfig {
 function getApiConfig(): ApiConfig {
   return {
     baseUrl: process.env.API_BASE || 'http://localhost:3000',
-    userEmail: process.env.USER_EMAIL || ''
   };
 }
 
 /**
- * Get or create session token for API calls
- * For now, we'll skip auth and add it later when needed
- * The API docs show it's required, but we can implement it when you set up Google OAuth
+ * Get session token from the shared cache.
+ * The UI process is responsible for keeping this token valid.
  */
 async function getSessionToken(): Promise<string | null> {
-  const config = getApiConfig();
-
-  // Check if we have a cached token
   const tokenCachePath = path.join(process.cwd(), '.cache', 'api_token.txt');
 
   if (fs.existsSync(tokenCachePath)) {
     const cachedToken = fs.readFileSync(tokenCachePath, 'utf8').trim();
-
-    // Verify token is still valid by making a test request
-    try {
-      const testResponse = await fetch(`${config.baseUrl}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${cachedToken}` }
-      });
-
-      if (testResponse.ok) {
-        console.log('✅ Using cached authentication token');
-        return cachedToken;
-      }
-    } catch (error) {
-      console.log('⚠️ Cached token expired or invalid');
+    if (cachedToken) {
+      console.log('✅ Using shared authentication token for bot process.');
+      return cachedToken;
     }
   }
 
-  console.log('ℹ️ No authentication token available');
-  console.log('ℹ️ API calls will proceed without authentication');
-  console.log('ℹ️ Add SESSION_TOKEN to .env if you need authenticated access');
-
+  console.log('ℹ️ No shared authentication token available for bot process.');
   return null;
 }
 
@@ -93,9 +74,11 @@ export async function apiRequest(
   return await response.json();
 }
 
+// The save and clear functions are kept for potential direct use or testing,
+// but the primary flow is now managed by the UI via Tauri IPC.
+
 /**
  * Save authentication token to cache
- * Use this if you get a token from Google OAuth login
  */
 export function saveSessionToken(token: string): void {
   const cacheDir = path.join(process.cwd(), '.cache');

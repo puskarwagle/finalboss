@@ -1,17 +1,6 @@
-import { getSessionFromCookies } from '$lib/session.js';
 
 export async function load({ cookies }) {
-  const sessionData = getSessionFromCookies(cookies);
-
-  return {
-    session: sessionData ? {
-      user: {
-        id: sessionData.id,
-        email: sessionData.email,
-        name: sessionData.name,
-        image: sessionData.picture
-      },
-      provider: sessionData.provider
-    } : null
-  };
+  // This function no longer needs to load session data from cookies
+  // as authentication is now handled on the client-side with JWTs.
+  return {};
 }

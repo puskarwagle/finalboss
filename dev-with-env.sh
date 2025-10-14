@@ -3,9 +3,11 @@
 
 # Load .env file
 if [ -f .env ]; then
-  export $(cat .env | grep -v '^#' | grep -v '^\s*$' | xargs)
+  set -a # automatically export all variables
+  source .env
+  set +a # stop automatically exporting
   echo "✅ Environment variables loaded from .env"
-  echo "📍 GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:0:20}..."
+  echo "📍 VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:0:20}..."
   echo "📍 API_BASE_URL: $API_BASE_URL"
 else
   echo "❌ .env file not found!"
