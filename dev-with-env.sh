@@ -7,7 +7,6 @@ if [ -f .env ]; then
   source .env
   set +a # stop automatically exporting
   echo "✅ Environment variables loaded from .env"
-  echo "📍 VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:0:20}..."
   echo "📍 API_BASE_URL: $API_BASE_URL"
 else
   echo "❌ .env file not found!"
