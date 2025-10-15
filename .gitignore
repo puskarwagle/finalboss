@@ -16,3 +16,7 @@ src/bots/jobs/*
 
 # User configuration files
 src/lib/authorized-users.json
+
+# Google OAuth credentials (never commit these)
+google_credentials.json
+*_credentials.json
