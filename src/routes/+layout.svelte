@@ -4,12 +4,15 @@
   import { page } from '$app/stores';
   import '../app.css';
 
+  // Always show clean login page, regardless of auth state
+  $: isLoginPage = $page.url.pathname === '/login';
+
   onMount(() => {
     authService.initialize();
   });
 </script>
 
-{#if $authService.isLoggedIn && $authService.user}
+{#if !isLoginPage && $authService.isLoggedIn && $authService.user}
   <!-- Authenticated Layout with DaisyUI Drawer -->
   <div class="drawer lg:drawer-open">
     <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
@@ -149,17 +152,23 @@
     </div>
   </div>
 {:else}
-  <!-- Non-authenticated Layout -->
-  <div class="navbar bg-base-100">
-    <div class="flex-1">
-      <a class="btn btn-ghost text-xl" href="/login">Quest Bot</a>
-    </div>
-    <div class="flex-none">
-      <a class="btn btn-primary" href="/login">Login</a>
-    </div>
-  </div>
-
-  <main class="min-h-screen bg-base-200">
+  <!-- Non-authenticated Layout OR Login Page -->
+  {#if isLoginPage}
+    <!-- Login page: completely clean, no navbar or wrapper -->
     <slot></slot>
-  </main>
+  {:else}
+    <!-- Other non-authenticated pages: show navbar -->
+    <div class="navbar bg-base-100">
+      <div class="flex-1">
+        <a class="btn btn-ghost text-xl" href="/login">Quest Bot</a>
+      </div>
+      <div class="flex-none">
+        <a class="btn btn-primary" href="/login">Login</a>
+      </div>
+    </div>
+
+    <main class="min-h-screen bg-base-200">
+      <slot></slot>
+    </main>
+  {/if}
 {/if}

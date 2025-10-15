@@ -1,16 +1,16 @@
 <script>
-  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { authService } from '$lib/authService.js';
 
   // Check authentication on mount
   onMount(() => {
-    if (!$page.data?.session?.user) {
+    if (!$authService.isLoggedIn) {
       goto('/login');
     }
   });
 
-  $: user = $page.data?.session?.user;
+  $: user = $authService.user;
   let showWelcome = true;
 
   function navigateTo(path) {

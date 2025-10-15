@@ -69,24 +69,71 @@ function createAuthStore() {
     }
   }
 
-  async function loginWithEmail(email) {
+  async function signup(email, password, name) {
     update(state => ({ ...state, loading: true }));
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/email-login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password, name }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Simple session-based auth - just store token and user
+        // Store session token and user
         if (browser) {
           localStorage.setItem('accessToken', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          // Set a long expiry for session token
-          const expiresAt = new Date().getTime() + 24 * 60 * 60 * 1000; // 24 hours
+          // Set a long expiry for session token (30 days)
+          const expiresAt = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
+          localStorage.setItem('expiresAt', expiresAt);
+        }
+
+        // Save token for bot processes
+        try {
+          await invoke('write_file_async', { filename: TOKEN_CACHE_FILE, content: data.token });
+          console.log('✅ Token saved to shared cache for bot processes.');
+        } catch (e) {
+          console.error('Failed to save token to shared cache:', e);
+        }
+
+        set({
+          user: data.user,
+          isLoggedIn: true,
+          loading: false,
+        });
+        console.log('✅ Signup successful');
+        goto('/app');
+        return { success: true };
+      } else {
+        throw new Error(data.error || 'Signup failed');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      update(state => ({ ...state, loading: false, user: null, isLoggedIn: false }));
+      return { success: false, error: error.message };
+    }
+  }
+
+  async function login(email, password) {
+    update(state => ({ ...state, loading: true }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Store session token and user
+        if (browser) {
+          localStorage.setItem('accessToken', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          // Set a long expiry for session token (30 days)
+          const expiresAt = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
           localStorage.setItem('expiresAt', expiresAt);
         }
 
@@ -193,26 +240,43 @@ function createAuthStore() {
 
   async function initialize() {
     if (!browser) return;
+
     const token = localStorage.getItem('accessToken');
     const userStr = localStorage.getItem('user');
+    const expiresAt = localStorage.getItem('expiresAt');
 
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        set({ user, isLoggedIn: true, loading: false });
-        // Proactively refresh token if it's expired
-        await getAccessToken();
-      } catch (e) {
-        await logout();
+    if (token && userStr && expiresAt) {
+      // Check if token is expired
+      const now = new Date().getTime();
+      const expiry = parseInt(expiresAt);
+
+      if (now < expiry) {
+        // Token is still valid
+        try {
+          const user = JSON.parse(userStr);
+          set({ user, isLoggedIn: true, loading: false });
+        } catch (e) {
+          console.error('Failed to parse user data:', e);
+          await logout();
+        }
+      } else {
+        // Token is expired, clear everything
+        console.log('Session expired, clearing auth state');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('expiresAt');
+        set({ user: null, isLoggedIn: false, loading: false });
       }
     } else {
+      // No valid session data
       set({ user: null, isLoggedIn: false, loading: false });
     }
   }
 
   return {
     subscribe,
-    loginWithEmail,
+    signup,
+    login,
     loginWithGoogleCredential,
     logout,
     getAccessToken,
