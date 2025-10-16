@@ -31,7 +31,10 @@ export class BotRegistry {
       const entries = fs.readdirSync(this.bots_dir, { withFileTypes: true });
 
       for (const entry of entries) {
-        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'core' && entry.name !== 'sessions') {
+        // Skip non-bot directories: core, sessions, and data folders
+        const skipDirs = ['core', 'sessions', 'all-resumes', 'jobs'];
+
+        if (entry.isDirectory() && !entry.name.startsWith('.') && !skipDirs.includes(entry.name)) {
           const bot_name = entry.name;
           const bot_path = path.join(this.bots_dir, bot_name);
 

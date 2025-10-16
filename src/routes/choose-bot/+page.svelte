@@ -1,6 +1,7 @@
 <script>
   import { invoke } from '@tauri-apps/api/core';
-  import { onMount } from 'svelte';
+  import { listen } from '@tauri-apps/api/event';
+  import { onMount, onDestroy } from 'svelte';
   import BotStats from '$lib/components/BotStats.svelte';
 
   // Dynamic bot list
@@ -11,6 +12,8 @@
       image: '/seek-logo.png'
     }
   ];
+
+  let unlistenProgress = null;
 
   // Load available bots on mount
   onMount(async () => {
@@ -28,13 +31,108 @@
       console.log('Using static bot list (dynamic discovery not available)');
       // Keep the static bot list as fallback
     }
+
+    // Listen for bot progress events from Rust
+    unlistenProgress = await listen('bot-progress', (event) => {
+      handleBotProgressEvent(event.payload);
+    });
+  });
+
+  onDestroy(() => {
+    if (unlistenProgress) {
+      unlistenProgress();
+    }
   });
 
   // Running bots tracking - supports multiple concurrent bots
   let runningBots = [];
 
-  function closeStatusMessage() {
-    // This function is no longer needed as we use BotStats component
+  function handleBotProgressEvent(event) {
+    console.log('Bot progress event:', event);
+
+    // Find bot by botId (from data) or use the first running bot if only one
+    let bot = runningBots.find(b => b.botId === event.data?.botId);
+
+    // If no bot found by ID, and we have exactly one bot running, assume it's for that bot
+    if (!bot && runningBots.length === 1) {
+      bot = runningBots[0];
+    }
+
+    // Create new bot on initialization event
+    if (!bot && event.type === 'info' && event.message?.includes('initialized')) {
+      bot = {
+        name: 'seek_bot',
+        botId: event.data?.botId || `bot_${Date.now()}`, // Fallback ID
+        currentStep: 'Initializing...',
+        totalJobs: 0,
+        jobsProcessed: 0,
+        appliedJobs: 0,
+        skippedJobs: 0,
+        isExpanded: true,
+        consoleMessages: [] // Track all console messages
+      };
+      runningBots = [...runningBots, bot];
+    }
+
+    if (!bot) {
+      console.warn('Could not find bot for event:', event);
+      return;
+    }
+
+    // Initialize consoleMessages if not present (for existing bots)
+    if (!bot.consoleMessages) {
+      bot.consoleMessages = [];
+    }
+
+    // Update bot stats based on event type
+    switch (event.type) {
+      case 'step_start':
+        // Format: "Step 5: performBasicSearch"
+        const stepName = event.funcName?.replace(/([A-Z])/g, ' $1').trim(); // camelCase to Title Case
+        bot.currentStep = `Step ${event.stepNumber}: ${stepName || event.funcName}`;
+        bot.consoleMessages.push({ type: 'step', text: bot.currentStep, timestamp: new Date() });
+        break;
+
+      case 'transition':
+        // Format: "openHomepage → homepage_opened"
+        const transitionMsg = event.transition?.replace(/_/g, ' '); // snake_case to readable
+        bot.currentStep = `✓ ${transitionMsg || event.transition}`;
+        bot.consoleMessages.push({ type: 'transition', text: bot.currentStep, timestamp: new Date() });
+        break;
+
+      case 'info':
+        if (event.message?.includes('completed')) {
+          bot.currentStep = '✅ Workflow completed successfully!';
+          bot.consoleMessages.push({ type: 'success', text: bot.currentStep, timestamp: new Date() });
+          // Remove from running list after delay
+          setTimeout(() => {
+            runningBots = runningBots.filter(b => b.botId !== bot.botId);
+          }, 5000);
+        } else if (event.message) {
+          bot.currentStep = event.message;
+          bot.consoleMessages.push({ type: 'info', text: event.message, timestamp: new Date() });
+        }
+        break;
+
+      case 'job_stat':
+        if (event.data) {
+          bot.totalJobs = event.data.totalJobs || bot.totalJobs;
+          bot.jobsProcessed = event.data.jobsProcessed || bot.jobsProcessed;
+          bot.appliedJobs = event.data.appliedJobs || bot.appliedJobs;
+          bot.skippedJobs = event.data.skippedJobs || bot.skippedJobs;
+        }
+        break;
+
+      case 'error':
+        bot.currentStep = `❌ Error: ${event.message}`;
+        bot.consoleMessages.push({ type: 'error', text: bot.currentStep, timestamp: new Date() });
+        break;
+
+      default:
+        console.log('Unhandled event type:', event.type);
+    }
+
+    runningBots = [...runningBots]; // Trigger reactivity
   }
 
   function handleBotClick(botName) {
@@ -46,91 +144,39 @@
     runBot(botName);
   }
 
-  function buildArgs(botName) {
-    // Convert bot names: seek_bot -> seek, linkedin_bot -> linkedin, indeed_bot -> indeed
-    const cleanBotName = botName.replace('_bot', '');
-
-    // New bot_starter.ts only needs the bot name
-    return [cleanBotName];
-  }
-
   function isBotRunning(botName) {
     return runningBots.some(bot => bot.name === botName);
   }
 
-  function stopBot(botName) {
-    console.log(`Stopping ${botName}...`);
-    // TODO: Implement actual bot stop functionality
+  function stopBot(botId) {
+    console.log(`Stopping bot ${botId}...`);
+    // TODO: Implement actual bot stop functionality via Rust
     // For now, just remove from running list
-    runningBots = runningBots.filter(bot => bot.name !== botName);
+    runningBots = runningBots.filter(bot => bot.botId !== botId);
   }
 
   async function runBot(botName) {
     try {
-      // Add bot to running list with initial stats
-      const botStats = {
-        name: botName,
-        currentStep: 'Starting...',
-        totalJobs: 0,
-        jobsProcessed: 0,
-        appliedJobs: 0,
-        skippedJobs: 0,
-        isExpanded: true
-      };
-      runningBots = [...runningBots, botStats];
+      console.log(`Starting ${botName} with streaming...`);
 
-      console.log(`Running ${botName}...`);
+      // Convert bot names: seek_bot -> seek
+      const cleanBotName = botName.replace('_bot', '');
 
-      // Build arguments for bot_starter.ts
-      const args = buildArgs(botName);
-      console.log(`Built args:`, args);
-
-      // Simulate stats updates (will be replaced with real-time updates later)
-      // Update current step
-      setTimeout(() => {
-        const bot = runningBots.find(b => b.name === botName);
-        if (bot) {
-          bot.currentStep = 'Opening browser...';
-          runningBots = [...runningBots];
-        }
-      }, 1000);
-
-      setTimeout(() => {
-        const bot = runningBots.find(b => b.name === botName);
-        if (bot) {
-          bot.currentStep = 'Collecting job cards...';
-          bot.totalJobs = 25;
-          runningBots = [...runningBots];
-        }
-      }, 3000);
-
-      setTimeout(() => {
-        const bot = runningBots.find(b => b.name === botName);
-        if (bot) {
-          bot.currentStep = 'Processing job applications...';
-          bot.jobsProcessed = 5;
-          bot.appliedJobs = 3;
-          bot.skippedJobs = 2;
-          runningBots = [...runningBots];
-        }
-      }, 5000);
-
-      // Execute the bot_starter.ts script
-      const result = await invoke('run_javascript_script', {
-        scriptPath: 'src/bots/bot_starter.ts',
-        args: args
+      // Start bot with streaming support
+      const result = await invoke('run_bot_streaming', {
+        botName: cleanBotName
       });
 
-      console.log(`${botName} result:`, result);
+      console.log(`Bot started:`, result);
 
-      // Remove bot from running list when complete
-      runningBots = runningBots.filter(bot => bot.name !== botName);
+      // Progress updates will come via 'bot-progress' events
+      // which are handled by handleBotProgressEvent
 
     } catch (error) {
-      console.error(`Error running ${botName}:`, error);
+      console.error(`Error starting ${botName}:`, error);
 
-      // Remove bot from running list on error
-      runningBots = runningBots.filter(bot => bot.name !== botName);
+      // Show error in UI
+      alert(`Failed to start bot: ${error}`);
     }
   }
 
@@ -203,7 +249,8 @@
           appliedJobs={botStat.appliedJobs}
           skippedJobs={botStat.skippedJobs}
           isExpanded={botStat.isExpanded}
-          onStop={() => stopBot(botStat.name)}
+          consoleMessages={botStat.consoleMessages || []}
+          onStop={() => stopBot(botStat.botId)}
         />
       {/each}
     </div>

@@ -58,8 +58,7 @@ export const API_CONFIG = {
 
   // External APIs
   EXTERNAL: {
-    GOOGLE_OAUTH: 'https://oauth2.googleapis.com/token',
-    GOOGLE_USERINFO: 'https://www.googleapis.com/oauth2/v2/userinfo'
+    // Add external API endpoints here if needed
   }
 };
 

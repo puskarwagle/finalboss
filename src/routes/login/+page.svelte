@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { authService } from '$lib/authService.js';
 
   let mode = 'login'; // 'login' or 'signup'
@@ -8,29 +9,39 @@
   let name = '';
   let error = '';
   let loading = false;
+  let success = '';
+  let rememberMe = true; // Default to true for convenience
+  let showPassword = false;
 
   // Clear any existing auth state when landing on login page
   onMount(() => {
     if ($authService.isLoggedIn) {
-      // Clear auth without redirecting (we're already on login page)
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('expiresAt');
-      localStorage.removeItem('refreshToken');
-      // Re-initialize authService to update state
-      authService.initialize();
+      // Already logged in, redirect to app
+      goto('/app');
+    }
+    // Load saved email if exists
+    const savedEmail = localStorage.getItem('savedEmail');
+    if (savedEmail) {
+      email = savedEmail;
+      rememberMe = true;
     }
   });
 
   function switchMode() {
     mode = mode === 'login' ? 'signup' : 'login';
     error = '';
+    success = '';
     password = '';
+  }
+
+  function togglePasswordVisibility() {
+    showPassword = !showPassword;
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     error = '';
+    success = '';
 
     if (!email || !email.includes('@')) {
       error = 'Please enter a valid email address';
@@ -44,18 +55,33 @@
 
     loading = true;
 
+    // Save or clear email based on remember me
+    if (rememberMe) {
+      localStorage.setItem('savedEmail', email);
+      localStorage.setItem('rememberMe', 'true');
+    } else {
+      localStorage.removeItem('savedEmail');
+      localStorage.removeItem('rememberMe');
+    }
+
     let result;
     if (mode === 'signup') {
-      result = await authService.signup(email, password, name || email.split('@')[0]);
+      result = await authService.signup(email, password, name || email.split('@')[0], rememberMe);
     } else {
-      result = await authService.login(email, password);
+      result = await authService.login(email, password, rememberMe);
     }
 
     if (!result.success) {
       error = result.error || `${mode === 'signup' ? 'Signup' : 'Login'} failed. Please try again.`;
       loading = false;
+    } else {
+      // Success! Show feedback and redirect
+      success = mode === 'signup' ? 'Account created successfully!' : 'Login successful!';
+      // Small delay to show success message, then redirect
+      setTimeout(() => {
+        goto('/app');
+      }, 500);
     }
-    // On success, the authService will automatically redirect to '/app'
   }
 </script>
 
@@ -103,6 +129,15 @@
           </div>
         {/if}
 
+        {#if success}
+          <div class="alert alert-success mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{success} Redirecting...</span>
+          </div>
+        {/if}
+
         <!-- Auth Form -->
         <form on:submit={handleSubmit} class="space-y-4">
           {#if mode === 'signup'}
@@ -140,17 +175,58 @@
             <label class="label" for="password">
               <span class="label-text">Password</span>
             </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Min. 8 characters"
-              class="input input-bordered w-full"
-              bind:value={password}
-              disabled={loading}
-              required
-              minlength="8"
-            />
+            <div class="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Min. 8 characters"
+                class="input input-bordered w-full pr-12"
+                bind:value={password}
+                disabled={loading}
+                required
+                minlength="8"
+              />
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm btn-circle absolute right-2 top-1/2 -translate-y-1/2"
+                on:click={togglePasswordVisibility}
+                disabled={loading}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {#if showPassword}
+                  <!-- Eye Slash Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                {:else}
+                  <!-- Eye Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                {/if}
+              </button>
+            </div>
           </div>
+
+          {#if mode === 'login'}
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-primary checkbox-sm"
+                  bind:checked={rememberMe}
+                  disabled={loading}
+                />
+                <span class="label-text">Remember me</span>
+              </label>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">
+                  {rememberMe ? 'Stay logged in until you log out' : 'Session will end when you close the app'}
+                </span>
+              </label>
+            </div>
+          {/if}
 
           <button
             type="submit"

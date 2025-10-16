@@ -1,4 +1,5 @@
 use std::path::Path;
+use tauri::Emitter;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -217,7 +218,7 @@ async fn run_python_script(script_path: &str) -> Result<String, String> {
 async fn run_javascript_script(script_path: &str, args: Option<Vec<String>>) -> Result<String, String> {
     use tokio::process::Command;
     use std::env;
-    
+
     // Get the current working directory and resolve relative paths
     let path = if script_path.starts_with("/") || (cfg!(windows) && script_path.len() > 1 && script_path.chars().nth(1) == Some(':')) {
         // Absolute path
@@ -230,23 +231,23 @@ async fn run_javascript_script(script_path: &str, args: Option<Vec<String>>) -> 
         }
         project_root.join(script_path)
     };
-    
+
     // Check if the script exists
     if !path.exists() {
         return Err(format!("JavaScript script not found: {}", path.display()));
     }
-    
+
     // Build command with arguments
     let mut cmd = Command::new("bun");
     cmd.arg(path.to_str().unwrap());
-    
+
     // Add arguments if provided
     if let Some(args) = args {
         for arg in args {
             cmd.arg(&arg);
         }
     }
-    
+
     let output = cmd
         .current_dir({
             let mut dir = env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
@@ -258,7 +259,7 @@ async fn run_javascript_script(script_path: &str, args: Option<Vec<String>>) -> 
         .output()
         .await
         .map_err(|e| format!("Failed to execute javascript script with bun: {}", e))?;
-    
+
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -269,14 +270,76 @@ async fn run_javascript_script(script_path: &str, args: Option<Vec<String>>) -> 
     }
 }
 
+#[tauri::command]
+async fn run_bot_streaming(
+    app: tauri::AppHandle,
+    bot_name: String
+) -> Result<String, String> {
+    use tokio::process::Command;
+    use tokio::io::{BufReader, AsyncBufReadExt};
+    use std::process::Stdio;
+    use std::env;
+
+    // Resolve project root
+    let mut project_root = env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+    if project_root.ends_with("src-tauri") {
+        project_root.pop();
+    }
+
+    let script_path = project_root.join("src/bots/bot_starter.ts");
+
+    if !script_path.exists() {
+        return Err(format!("Bot starter script not found: {}", script_path.display()));
+    }
+
+    // Spawn bot process with piped stdout
+    let mut child = Command::new("bun")
+        .arg(script_path.to_str().unwrap())
+        .arg(&bot_name)
+        .current_dir(&project_root)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit()) // Debug logs show in terminal
+        .spawn()
+        .map_err(|e| format!("Failed to spawn bot process: {}", e))?;
+
+    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+    let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
+
+    // Clone app handle for use in async task (AppHandle is Clone)
+    let app_clone = app.clone();
+
+    // Spawn task to stream stdout lines as Tauri events
+    tokio::spawn(async move {
+        while let Ok(Some(line)) = lines.next_line().await {
+            // Filter for structured events with [BOT_EVENT] prefix
+            if line.starts_with("[BOT_EVENT]") {
+                let json_str = &line[11..]; // Remove prefix
+                if let Ok(event) = serde_json::from_str::<serde_json::Value>(json_str) {
+                    // Emit to UI (using cloned app handle)
+                    let _ = app_clone.emit("bot-progress", event);
+                }
+            }
+            // All other lines are debug logs - ignored by UI
+        }
+    });
+
+    // Wait for bot process to complete
+    tokio::spawn(async move {
+        let _ = child.wait().await;
+    });
+
+    Ok(format!("Bot '{}' started successfully", bot_name))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
-            greet, 
-            list_files, 
+            greet,
+            list_files,
             write_file_async,
             read_file_async,
             copy_file_async,
@@ -287,7 +350,8 @@ pub fn run() {
             file_exists_async,
             get_file_metadata_async,
             run_python_script,
-            run_javascript_script
+            run_javascript_script,
+            run_bot_streaming
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

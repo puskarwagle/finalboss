@@ -26,17 +26,55 @@ export interface WorkflowContext {
 
 export type StepFunction = (ctx: WorkflowContext) => AsyncGenerator<string, void, unknown>;
 
+export interface BotProgressEvent {
+  type: 'step_start' | 'step_complete' | 'transition' | 'error' | 'info' | 'job_stat';
+  timestamp: number;
+  step?: string;
+  stepNumber?: number;
+  funcName?: string;
+  transition?: string;
+  message?: string;
+  data?: any;
+}
+
 export class WorkflowEngine {
   private config: WorkflowConfig;
   private stepFunctions: Map<string, StepFunction> = new Map();
   private currentStep: string;
   private context: WorkflowContext = {};
   private overlay: UniversalOverlay | null = null;
+  private botId: string;
+  private eventsFilePath: string;
 
   constructor(configPath: string) {
     const configContent = fs.readFileSync(configPath, 'utf8');
     this.config = yaml.load(configContent) as WorkflowConfig;
     this.currentStep = this.config.workflow_meta.start_step;
+
+    // Generate unique bot ID
+    this.botId = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    this.eventsFilePath = ''; // Not used anymore, keeping for compatibility
+
+    // Emit initial event
+    this.emitProgress({
+      type: 'info',
+      timestamp: Date.now(),
+      message: `Bot initialized: ${this.config.workflow_meta.title}`,
+      data: { botId: this.botId }
+    });
+  }
+
+  private emitProgress(event: BotProgressEvent): void {
+    try {
+      // Emit structured event to stdout with prefix for Rust to capture
+      process.stdout.write(`[BOT_EVENT]${JSON.stringify(event)}\n`);
+    } catch (error) {
+      console.log('⚠️ Failed to emit progress event:', error);
+    }
+  }
+
+  getBotId(): string {
+    return this.botId;
   }
 
   registerStepFunction(stepName: string, func: StepFunction): void {
@@ -62,6 +100,15 @@ export class WorkflowEngine {
       throw new Error(`Function '${stepConfig.func}' not registered`);
     }
 
+    // Emit step start event
+    this.emitProgress({
+      type: 'step_start',
+      timestamp: Date.now(),
+      step: stepName,
+      stepNumber: stepConfig.step,
+      funcName: stepConfig.func
+    });
+
     try {
       const generator = stepFunction(this.context);
       const timeoutPromise = new Promise<string>((resolve) => {
@@ -74,6 +121,16 @@ export class WorkflowEngine {
       ]);
 
       console.log(`Step ${stepConfig.step} [${stepConfig.func}] → ${result}`);
+
+      // Emit transition event
+      this.emitProgress({
+        type: 'transition',
+        timestamp: Date.now(),
+        step: stepName,
+        stepNumber: stepConfig.step,
+        funcName: stepConfig.func,
+        transition: result
+      });
 
       // Initialize overlay after first step if not already done (driver might be set in first step)
       if (!this.overlay && this.context.driver) {
@@ -211,5 +268,13 @@ export class WorkflowEngine {
     }
 
     console.log('✅ Workflow completed');
+
+    // Emit workflow completion event
+    this.emitProgress({
+      type: 'info',
+      timestamp: Date.now(),
+      message: 'Workflow completed successfully',
+      data: { totalSteps: stepCount }
+    });
   }
 }

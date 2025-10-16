@@ -1,5 +1,5 @@
 import { Builder, WebDriver } from 'selenium-webdriver';
-import { Options, ServiceBuilder } from 'selenium-webdriver/chrome';
+import { Options } from 'selenium-webdriver/chrome';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -77,7 +77,7 @@ export const monitorBrowserClose = (driver: WebDriver, onBrowserClosed?: () => v
   };
 };
 
-export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ driver: WebDriver; actions: any; sessionExists: boolean; sessionsDir: string }> => {
+export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ driver: WebDriver; actions: any; sessionExists: boolean; sessionsDir: string; stopMonitoring?: () => void }> => {
   try {
     const configPath = path.join(__dirname, 'user-bots-config.json');
     const config: BotConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -125,10 +125,11 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
       }
     }
 
+    // Selenium Manager will automatically download the correct ChromeDriver version
+    // for the user's Chrome browser - no manual chromedriver package needed!
     const driver = await new Builder()
       .forBrowser('chrome')
       .setChromeOptions(options)
-      .setChromeService(new ServiceBuilder())
       .build();
 
     await driver.manage().window().maximize();

@@ -26,7 +26,6 @@
     "@types/js-yaml": "^4.0.9",
     "@types/selenium-webdriver": "^4.1.28",
     "autoprefixer": "^10.4.21",
-    "chromedriver": "^139.0.3",
     "daisyui": "^5.1.23",
     "docx": "^9.5.1",
     "google-auth-library": "^10.3.0",

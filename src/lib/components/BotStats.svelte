@@ -1,4 +1,6 @@
 <script>
+  import { onMount, afterUpdate } from 'svelte';
+
   export let botName = '';
   export let currentStep = 'Initializing...';
   export let totalJobs = 0;
@@ -6,17 +8,45 @@
   export let appliedJobs = 0;
   export let skippedJobs = 0;
   export let isExpanded = true;
+  export let consoleMessages = [];
   export let onStop = () => {};
+
+  let consoleContainer;
 
   function toggleExpand() {
     isExpanded = !isExpanded;
   }
+
+  // Auto-scroll console to bottom when new messages arrive
+  afterUpdate(() => {
+    if (consoleContainer && consoleMessages.length > 0) {
+      consoleContainer.scrollTop = consoleContainer.scrollHeight;
+    }
+  });
 
   // Format bot name for display
   $: displayName = botName.replace('_bot', '').replace('_', ' ').toUpperCase();
 
   // Calculate progress percentage
   $: progressPercent = totalJobs > 0 ? Math.round((jobsProcessed / totalJobs) * 100) : 0;
+
+  // Get message style based on type
+  function getMessageClass(type) {
+    switch (type) {
+      case 'error': return 'text-error';
+      case 'success': return 'text-success';
+      case 'step': return 'text-primary font-semibold';
+      case 'transition': return 'text-info';
+      default: return 'text-base-content';
+    }
+  }
+
+  // Format timestamp
+  function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
 </script>
 
 <div class="card bg-base-200 shadow-lg border-2 border-primary mb-4">
@@ -32,7 +62,7 @@
 
         <div class="flex-1">
           <h3 class="font-bold text-lg">{displayName}</h3>
-          <p class="text-sm text-base-content/70">{currentStep}</p>
+          <p class="text-sm font-semibold text-primary">{currentStep}</p>
         </div>
       </div>
 
@@ -107,6 +137,27 @@
         </div>
       </div>
 
+      <!-- Console Messages (Scrollable) -->
+      {#if consoleMessages.length > 0}
+        <div class="mt-4">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-sm font-semibold">Console Output</h4>
+            <span class="text-xs text-base-content/60">{consoleMessages.length} messages</span>
+          </div>
+          <div
+            bind:this={consoleContainer}
+            class="bg-base-300 rounded-lg p-3 h-48 overflow-y-auto font-mono text-xs"
+          >
+            {#each consoleMessages as msg, i}
+              <div class="mb-1 flex gap-2">
+                <span class="text-base-content/50 flex-shrink-0">{formatTime(msg.timestamp)}</span>
+                <span class={getMessageClass(msg.type)}>{msg.text}</span>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
       <!-- Activity Indicator -->
       <div class="flex items-center justify-center gap-2 mt-4 text-sm">
         <span class="loading loading-spinner loading-sm text-primary"></span>
@@ -119,5 +170,28 @@
 <style>
   .rotate-180 {
     transform: rotate(180deg);
+  }
+
+  /* Custom scrollbar for console */
+  .overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
   }
 </style>

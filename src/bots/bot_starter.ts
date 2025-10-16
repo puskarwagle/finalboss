@@ -2,6 +2,13 @@ import { bot_registry, BotRegistry } from './core/registry';
 import { WorkflowEngine, type WorkflowContext } from './core/workflow_engine';
 import * as path from 'path';
 
+// Ensure stdout is not buffered for real-time event streaming
+if (process.stdout.setDefaultEncoding) {
+  process.stdout.setDefaultEncoding('utf8');
+}
+// Disable stdout buffering for immediate event emission
+process.stdout.write(''); // Force initialization
+
 const print_log = (message: string) => {
   console.log(message);
 };

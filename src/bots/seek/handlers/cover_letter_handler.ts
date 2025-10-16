@@ -57,18 +57,31 @@ Focus on demonstrating value and enthusiasm for the role.`
 
   // Use apiRequest helper for authenticated calls
   const { apiRequest } = await import('../../core/api_client');
-  const data = await apiRequest('/api/cover_letter', 'POST', requestBody);
+
+  let data;
+  try {
+    data = await apiRequest('/api/cover_letter', 'POST', requestBody);
+  } catch (apiError: any) {
+    printLog(`❌ API request failed: ${apiError.message}`);
+    throw new Error(`Cover letter API call failed: ${apiError.message}`);
+  }
 
   fs.writeFileSync(
     path.join(jobDir, 'cover_letter_response.json'),
     JSON.stringify(data, null, 2)
   );
 
+  // Check for error response
+  if (data.success === false) {
+    throw new Error(`API returned error: ${data.error || 'Unknown error'}`);
+  }
+
   if (data.cover_letter) {
     printLog("✅ AI cover letter generated");
     printLog(`📄 Length: ${data.cover_letter.length} chars`);
     return data.cover_letter;
   } else {
+    printLog(`❌ API response missing cover_letter field. Response: ${JSON.stringify(data)}`);
     throw new Error('No cover_letter field returned from API');
   }
 }

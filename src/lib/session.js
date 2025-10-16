@@ -28,7 +28,7 @@ export function validateSession(sessionData) {
 }
 
 export function getSessionFromCookies(cookies) {
-  // Try to get session_token first (Google OAuth)
+  // Try to get session_token first
   const token = cookies.get('session_token');
   if (token) {
     const sessionData = parseSessionToken(token);
@@ -37,7 +37,7 @@ export function getSessionFromCookies(cookies) {
     }
   }
 
-  // Try to get corpus_rag session (corpus-rag OAuth)
+  // Try to get corpus_rag session
   const corpusUser = cookies.get('corpus_rag_user');
   const corpusToken = cookies.get('corpus_rag_token');
   

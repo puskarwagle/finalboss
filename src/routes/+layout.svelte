@@ -12,7 +12,15 @@
   });
 </script>
 
-{#if !isLoginPage && $authService.isLoggedIn && $authService.user}
+{#if $authService.loading}
+  <!-- Loading State -->
+  <div class="min-h-screen flex items-center justify-center bg-base-200">
+    <div class="text-center">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+      <p class="mt-4 text-base-content/70">Loading...</p>
+    </div>
+  </div>
+{:else if !isLoginPage && $authService.isLoggedIn && $authService.user}
   <!-- Authenticated Layout with DaisyUI Drawer -->
   <div class="drawer lg:drawer-open">
     <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />

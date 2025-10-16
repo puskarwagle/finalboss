@@ -54,19 +54,6 @@ function createAuthStore() {
       }
     },
 
-    // Google OAuth login
-    loginWithGoogle: async () => {
-      update(state => ({ ...state, loading: true }));
-      try {
-        // Redirect to our custom Google OAuth handler
-        if (browser) {
-          window.location.href = '/auth/google/signin';
-        }
-      } catch (error) {
-        update(state => ({ ...state, loading: false }));
-        return { success: false, error: 'Google login failed' };
-      }
-    },
 
     // Update session from page data
     updateSession: (session) => {
@@ -108,15 +95,6 @@ function createAuthStore() {
         }
       }
 
-      // Handle Google OAuth logout
-      try {
-        // Use our custom Google logout endpoint
-        if (browser) {
-          window.location.href = '/auth/google/logout';
-        }
-      } catch (error) {
-        console.error('Google logout failed:', error);
-      }
 
       if (browser) {
         localStorage.removeItem('auth_token');

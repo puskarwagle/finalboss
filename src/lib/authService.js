@@ -69,7 +69,7 @@ function createAuthStore() {
     }
   }
 
-  async function signup(email, password, name) {
+  async function signup(email, password, name, rememberMe = true) {
     update(state => ({ ...state, loading: true }));
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
@@ -83,11 +83,13 @@ function createAuthStore() {
       if (response.ok && data.success) {
         // Store session token and user
         if (browser) {
-          localStorage.setItem('accessToken', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem('accessToken', data.token);
+          storage.setItem('user', JSON.stringify(data.user));
           // Set a long expiry for session token (30 days)
           const expiresAt = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
-          localStorage.setItem('expiresAt', expiresAt);
+          storage.setItem('expiresAt', expiresAt);
+          storage.setItem('rememberMe', rememberMe ? 'true' : 'false');
         }
 
         // Save token for bot processes
@@ -104,7 +106,6 @@ function createAuthStore() {
           loading: false,
         });
         console.log('✅ Signup successful');
-        goto('/app');
         return { success: true };
       } else {
         throw new Error(data.error || 'Signup failed');
@@ -116,7 +117,7 @@ function createAuthStore() {
     }
   }
 
-  async function login(email, password) {
+  async function login(email, password, rememberMe = true) {
     update(state => ({ ...state, loading: true }));
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -130,11 +131,13 @@ function createAuthStore() {
       if (response.ok && data.success) {
         // Store session token and user
         if (browser) {
-          localStorage.setItem('accessToken', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem('accessToken', data.token);
+          storage.setItem('user', JSON.stringify(data.user));
           // Set a long expiry for session token (30 days)
           const expiresAt = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
-          localStorage.setItem('expiresAt', expiresAt);
+          storage.setItem('expiresAt', expiresAt);
+          storage.setItem('rememberMe', rememberMe ? 'true' : 'false');
         }
 
         // Save token for bot processes
@@ -151,7 +154,6 @@ function createAuthStore() {
           loading: false,
         });
         console.log('✅ Login successful');
-        goto('/app');
         return { success: true };
       } else {
         throw new Error(data.error || 'Login failed');
@@ -163,45 +165,21 @@ function createAuthStore() {
     }
   }
 
-  async function loginWithGoogleCredential(credential) {
-    update(state => ({ ...state, loading: true }));
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login-jwt`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        await setTokens(data);
-        set({
-          user: data.user,
-          isLoggedIn: true,
-          loading: false,
-        });
-        console.log('✅ Login successful');
-        goto('/app'); // Redirect to the main application page
-        return { success: true };
-      } else {
-        throw new Error(data.message || 'Login failed');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      update(state => ({ ...state, loading: false, user: null, isLoggedIn: false }));
-      return { success: false, error: error.message };
-    }
-  }
 
   async function logout() {
     if (!browser) return;
 
-    // Clear local storage
+    // Clear both localStorage and sessionStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('expiresAt');
     localStorage.removeItem('user');
+    localStorage.removeItem('rememberMe');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('expiresAt');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('rememberMe');
 
     // Reset store
     set({ user: null, isLoggedIn: false, loading: false });
@@ -222,8 +200,8 @@ function createAuthStore() {
   async function getAccessToken() {
     if (!browser) return null;
 
-    const expiresAt = localStorage.getItem('expiresAt');
-    const accessToken = localStorage.getItem('accessToken');
+    const expiresAt = localStorage.getItem('expiresAt') || sessionStorage.getItem('expiresAt');
+    const accessToken = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
 
     if (!accessToken || !expiresAt) {
       return null;
@@ -241,9 +219,11 @@ function createAuthStore() {
   async function initialize() {
     if (!browser) return;
 
-    const token = localStorage.getItem('accessToken');
-    const userStr = localStorage.getItem('user');
-    const expiresAt = localStorage.getItem('expiresAt');
+    // Check both localStorage and sessionStorage
+    let token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    let userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    let expiresAt = localStorage.getItem('expiresAt') || sessionStorage.getItem('expiresAt');
+    const storage = localStorage.getItem('accessToken') ? localStorage : sessionStorage;
 
     if (token && userStr && expiresAt) {
       // Check if token is expired
@@ -262,9 +242,10 @@ function createAuthStore() {
       } else {
         // Token is expired, clear everything
         console.log('Session expired, clearing auth state');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('expiresAt');
+        storage.removeItem('accessToken');
+        storage.removeItem('user');
+        storage.removeItem('expiresAt');
+        storage.removeItem('rememberMe');
         set({ user: null, isLoggedIn: false, loading: false });
       }
     } else {
@@ -277,7 +258,6 @@ function createAuthStore() {
     subscribe,
     signup,
     login,
-    loginWithGoogleCredential,
     logout,
     getAccessToken,
     initialize,
