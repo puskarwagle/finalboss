@@ -132,10 +132,13 @@ export class WorkflowEngine {
         transition: result
       });
 
-      // Initialize overlay after first step if not already done (driver might be set in first step)
-      if (!this.overlay && this.context.driver) {
-        console.log('🎨 Creating overlay...');
-        this.overlay = new UniversalOverlay(this.context.driver);
+      // Use bot's overlay if available, otherwise create fallback
+      const activeOverlay = this.context.overlay || this.overlay;
+
+      // Initialize fallback overlay if no bot overlay and driver available
+      if (!activeOverlay && !this.overlay && this.context.driver) {
+        console.log('🎨 Creating fallback overlay (bot should create its own)...');
+        this.overlay = new UniversalOverlay(this.context.driver, 'Workflow');
         try {
           await this.overlay.showOverlay({
             title: '🤖 Bot Status: Running',
@@ -148,17 +151,18 @@ export class WorkflowEngine {
             draggable: true,
             collapsible: true
           });
-          console.log('✅ Overlay is now visible in browser!');
+          console.log('✅ Fallback overlay visible');
         } catch (error) {
-          console.warn('❌ Failed to initialize late overlay:', error);
+          console.warn('❌ Failed to initialize fallback overlay:', error);
           this.overlay = null;
         }
       }
 
-      // Update overlay if available
-      if (this.overlay) {
+      // Update overlay if available (prefer bot's overlay)
+      const overlayToUpdate = this.context.overlay || this.overlay;
+      if (overlayToUpdate) {
         try {
-          await this.overlay.updateOverlay({
+          await overlayToUpdate.updateOverlay({
             title: '🤖 Bot Status: Running',
             html: `
               <div style="line-height: 1.6;">
@@ -192,11 +196,11 @@ export class WorkflowEngine {
     console.log(`🤖 ${this.config.workflow_meta.title}`);
 
 
-    // Initialize overlay if driver is available in context
-    console.log('🔍 Debug: Checking for driver in context...', !!this.context.driver);
-    if (this.context.driver && !this.overlay) {
-      console.log('🎨 Debug: Creating overlay...');
-      this.overlay = new UniversalOverlay(this.context.driver);
+    // Initialize fallback overlay if no bot overlay and driver is available
+    console.log('🔍 Debug: Checking for driver and overlay in context...', !!this.context.driver, !!this.context.overlay);
+    if (this.context.driver && !this.context.overlay && !this.overlay) {
+      console.log('🎨 Debug: Creating fallback overlay (bot should create its own)...');
+      this.overlay = new UniversalOverlay(this.context.driver, 'Workflow');
       try {
         console.log('🎨 Debug: Showing initial overlay...');
         await this.overlay.showOverlay({
@@ -210,11 +214,13 @@ export class WorkflowEngine {
           draggable: true,
           collapsible: true
         });
-        console.log('✅ Debug: Overlay initialized successfully');
+        console.log('✅ Debug: Fallback overlay initialized');
       } catch (error) {
-        console.warn('❌ Failed to initialize overlay:', error);
+        console.warn('❌ Failed to initialize fallback overlay:', error);
         this.overlay = null;
       }
+    } else if (this.context.overlay) {
+      console.log('✅ Debug: Using bot\'s overlay');
     } else if (!this.context.driver) {
       console.log('❌ Debug: No driver found in context');
     }
@@ -244,10 +250,11 @@ export class WorkflowEngine {
       console.warn('❌ Maximum step count reached, stopping workflow');
     }
 
-    // Update overlay with completion status
-    if (this.overlay) {
+    // Update overlay with completion status (prefer bot's overlay)
+    const completionOverlay = this.context.overlay || this.overlay;
+    if (completionOverlay) {
       try {
-        await this.overlay.updateOverlay({
+        await completionOverlay.updateOverlay({
           title: '🤖 Bot Status: Completed',
           html: `
             <div style="line-height: 1.6;">

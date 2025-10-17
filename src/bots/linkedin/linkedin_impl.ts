@@ -15,14 +15,29 @@ const printLog = (message: string) => {
   console.log(message);
 };
 
-// Load applied job IDs from file
-export async function* loadAppliedJobIds(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step0: load applied job IDs");
-
-  const jobIdsPath = path.join(process.cwd(), 'deknilJobsIds.json');
-  let jobIds: Set<string> = new Set();
+// Step 0: Initialize Context - Load config, selectors, and job IDs
+export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
+  printLog("Initializing context...");
 
   try {
+    // Load selectors (check both config/ subdirectory and root)
+    const selectorsConfigPath = path.join(__dirname, 'config/linkedin_selectors.json');
+    const selectorsRootPath = path.join(__dirname, 'linkedin_selectors.json');
+    const selectorsPath = fs.existsSync(selectorsConfigPath) ? selectorsConfigPath : selectorsRootPath;
+    ctx.selectors = JSON.parse(fs.readFileSync(selectorsPath, 'utf-8'));
+
+    // Load config
+    const configPath = path.join(__dirname, '../core/user-bots-config.json');
+    if (fs.existsSync(configPath)) {
+      ctx.config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    } else {
+      ctx.config = {};
+    }
+
+    // Load applied job IDs
+    const jobIdsPath = path.join(process.cwd(), 'deknilJobsIds.json');
+    let jobIds: Set<string> = new Set();
+
     if (fs.existsSync(jobIdsPath)) {
       const data = JSON.parse(fs.readFileSync(jobIdsPath, 'utf-8'));
       jobIds = new Set(Array.isArray(data) ? data : []);
@@ -30,39 +45,45 @@ export async function* loadAppliedJobIds(ctx: WorkflowContext): AsyncGenerator<s
     } else {
       printLog("deknilJobsIds.json not found, starting fresh");
     }
-  } catch (error) {
-    printLog(`Error loading job IDs: ${error}`);
-  }
 
-  ctx.applied_job_ids = jobIds;
-  yield "applied_job_ids_loaded";
+    ctx.applied_job_ids = jobIds;
+
+    printLog("Context initialized successfully");
+    yield "ctx_ready";
+  } catch (error) {
+    printLog(`Context initialization failed: ${error}`);
+    yield "ctx_failed";
+  }
 }
 
 // Open LinkedIn and check login status
 export async function* openCheckLogin(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step1: open and check login");
-
   try {
-    const { driver, sessionExists, sessionsDir } = await setupChromeDriver('linkedin');
-    ctx.driver = driver;
-    ctx.sessionExists = sessionExists;
-    ctx.sessionsDir = sessionsDir;
-    ctx.humanBehavior = new HumanBehavior(DEFAULT_HUMANIZATION);
-    ctx.sessionManager = new UniversalSessionManager(driver, SessionConfigs.linkedin);
-    ctx.overlay = new UniversalOverlay(driver);
+    // Only setup Chrome if driver doesn't exist yet
+    if (!ctx.driver) {
+      const { driver, sessionExists, sessionsDir } = await setupChromeDriver('linkedin');
+      ctx.driver = driver;
+      ctx.sessionExists = sessionExists;
+      ctx.sessionsDir = sessionsDir;
+      ctx.humanBehavior = new HumanBehavior(DEFAULT_HUMANIZATION);
+      ctx.sessionManager = new UniversalSessionManager(driver, SessionConfigs.linkedin);
+      ctx.overlay = new UniversalOverlay(driver, 'LinkedIn');
 
-    await StealthFeatures.hideWebDriver(driver);
-    await StealthFeatures.randomizeUserAgent(driver);
+      await StealthFeatures.hideWebDriver(driver);
+      await StealthFeatures.randomizeUserAgent(driver);
+    }
 
-    // Load selectors
-    const selectorsPath = path.join(__dirname, 'linkedin_selectors.json');
-    ctx.selectors = JSON.parse(fs.readFileSync(selectorsPath, 'utf-8'));
+    printLog(`Opening URL: ${ctx.selectors?.urls?.home_url || 'https://www.linkedin.com/'}`);
+    await ctx.driver.get(ctx.selectors?.urls?.home_url || 'https://www.linkedin.com/');
 
-    printLog("Opening LinkedIn...");
-    await driver.get(ctx.selectors.urls?.home_url || 'https://www.linkedin.com/');
-    await driver.sleep(3000);
+    printLog("Waiting for page to load...");
+    await ctx.driver.sleep(5000);
 
-    const currentUrl = await driver.getCurrentUrl();
+    const currentUrl = await ctx.driver.getCurrentUrl();
+    const title = await ctx.driver.getTitle();
+
+    printLog(`Current URL: ${currentUrl}`);
+    printLog(`Page title: ${title}`);
 
     // Check if already on feed (logged in)
     if (currentUrl.startsWith(ctx.selectors.urls?.feed_url || 'https://www.linkedin.com/feed/')) {
@@ -72,7 +93,7 @@ export async function* openCheckLogin(ctx: WorkflowContext): AsyncGenerator<stri
     }
 
     // Check for sign-in indicators
-    const pageSource = await driver.getPageSource();
+    const pageSource = await ctx.driver.getPageSource();
     if (pageSource.includes('Sign in') || pageSource.includes('Join now')) {
       printLog("User needs to log in");
       yield "user_needs_to_login";
@@ -86,81 +107,18 @@ export async function* openCheckLogin(ctx: WorkflowContext): AsyncGenerator<stri
   }
 }
 
-// Attempt credential login
+// Attempt credential login (skipped - users login manually like Seek)
 export async function* credentialLogin(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step2: attempt credential login");
+  printLog("Skipping credential login - users login manually");
 
-  try {
-    const driver = ctx.driver;
-    const selectors = ctx.selectors;
-
-    // Load config
-    const configPath = path.join(__dirname, '../core/user-bots-config.json');
-    let config: any = {};
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    }
-
-    const username = config.linkedin?.username || '';
-    const password = config.linkedin?.password || '';
-
-    if (!username || !password) {
-      printLog("No credentials configured");
-      yield "no_login_credentials_found";
-      return;
-    }
-
-    printLog("Navigating to login page...");
-    await driver.get(selectors.urls?.login_url || 'https://www.linkedin.com/login');
-    await driver.sleep(2000);
-
-    try {
-      const usernameInput = await driver.findElement(By.id(selectors.auth?.username_input_id || 'username'));
-      await usernameInput.sendKeys(username);
-      printLog("Username filled");
-    } catch (error) {
-      printLog("Username input not found");
-      yield "username_input_not_found";
-      return;
-    }
-
-    try {
-      const passwordInput = await driver.findElement(By.id(selectors.auth?.password_input_id || 'password'));
-      await passwordInput.sendKeys(password);
-      printLog("Password filled");
-    } catch (error) {
-      printLog("Password input not found");
-      yield "password_input_not_found";
-      return;
-    }
-
-    try {
-      const signInButton = await driver.findElement(By.xpath(selectors.auth?.signin_button_xpath || '//button[@type="submit"]'));
-      await signInButton.click();
-      printLog("Sign in button clicked");
-      await driver.sleep(5000);
-
-      const currentUrl = await driver.getCurrentUrl();
-      if (currentUrl.includes('/feed')) {
-        printLog("Login successful");
-        yield "login_successful_on_feed";
-      } else {
-        printLog("Login incomplete");
-        yield "credentials_login_incomplete";
-      }
-    } catch (error) {
-      printLog(`Sign in error: ${error}`);
-      yield "signin_button_click_failed";
-    }
-  } catch (error) {
-    printLog(`Credential login failed: ${error}`);
-    yield "credential_login_failed";
-  }
+  // Always skip to manual login since users login manually like Seek
+  printLog("Proceeding to manual login prompt");
+  yield "no_login_credentials_found";
 }
 
 // Show manual login prompt
 export async function* showManualLoginPrompt(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step3: show manual login prompt");
+  printLog("Showing manual login prompt");
 
   try {
     await ctx.overlay.showSignInOverlay();
@@ -174,7 +132,7 @@ export async function* showManualLoginPrompt(ctx: WorkflowContext): AsyncGenerat
 
 // Open jobs page
 export async function* openJobsPage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step5: open jobs page");
+  printLog("Opening jobs page...");
 
   try {
     const driver = ctx.driver;
@@ -197,20 +155,13 @@ export async function* openJobsPage(ctx: WorkflowContext): AsyncGenerator<string
 
 // Set search location
 export async function* setSearchLocation(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step6: set search location");
+  printLog("Setting search location...");
 
   try {
     const driver = ctx.driver;
     const selectors = ctx.selectors;
 
-    // Load config
-    const configPath = path.join(__dirname, '../core/user-bots-config.json');
-    let config: any = {};
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    }
-
-    const location = config.linkedin?.search_location || '';
+    const location = ctx.config.formData?.locations || '';
 
     if (!location) {
       printLog("No search location configured");
@@ -250,20 +201,13 @@ export async function* setSearchLocation(ctx: WorkflowContext): AsyncGenerator<s
 
 // Set search keywords
 export async function* setSearchKeywords(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step7: set search keywords");
+  printLog("Setting search keywords...");
 
   try {
     const driver = ctx.driver;
     const selectors = ctx.selectors;
 
-    // Load config
-    const configPath = path.join(__dirname, '../core/user-bots-config.json');
-    let config: any = {};
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    }
-
-    const keywords = config.linkedin?.search_keywords || '';
+    const keywords = ctx.config.formData?.keywords || '';
 
     if (!keywords) {
       printLog("No search keywords configured");
@@ -303,7 +247,7 @@ export async function* setSearchKeywords(ctx: WorkflowContext): AsyncGenerator<s
 
 // Apply filters
 export async function* applyFilters(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step8: apply filters");
+  printLog("Applying filters...");
 
   try {
     const driver = ctx.driver;
@@ -317,13 +261,7 @@ export async function* applyFilters(ctx: WorkflowContext): AsyncGenerator<string
       await driver.sleep(2000);
 
       // Click Easy Apply filter if configured
-      const configPath = path.join(__dirname, '../core/user-bots-config.json');
-      let config: any = {};
-      if (fs.existsSync(configPath)) {
-        config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      }
-
-      if (config.linkedin?.easy_apply_only) {
+      if (ctx.config.formData?.easyApplyOnly) {
         try {
           const easyApplyButton = await driver.findElement(By.xpath('//button[contains(text(), "Easy Apply")]'));
           await easyApplyButton.click();
@@ -356,7 +294,7 @@ export async function* applyFilters(ctx: WorkflowContext): AsyncGenerator<string
 
 // Get page info
 export async function* getPageInfo(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step9: get page info");
+  printLog("Getting page info...");
 
   try {
     const driver = ctx.driver;
@@ -386,7 +324,7 @@ export async function* getPageInfo(ctx: WorkflowContext): AsyncGenerator<string,
 
 // Extract job details
 export async function* extractJobDetails(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step10: extract job details");
+  printLog("Extracting job details...");
 
   try {
     const driver = ctx.driver;
@@ -480,7 +418,7 @@ export async function* extractJobDetails(ctx: WorkflowContext): AsyncGenerator<s
 
 // Process jobs
 export async function* processJobs(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step11: process jobs");
+  printLog("Processing jobs...");
 
   const extractedJobs = ctx.extracted_jobs || [];
 
@@ -499,7 +437,7 @@ export async function* processJobs(ctx: WorkflowContext): AsyncGenerator<string,
 
 // Attempt Easy Apply
 export async function* attemptEasyApply(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step14: attempt Easy Apply");
+  printLog("Attempting Easy Apply...");
 
   try {
     const driver = ctx.driver;
@@ -574,19 +512,12 @@ export async function* attemptEasyApply(ctx: WorkflowContext): AsyncGenerator<st
 
 // Upload resume
 export async function* uploadResume(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step15: upload resume");
+  printLog("Uploading resume...");
 
   try {
     const driver = ctx.driver;
 
-    // Load config
-    const configPath = path.join(__dirname, '../core/user-bots-config.json');
-    let config: any = {};
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    }
-
-    const resumePath = config.linkedin?.resume_path || '';
+    const resumePath = ctx.config.formData?.resumePath || '';
 
     if (!resumePath || !fs.existsSync(resumePath)) {
       printLog("No resume configured or file not found");
@@ -612,20 +543,13 @@ export async function* uploadResume(ctx: WorkflowContext): AsyncGenerator<string
 
 // Answer questions
 export async function* answerQuestions(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step16: answer questions");
+  printLog("Answering questions...");
 
   try {
     const driver = ctx.driver;
 
-    // Load config
-    const configPath = path.join(__dirname, '../core/user-bots-config.json');
-    let config: any = {};
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    }
-
-    const phone = config.linkedin?.phone || '';
-    const email = config.linkedin?.email || config.linkedin?.username || '';
+    const phone = ctx.config.formData?.phone || '';
+    const email = ctx.config.formData?.email || '';
 
     // Find all form elements
     try {
@@ -688,7 +612,7 @@ export async function* answerQuestions(ctx: WorkflowContext): AsyncGenerator<str
 
 // Submit application
 export async function* submitApplication(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step17: submit application");
+  printLog("Submitting application...");
 
   try {
     const driver = ctx.driver;
@@ -756,7 +680,7 @@ export async function* submitApplication(ctx: WorkflowContext): AsyncGenerator<s
 
 // Save applied job
 export async function* saveAppliedJob(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step18: save applied job");
+  printLog("Saving applied job...");
 
   try {
     const currentJob = ctx.current_job;
@@ -782,7 +706,7 @@ export async function* saveAppliedJob(ctx: WorkflowContext): AsyncGenerator<stri
 
 // External apply
 export async function* externalApply(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step19: external apply");
+  printLog("Handling external apply...");
 
   try {
     const driver = ctx.driver;
@@ -831,7 +755,7 @@ export async function* externalApply(ctx: WorkflowContext): AsyncGenerator<strin
 
 // Save external job
 export async function* saveExternalJob(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step20: save external job");
+  printLog("Saving external job...");
 
   const currentJob = ctx.current_job;
   const externalUrl = ctx.external_application_url || '';
@@ -842,7 +766,7 @@ export async function* saveExternalJob(ctx: WorkflowContext): AsyncGenerator<str
 
 // Application failed
 export async function* applicationFailed(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step21: application failed");
+  printLog("Marking application as failed...");
 
   const currentJob = ctx.current_job;
 
@@ -864,7 +788,7 @@ export async function* applicationFailed(ctx: WorkflowContext): AsyncGenerator<s
 
 // Continue processing
 export async function* continueProcessing(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step22: continue processing");
+  printLog("Continuing to next job...");
 
   const extractedJobs = ctx.extracted_jobs || [];
   const currentIndex = ctx.current_job_index || 0;
@@ -886,7 +810,7 @@ export async function* continueProcessing(ctx: WorkflowContext): AsyncGenerator<
 
 // Navigate to next page
 export async function* navigateToNextPage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Step23: navigate to next page");
+  printLog("Navigating to next page...");
 
   try {
     const driver = ctx.driver;
@@ -912,7 +836,7 @@ export async function* navigateToNextPage(ctx: WorkflowContext): AsyncGenerator<
 
 // Finish
 export async function* finish(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  printLog("LinkedIn Finish: cleanup and stop");
+  printLog("Finishing workflow...");
 
   try {
     const appliedCount = ctx.applied_jobs || 0;
@@ -938,7 +862,7 @@ export async function* finish(ctx: WorkflowContext): AsyncGenerator<string, void
 
 // Export step functions
 export const linkedinStepFunctions = {
-  loadAppliedJobIds,
+  step0,
   openCheckLogin,
   credentialLogin,
   showManualLoginPrompt,

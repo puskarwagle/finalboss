@@ -19,7 +19,11 @@
     "companyWeight": "0.1",
     "enableDeepSeek": false,
     "deepSeekApiKey": "",
-    "acceptTerms": true
+    "acceptTerms": true,
+    "resumePath": "",
+    "phone": "",
+    "email": "",
+    "easyApplyOnly": false
   },
   "industries": [
     {

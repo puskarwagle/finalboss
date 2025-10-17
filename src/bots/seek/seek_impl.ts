@@ -65,6 +65,7 @@ export async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string
     ctx.sessionsDir = sessionsDir;
     ctx.humanBehavior = new HumanBehavior(DEFAULT_HUMANIZATION);
     ctx.sessionManager = new UniversalSessionManager(driver, SessionConfigs.seek);
+    ctx.overlay = new UniversalOverlay(driver, 'Seek');
 
     await StealthFeatures.hideWebDriver(driver);
     await StealthFeatures.randomizeUserAgent(driver);
@@ -164,8 +165,7 @@ export async function* clickSearchButton(ctx: WorkflowContext): AsyncGenerator<s
 
 // Step 4: Show Sign In Banner and Wait for Login
 export async function* showSignInBanner(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
-  const overlay = new UniversalOverlay(ctx.driver);
-  await overlay.showSignInOverlay();
+  await ctx.overlay.showSignInOverlay();
   await ctx.driver.get(ctx.seek_url || 'https://www.seek.com.au');
   await ctx.driver.sleep(2000);
   yield "signin_banner_shown";

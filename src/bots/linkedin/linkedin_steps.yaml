@@ -6,12 +6,12 @@ workflow_meta:
 steps_config:
   step0:
     step: 0
-    func: "loadAppliedJobIds"
+    func: "step0"
     transitions:
-      applied_job_ids_loaded: "open_check_login"
-      retry: "open_check_login"
-    timeout: 10
-    on_timeout_event: "retry"
+      ctx_ready: "open_check_login"
+      ctx_failed: "step0"
+    timeout: 30
+    on_timeout_event: "ctx_failed"
 
   open_check_login:
     step: 1
@@ -20,9 +20,9 @@ steps_config:
       login_not_needed: "open_jobs_page"
       user_needs_to_login: "credential_login"
       cannot_determine_login_status: "open_jobs_page"
-      no_available_page: "open_check_login"
-      failed_to_navigate: "open_check_login"
-      failed_checking_login_status: "open_check_login"
+      no_available_page: "show_manual_login_prompt"
+      failed_to_navigate: "show_manual_login_prompt"
+      failed_checking_login_status: "show_manual_login_prompt"
     timeout: 30
     on_timeout_event: "failed_to_navigate"
 
