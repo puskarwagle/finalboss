@@ -10,6 +10,11 @@
       name: 'seek_bot',
       description: 'Automate job searching on Seek.com.au with advanced filtering and application features',
       image: '/seek-logo.png'
+    },
+    {
+      name: 'linkedin_bot',
+      description: 'Automate job searching on LinkedIn with Easy Apply and smart filtering',
+      image: '/linkedin-logo.png'
     }
   ];
 

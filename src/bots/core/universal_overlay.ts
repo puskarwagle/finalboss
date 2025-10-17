@@ -74,19 +74,27 @@ export class UniversalOverlay {
             'left: ' + finalConfig.position.x + 'px;' +
             'width: ' + (typeof finalConfig.size.width === 'number' ? finalConfig.size.width + 'px' : finalConfig.size.width) + ';' +
             'height: ' + (typeof finalConfig.size.height === 'number' ? finalConfig.size.height + 'px' : finalConfig.size.height) + ';' +
-            'background: ' + finalConfig.style.backgroundColor + ';' +
-            'border: 2px solid ' + finalConfig.style.borderColor + ';' +
-            'border-radius: 12px;' +
+            'background: ' + finalConfig.style.backgroundColor + 'dd;' +
+            'border: 1px solid ' + finalConfig.style.borderColor + '80;' +
+            'border-radius: 16px;' +
             'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);' +
             'z-index: 999999;' +
-            'font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;' +
+            'font-family: \'Space Grotesk\', sans-serif;' +
             'color: ' + finalConfig.style.textColor + ';' +
-            'transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease, opacity 0.2s ease, transform 0.2s ease;' +
+            'transition: all 0.3s ease;' +
+            'backdrop-filter: blur(10px);' +
+            '-webkit-backdrop-filter: blur(10px);' +
             'cursor: ' + (finalConfig.draggable ? 'move' : 'default') + ';' +
             'user-select: none;' +
             '-webkit-user-select: none;' +
             '-moz-user-select: none;' +
             '-ms-user-select: none;';
+
+          // Inject Google Font
+          const fontLink = document.createElement('link');
+          fontLink.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap';
+          fontLink.rel = 'stylesheet';
+          document.head.appendChild(fontLink);
 
           // Create header
           const header = document.createElement('div');
@@ -102,7 +110,7 @@ export class UniversalOverlay {
           const title = document.createElement('div');
           title.style.cssText =
             'font-weight: bold;' +
-            'font-size: 14px;' +
+            'font-size: 16px;' +
             'color: ' + finalConfig.style.borderColor + ';';
           title.textContent = finalConfig.title;
 
@@ -111,22 +119,61 @@ export class UniversalOverlay {
             'display: flex;' +
             'gap: 8px;';
 
+          // Close button
+          const closeBtn = document.createElement('button');
+          closeBtn.innerHTML = '×';
+          closeBtn.style.cssText =
+            'background: none;' +
+            'border: 1px solid ' + finalConfig.style.borderColor + '80;' +
+            'color: ' + finalConfig.style.borderColor + ';' +
+            'width: 24px;' +
+            'height: 24px;' +
+            'border-radius: 6px;' +
+            'cursor: pointer;' +
+            'font-size: 20px;' +
+            'display: flex;' +
+            'align-items: center;' +
+            'justify-content: center;' +
+            'transition: all 0.2s ease;';
+
+          closeBtn.onmouseover = () => {
+            closeBtn.style.background = finalConfig.style.borderColor + '30';
+            closeBtn.style.transform = 'scale(1.1)';
+          };
+          closeBtn.onmouseout = () => {
+            closeBtn.style.background = 'none';
+            closeBtn.style.transform = 'scale(1)';
+          };
+          closeBtn.onclick = () => {
+            overlay.remove();
+          };
+
           // Collapse/Expand button
           if (finalConfig.collapsible) {
             const collapseBtn = document.createElement('button');
             collapseBtn.innerHTML = '−';
             collapseBtn.style.cssText =
               'background: none;' +
-              'border: 1px solid ' + finalConfig.style.borderColor + ';' +
+              'border: 1px solid ' + finalConfig.style.borderColor + '80;' +
               'color: ' + finalConfig.style.borderColor + ';' +
               'width: 24px;' +
               'height: 24px;' +
-              'border-radius: 4px;' +
+              'border-radius: 6px;' +
               'cursor: pointer;' +
               'font-size: 16px;' +
               'display: flex;' +
               'align-items: center;' +
-              'justify-content: center;';
+              'justify-content: center;' +
+              'transition: all 0.2s ease;';
+
+            collapseBtn.onmouseover = () => {
+              collapseBtn.style.background = finalConfig.style.borderColor + '30';
+              collapseBtn.style.transform = 'scale(1.1)';
+            };
+            collapseBtn.onmouseout = () => {
+              collapseBtn.style.background = 'none';
+              collapseBtn.style.transform = 'scale(1)';
+            };
 
             collapseBtn.onclick = function() {
               const content = overlay.querySelector('.overlay-content');
@@ -178,6 +225,7 @@ export class UniversalOverlay {
             controls.appendChild(collapseBtn);
           }
 
+          controls.appendChild(closeBtn);
           header.appendChild(title);
           header.appendChild(controls);
 
