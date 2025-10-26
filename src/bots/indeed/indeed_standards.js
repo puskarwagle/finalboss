@@ -189,7 +189,10 @@ export async function* detectPageState(ctx) {
 
 // Step 3.5: Click Search Button
 export async function* clickSearchButton(ctx) {
-  const searchSelectors = ['button[type="submit"]', 'input[type="submit"]'];
+  // Get search button selectors from context, with fallbacks
+  const searchSelectors = ctx.selectors?.search?.search_button ? 
+    [ctx.selectors.search.search_button] : 
+    ['button[type="submit"]', 'input[type="submit"]'];
 
   for (const selector of searchSelectors) {
     try {
@@ -226,20 +229,52 @@ export async function* performBasicSearch(ctx) {
 export async function* collectJobCards(ctx) {
   const selectors = ctx.selectors?.jobs?.job_card_selectors || ['div[data-testid="slider_item"]'];
 
+  printLog("Collecting job cards...");
+  printLog(`Available selectors: ${selectors.join(', ')}`);
+
   for (const selector of selectors) {
     try {
+      printLog(`Trying selector: ${selector}`);
       const cards = await ctx.page.locator(selector).all();
+      printLog(`Found ${cards.length} cards with selector: ${selector}`);
+      
       if (cards.length > 0) {
-        ctx.job_cards = cards;
-        ctx.job_index = 0;
-        ctx.total_jobs = cards.length;
-        ctx.applied_jobs = 0;
+        // Verify cards are actually visible and clickable
+        let validCards = 0;
+        for (let i = 0; i < Math.min(cards.length, 5); i++) { // Check first 5 cards
+          try {
+            const isVisible = await cards[i].isVisible();
+            const isEnabled = await cards[i].isEnabled();
+            if (isVisible && isEnabled) {
+              validCards++;
+            }
+          } catch (e) {
+            printLog(`Card ${i + 1} validation failed: ${e.message}`);
+          }
+        }
+        
+        printLog(`Valid cards found: ${validCards}/${Math.min(cards.length, 5)}`);
+        
+        if (validCards > 0) {
+          ctx.job_cards = cards;
+          ctx.job_index = 0;
+          ctx.total_jobs = cards.length;
+          ctx.applied_jobs = 0;
 
-        yield "cards_collected";
-        return;
+          printLog(`Successfully collected ${cards.length} job cards`);
+          yield "cards_collected";
+          return;
+        } else {
+          printLog(`No valid cards found with selector: ${selector}`);
+        }
       }
-    } catch { continue; }
+    } catch (error) {
+      printLog(`Selector ${selector} failed: ${error.message}`);
+      continue;
+    }
   }
+  
+  printLog("No job cards found with any selector");
   yield "cards_collect_retry";
 }
 
@@ -248,54 +283,217 @@ export async function* clickJobCard(ctx) {
   const cards = ctx.job_cards || [];
   const index = ctx.job_index || 0;
 
+  printLog(`Attempting to click job card ${index + 1}/${cards.length}`);
+
   if (!cards.length || index >= cards.length) {
+    printLog("No more job cards to click");
     yield "job_cards_finished";
     return;
   }
 
   try {
-    await cards[index].scrollIntoViewIfNeeded();
-    await cards[index].click();
+    // Check if the card is still visible and enabled
+    const card = cards[index];
+    const isVisible = await card.isVisible();
+    const isEnabled = await card.isEnabled();
+    
+    printLog(`Card ${index + 1} - Visible: ${isVisible}, Enabled: ${isEnabled}`);
+    
+    if (!isVisible || !isEnabled) {
+      printLog(`Card ${index + 1} is no longer attached to DOM, refreshing job cards...`);
+      // Try to refresh job cards
+      const selectors = ctx.selectors?.jobs?.job_card_selectors || ['div[data-testid="slider_item"]'];
+      let refreshed = false;
+      
+      for (const selector of selectors) {
+        try {
+          const newCards = await ctx.page.locator(selector).all();
+          if (newCards.length > 0) {
+            ctx.job_cards = newCards;
+            ctx.total_jobs = newCards.length;
+            refreshed = true;
+            printLog(`Refreshed job cards: found ${newCards.length} cards`);
+            break;
+          }
+        } catch (e) {
+          printLog(`Failed to refresh with selector ${selector}: ${e.message}`);
+          continue;
+        }
+      }
+      
+      if (!refreshed) {
+        printLog("Failed to refresh job cards");
+        ctx.job_index = index + 1;
+        yield "job_cards_finished";
+        return;
+      }
+      
+      // Try again with refreshed cards
+      const newCard = ctx.job_cards[index];
+      if (newCard && await newCard.isVisible()) {
+        await newCard.scrollIntoViewIfNeeded();
+        await newCard.click();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        ctx.job_index = index + 1;
+        yield "job_card_clicked";
+        return;
+      }
+    }
+    
+    if (!isVisible) {
+      printLog(`Card ${index + 1} is not visible, scrolling into view...`);
+      await card.scrollIntoViewIfNeeded();
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for scroll
+    }
+    
+    // Try to click the card
+    await card.click();
     await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for details panel to load
+    
+    printLog(`Successfully clicked job card ${index + 1}`);
     ctx.job_index = index + 1;
     yield "job_card_clicked";
-  } catch {
-    ctx.job_index = index + 1;
-    yield "job_card_skipped";
+    
+  } catch (error) {
+    printLog(`Error clicking job card ${index + 1}: ${error.message}`);
+    
+    // Try alternative clicking methods
+    try {
+      const card = cards[index];
+      printLog(`Trying alternative click method for card ${index + 1}...`);
+      
+      // Try clicking with force
+      await card.click({ force: true });
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      printLog(`Successfully clicked job card ${index + 1} with force`);
+      ctx.job_index = index + 1;
+      yield "job_card_clicked";
+      
+    } catch (forceError) {
+      printLog(`Force click also failed: ${forceError.message}`);
+      
+      // Try using page.evaluate to click
+      try {
+        const clicked = await ctx.page.evaluate((cardIndex) => {
+          const selectors = [
+            'div[data-testid="slider_item"]',
+            '.job_seen_beacon',
+            'div[class*="slider_container"]',
+            'div[class*="result"]',
+            'div[class*="item"]',
+            'div[class*="card"]',
+            'div[class*="job"]',
+            'div[class*="list"]'
+          ];
+          
+          for (const selector of selectors) {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length > cardIndex) {
+              const element = elements[cardIndex];
+              if (element && element.offsetParent !== null) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                  element.click();
+                }, 500);
+                return true;
+              }
+            }
+          }
+          return false;
+        }, index);
+        
+        if (clicked) {
+          printLog(`Successfully clicked job card ${index + 1} using page.evaluate`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          ctx.job_index = index + 1;
+          yield "job_card_clicked";
+        } else {
+          printLog(`Failed to click job card ${index + 1} using page.evaluate`);
+          ctx.job_index = index + 1;
+          yield "job_card_skipped";
+        }
+        
+      } catch (evalError) {
+        printLog(`Page.evaluate click failed: ${evalError.message}`);
+        ctx.job_index = index + 1;
+        yield "job_card_skipped";
+      }
+    }
   }
 }
 
 // Detect Apply Button Type
 export async function* detectApplyType(ctx) {
   try {
-    const result = await ctx.page.evaluate(`
+    // Get selectors from context
+    const selectors = ctx.selectors?.jobs?.apply_button_candidates || [];
+    
+    const result = await ctx.page.evaluate((selectors) => {
       const container = document.querySelector('[data-testid="jobDetailsPage"]') || document.body;
-
-      // Look for buttons/links with apply text
-      const applyButtons = Array.from(container.querySelectorAll('button, a, [role="button"]')).filter(el => {
-        return el.offsetParent !== null && !el.disabled;
-      });
 
       let foundQuickApply = false;
       let foundRegularApply = false;
 
-      for (const button of applyButtons) {
-        const text = (button.textContent || '').trim();
-        const lowerText = text.toLowerCase();
+      // First, try to find apply buttons using the validated selectors
+      for (const selector of selectors) {
+        try {
+          const elements = container.querySelectorAll(selector);
+          for (const element of elements) {
+            if (element.offsetParent !== null && !element.disabled) {
+              const text = (element.textContent || '').trim();
+              const lowerText = text.toLowerCase();
 
-        // ONLY Quick Apply if it contains the word "quick"
-        if (lowerText.includes('quick') && lowerText.includes('apply')) {
-          foundQuickApply = true;
-          break; // Stop at first Quick Apply
+              // Check aria-label for additional context
+              const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
+              
+              // ONLY Quick Apply if it contains the word "quick"
+              if (lowerText.includes('quick') && lowerText.includes('apply')) {
+                foundQuickApply = true;
+                break;
+              }
+              // Check if it's a regular apply button (opens in new tab or external)
+              else if ((lowerText === 'apply' || lowerText === 'apply now') && 
+                       (ariaLabel.includes('new tab') || ariaLabel.includes('external') || ariaLabel.includes('company site'))) {
+                foundRegularApply = true;
+              }
+              // Default to regular apply for any apply button without "quick"
+              else if (lowerText.includes('apply') && !lowerText.includes('quick')) {
+                foundRegularApply = true;
+              }
+            }
+          }
+          if (foundQuickApply) break;
+        } catch (e) {
+          // Continue with next selector if this one fails
+          continue;
         }
-        // Regular Apply if it's exactly "Apply" or "Apply Now" but NO "quick"
-        else if ((lowerText === 'apply' || lowerText === 'apply now') && !lowerText.includes('quick')) {
-          foundRegularApply = true;
+      }
+
+      // Fallback: Look for any buttons/links with apply text if selectors didn't work
+      if (!foundQuickApply && !foundRegularApply) {
+        const applyButtons = Array.from(container.querySelectorAll('button, a, [role="button"]')).filter(el => {
+          return el.offsetParent !== null && !el.disabled;
+        });
+
+        for (const button of applyButtons) {
+          const text = (button.textContent || '').trim();
+          const lowerText = text.toLowerCase();
+
+          // ONLY Quick Apply if it contains the word "quick"
+          if (lowerText.includes('quick') && lowerText.includes('apply')) {
+            foundQuickApply = true;
+            break; // Stop at first Quick Apply
+          }
+          // Regular Apply if it's exactly "Apply" or "Apply Now" but NO "quick"
+          else if ((lowerText === 'apply' || lowerText === 'apply now') && !lowerText.includes('quick')) {
+            foundRegularApply = true;
+          }
         }
       }
 
       return { hasQuickApply: foundQuickApply, hasRegularApply: foundRegularApply };
-    `);
+    }, selectors);
 
     printLog(`Apply detection result: Quick=${result.hasQuickApply}, Regular=${result.hasRegularApply}`);
 
@@ -318,19 +516,26 @@ export async function* detectApplyType(ctx) {
 // Parse Job Details
 export async function* parseJobDetails(ctx) {
   try {
-    const jobData = await ctx.page.evaluate(`
+    // Get selectors from context
+    const titleSelectors = ctx.selectors?.jobs?.title_selectors || [
+      'h1[data-testid="job-title"]',
+      'h1',
+      '.job-title'
+    ];
+    const companySelectors = ctx.selectors?.jobs?.company_selectors || [
+      '[data-testid="company-name"]',
+      '.company-name',
+      '[class*="company"]',
+      'span[class*="company"]'
+    ];
+
+    const jobData = await ctx.page.evaluate((titleSelectors, companySelectors) => {
       // Extract job content with Indeed structure handling
       function extractJobContent() {
         const container = document.querySelector('[data-testid="jobDetailsPage"]') || document.body;
 
         // Try to extract title using specific selectors first
         let titleText = '';
-        const titleSelectors = [
-          'h1[data-testid="job-title"]',
-          'h1',
-          '.job-title'
-        ];
-
         for (const selector of titleSelectors) {
           const titleEl = container.querySelector(selector);
           if (titleEl && titleEl.textContent.trim()) {
@@ -341,11 +546,6 @@ export async function* parseJobDetails(ctx) {
 
         // Try to extract company using specific selectors
         let companyText = '';
-        const companySelectors = [
-          '[data-testid="company-name"]',
-          '.company-name'
-        ];
-
         for (const selector of companySelectors) {
           const companyEl = container.querySelector(selector);
           if (companyEl && companyEl.textContent.trim()) {
@@ -382,7 +582,7 @@ export async function* parseJobDetails(ctx) {
       };
 
       return finalData;
-    `);
+    }, titleSelectors, companySelectors);
 
     if (jobData) {
       // Save job data to file in src/bots/jobs/
@@ -424,17 +624,45 @@ export async function* clickQuickApply(ctx) {
   try {
     printLog("Clicking Quick Apply button...");
 
-    const clicked = await ctx.page.evaluate(`
+    // Get selectors from context
+    const selectors = ctx.selectors?.jobs?.apply_button_candidates || [];
+
+    const clicked = await ctx.page.evaluate((selectors) => {
       const container = document.querySelector('[data-testid="jobDetailsPage"]') || document.body;
 
-      // Try multiple selectors for Quick Apply button
-      const quickApplySelectors = [
-        '[data-testid="indeedApply"]',
-        'button',
-        'a'
-      ];
+      // Try validated selectors first
+      for (const selector of selectors) {
+        try {
+          const elements = Array.from(container.querySelectorAll(selector));
 
-      for (const selector of quickApplySelectors) {
+          for (const element of elements) {
+            const text = (element.textContent || '').toLowerCase();
+
+            if (text.includes('quick apply') ||
+                (text.includes('apply') && !text.includes('applied'))) {
+
+              if (element.offsetParent !== null && !element.disabled) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Small delay before clicking
+                setTimeout(() => {
+                  element.click();
+                  console.log('Quick Apply button clicked successfully');
+                }, 500);
+
+                return true;
+              }
+            }
+          }
+        } catch (e) {
+          // Continue with next selector if this one fails
+          continue;
+        }
+      }
+
+      // Fallback: Try generic selectors
+      const fallbackSelectors = ['button', 'a'];
+      for (const selector of fallbackSelectors) {
         const elements = Array.from(container.querySelectorAll(selector));
 
         for (const element of elements) {
@@ -460,7 +688,7 @@ export async function* clickQuickApply(ctx) {
 
       console.log('Quick Apply button not found or not clickable');
       return false;
-    `);
+    }, selectors);
 
     if (clicked) {
       // Wait for potential new tab/window to open
@@ -578,14 +806,15 @@ export async function* clickContinueButton(ctx) {
   try {
     printLog("Clicking continue button...");
 
-    const continueClicked = await ctx.page.evaluate(`
-      const continueSelectors = [
-        'button[data-testid="continue-button"]',
-        'button:has-text("Continue")',
-        'button:has-text("Next")'
-      ];
+    // Get continue button selectors from context, with fallbacks
+    const continueSelectors = ctx.selectors?.application?.continue_button_selectors || [
+      'button[data-testid="continue-button"]',
+      'button:has-text("Continue")',
+      'button:has-text("Next")'
+    ];
 
-      for (const selector of continueSelectors) {
+    const continueClicked = await ctx.page.evaluate((selectors) => {
+      for (const selector of selectors) {
         let button;
         if (selector.includes(':has-text')) {
           const text = selector.match(/has-text\\(\"([^\"]+)\"\\)/)[1];
@@ -608,7 +837,7 @@ export async function* clickContinueButton(ctx) {
       }
 
       return false;
-    `);
+    }, continueSelectors);
 
     if (continueClicked) {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for navigation/page change
@@ -675,14 +904,21 @@ export async function* clickNextPage(ctx) {
   try {
     printLog("Checking for next page button...");
 
-    const nextButton = await ctx.page.evaluate(`
-      const nextButton = document.querySelector('a[aria-label="Next Page"]');
-      if (nextButton && !nextButton.hasAttribute('disabled')) {
-        nextButton.click();
-        return true;
+    // Get pagination selectors from context, with fallbacks
+    const paginationSelectors = ctx.selectors?.search?.pagination_next ? 
+      [ctx.selectors.search.pagination_next] : 
+      ['a[aria-label="Next Page"]'];
+
+    const nextButton = await ctx.page.evaluate((selectors) => {
+      for (const selector of selectors) {
+        const nextButton = document.querySelector(selector);
+        if (nextButton && !nextButton.hasAttribute('disabled')) {
+          nextButton.click();
+          return true;
+        }
       }
       return false;
-    `);
+    }, paginationSelectors);
 
     if (nextButton) {
       printLog("Next page button clicked.");

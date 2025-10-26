@@ -29,7 +29,15 @@
       "div[class*='item']",
       "div[class*='card']",
       "div[class*='job']",
-      "div[class*='list']"
+      "div[class*='list']",
+      "[data-testid='job-card']",
+      ".jobsearch-SerpJobCard",
+      "div[class*='jobsearch']",
+      "div[class*='serp']",
+      "div[class*='jobcard']",
+      "div[class*='job-card']",
+      "div[class*='result-item']",
+      "div[class*='job-item']"
     ],
     "title_selectors": [
       "a.jcs-JobTitle",
@@ -40,8 +48,19 @@
       "a[data-testid='job-title']",
       "h3 a"
     ],
+    "company_selectors": [
+      "[data-testid='company-name']",
+      ".company-name",
+      "[class*='company']",
+      "span[class*='company']"
+    ],
     "apply_button_candidates": [
-      "[data-testid='indeedApply']",
+      "#indeedApplyButton",
+      "[data-testid='indeedApplyButton-test']",
+      "button[aria-label*='Apply now']",
+      "button.css-jiauqs",
+      "button.e8ju0x50",
+      "button:has-text('Apply now')",
       "button:has-text('Apply')",
       "button:has-text('Postuler')",
       "[class*='apply']",
@@ -50,6 +69,7 @@
       "a[data-testid='apply-button']"
     ],
     "indeed_apply_button": "button:has(span[class*='css-1ebo7dz'])",
+    "indeed_apply_button_alt": "#indeedApplyButton",
     "apply_button_fallbacks": [
       "button:visible:has-text('Postuler')",
       "button:visible:has-text('Apply')",
