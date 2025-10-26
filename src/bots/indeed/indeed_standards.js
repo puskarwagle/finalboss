@@ -619,6 +619,108 @@ export async function* parseJobDetails(ctx) {
   }
 }
 
+// Click Apply Button (Generic - works for both Quick Apply and Regular Apply)
+export async function* clickApplyButton(ctx) {
+  try {
+    printLog("Clicking apply button...");
+
+    // Get selectors from context
+    const selectors = ctx.selectors?.jobs?.apply_button_candidates || [];
+
+    const result = await ctx.page.evaluate((selectors) => {
+      const container = document.querySelector('[data-testid="jobDetailsPage"]') || document.body;
+
+      // Try validated selectors first
+      for (const selector of selectors) {
+        try {
+          const elements = Array.from(container.querySelectorAll(selector));
+
+          for (const element of elements) {
+            const text = (element.textContent || '').toLowerCase();
+            const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
+
+            // Check if it's an apply button
+            if (text.includes('apply') && !text.includes('applied')) {
+              if (element.offsetParent !== null && !element.disabled) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Small delay before clicking
+                setTimeout(() => {
+                  element.click();
+                  console.log('Apply button clicked successfully');
+                }, 500);
+
+                return { 
+                  success: true, 
+                  buttonType: text.includes('quick') ? 'quick_apply' : 'regular_apply',
+                  text: text,
+                  ariaLabel: ariaLabel
+                };
+              }
+            }
+          }
+        } catch (e) {
+          // Continue with next selector if this one fails
+          continue;
+        }
+      }
+
+      // Fallback: Try generic selectors
+      const fallbackSelectors = ['button', 'a'];
+      for (const selector of fallbackSelectors) {
+        const elements = Array.from(container.querySelectorAll(selector));
+
+        for (const element of elements) {
+          const text = (element.textContent || '').toLowerCase();
+
+          if (text.includes('apply') && !text.includes('applied')) {
+            if (element.offsetParent !== null && !element.disabled) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+              // Small delay before clicking
+              setTimeout(() => {
+                element.click();
+                console.log('Apply button clicked successfully');
+              }, 500);
+
+              return { 
+                success: true, 
+                buttonType: text.includes('Apply now') ? 'quick_apply' : 'regular_apply',
+                text: text,
+                ariaLabel: (element.getAttribute('aria-label') || '').toLowerCase()
+              };
+            }
+          }
+        }
+      }
+
+      console.log('Apply button not found or not clickable');
+      return { success: false, error: 'No apply button found' };
+    }, selectors);
+
+    if (result.success) {
+      // Wait for potential navigation or new tab/window to open
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      printLog(`Apply button clicked successfully - Type: ${result.buttonType}`);
+      printLog(`Button text: "${result.text}", Aria-label: "${result.ariaLabel}"`);
+      
+      // Check if we're still on the same page (might be external application)
+      const currentUrl = await ctx.page.url();
+      printLog(`Current URL after click: ${currentUrl}`);
+      
+      yield "apply_button_clicked";
+    } else {
+      printLog(`Apply button not found: ${result.error}`);
+      yield "apply_button_failed";
+    }
+
+  } catch (error) {
+    printLog(`Error clicking apply button: ${error}`);
+    yield "apply_button_failed";
+  }
+}
+
 // Click Quick Apply Button
 export async function* clickQuickApply(ctx) {
   try {
@@ -971,6 +1073,7 @@ export const indeedStepFunctions = {
   clickJobCard,
   detectApplyType,
   parseJobDetails,
+  clickApplyButton,
   clickQuickApply,
   waitForQuickApplyPage,
   getCurrentStep,
@@ -1073,6 +1176,8 @@ class WorkflowEngine {
   async handleStepTransition(stepName, event, stepConfig) {
     const nextStep = stepConfig.transitions[event];
     
+    printLog(`🔄 Transition: ${stepName} -> ${event} -> ${nextStep}`);
+    
     if (nextStep === 'done') {
       printLog('🎉 Workflow completed!');
       await this.cleanup();
@@ -1081,6 +1186,7 @@ class WorkflowEngine {
     
     if (nextStep) {
       this.currentStep = nextStep;
+      printLog(`➡️ Next step: ${nextStep}`);
       return true; // Continue with next step
     } else {
       printLog(`❌ No transition defined for event: ${event} in step: ${stepName}`);
@@ -1103,8 +1209,11 @@ class WorkflowEngine {
       
       // Execute workflow steps
       while (this.currentStep && this.currentStep !== 'done') {
+        printLog(`\n🔄 Current step: ${this.currentStep}`);
         const continueExecution = await this.executeStep(this.currentStep);
+        printLog(`🔄 Continue execution: ${continueExecution}`);
         if (!continueExecution) {
+          printLog('🛑 Stopping workflow execution');
           break;
         }
       }
