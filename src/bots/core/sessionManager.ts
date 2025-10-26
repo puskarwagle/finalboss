@@ -200,17 +200,27 @@ export const SessionConfigs = {
     signInSelectors: [
       'a[data-tn-element="header-signin-link"]',
       '.gnav-SignIn',
-      'a[href*="account/login"]'
+      'a[href*="account/login"]',
+      'a[href*="auth"]',
+      'button:has-text("Sign in")',
+      'button:has-text("Log in")'
     ],
     userMenuSelectors: [
       '.gnav-AccountMenu',
       '.np-dropdown',
-      '[data-testid="gnav-AccountMenu"]'
+      '[data-testid="gnav-AccountMenu"]',
+      '.gnav-UserMenu',
+      '[data-testid="user-menu"]',
+      'button[aria-label*="account"]',
+      'button[aria-label*="profile"]'
     ],
     loggedInIndicators: [
       'prefs',
       'account',
-      'saved-jobs'
+      'saved-jobs',
+      'profile',
+      'dashboard',
+      'my-indeed'
     ]
   }
 };

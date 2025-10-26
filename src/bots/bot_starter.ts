@@ -1,5 +1,5 @@
-import { bot_registry, BotRegistry } from './core/registry';
-import { WorkflowEngine, type WorkflowContext } from './core/workflow_engine';
+import { bot_registry, BotRegistry } from './core/registry.js';
+import { WorkflowEngine, type WorkflowContext } from './core/workflow_engine.js';
 import * as path from 'path';
 
 // Ensure stdout is not buffered for real-time event streaming
