@@ -1,7 +1,7 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { authService } from '$lib/authService.js';
+  import { authService } from '$lib/authService';
 
   let mode = 'login'; // 'login' or 'signup'
   let email = '';
@@ -38,7 +38,7 @@
     showPassword = !showPassword;
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
     error = '';
     success = '';

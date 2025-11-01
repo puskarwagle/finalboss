@@ -1,7 +1,7 @@
-<script>
+<script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { authService } from '$lib/authService.js';
+  import { authService } from '$lib/authService';
 
   // Check authentication on mount
   onMount(() => {
@@ -13,7 +13,7 @@
   $: user = $authService.user;
   let showWelcome = true;
 
-  function navigateTo(path) {
+  function navigateTo(path: string) {
     goto(path);
   }
 
@@ -64,6 +64,25 @@
           <div class="card-actions">
             <div class="badge badge-primary">Automation</div>
             <div class="badge badge-outline">Essential</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resume Builder Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer"
+           on:click={() => navigateTo('/resume-builder')}
+           on:keydown={(e) => e.key === 'Enter' && navigateTo('/resume-builder')}
+           role="button"
+           tabindex="0">
+        <figure class="px-10 pt-10">
+          <div class="text-6xl">📄</div>
+        </figure>
+        <div class="card-body items-center text-center">
+          <h2 class="card-title">Resume Builder</h2>
+          <p>Create professional ATS-friendly resumes with our easy-to-use template-based builder</p>
+          <div class="card-actions">
+            <div class="badge badge-success">ATS-Ready</div>
+            <div class="badge badge-outline">Templates</div>
           </div>
         </div>
       </div>
