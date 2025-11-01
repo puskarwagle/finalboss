@@ -41,7 +41,20 @@
     },
     "job_list_item_xpath": "//li[@data-occludable-job-id]",
     "job_time_posted_relative_xpath": ".//span[contains(normalize-space(), ' ago')]",
-    "keywords_label_xpath": ".//label[@class='jobs-search-box__input-icon jobs-search-box__keywords-label']"
+    "keywords_label_xpath": ".//label[@class='jobs-search-box__input-icon jobs-search-box__keywords-label']",
+    "job_details_panel": {
+      "container_css": "div.jobs-details__main-content",
+      "title_css": "div.job-details-jobs-unified-top-card__job-title h1",
+      "title_link_css": "div.job-details-jobs-unified-top-card__job-title h1 a",
+      "company_name_css": "div.job-details-jobs-unified-top-card__company-name a",
+      "company_logo_css": "a[aria-label*='logo'] img",
+      "location_xpath": "//div[contains(@class, 'job-details-jobs-unified-top-card__tertiary-description')]//span[contains(@class, 'tvm__text--low-emphasis')][1]",
+      "time_posted_xpath": "//div[contains(@class, 'job-details-jobs-unified-top-card__tertiary-description')]//span[contains(@class, 'tvm__text--positive')]//span",
+      "applicants_count_xpath": "//div[contains(@class, 'job-details-jobs-unified-top-card__tertiary-description')]//span[contains(text(), 'applicants')]",
+      "job_type_tags_css": "div.job-details-fit-level-preferences button",
+      "description_css": "div.jobs-description__content article",
+      "description_text_css": "div.jobs-box__html-content"
+    }
   },
   "pagination": {
     "container_candidates": [
@@ -63,13 +76,21 @@
     "next_page_button_xpath_template": "//button[@aria-label='Page {page}']"
   },
   "easy_apply": {
-    "button_xpath": ".//button[contains(@class,'jobs-apply-button') and contains(@class, 'artdeco-button--3') and contains(@aria-label, 'Easy')]",
-    "general_apply_button_xpath": ".//button[contains(@class,'jobs-apply-button') and contains(@class, 'artdeco-button--3')]",
+    "button_css_candidates": [
+      "button#jobs-apply-button-id",
+      "button.jobs-apply-button[aria-label*='Easy Apply']",
+      "button.jobs-apply-button[data-job-id]"
+    ],
+    "button_xpath": ".//button[contains(@class,'jobs-apply-button') and contains(@aria-label, 'Easy Apply')]",
+    "general_apply_button_xpath": ".//button[contains(@class,'jobs-apply-button')]",
     "modal_class": "jobs-easy-apply-modal",
-    "review_button_xpath": ".//span[normalize-space(.)='Review']",
-    "next_button_xpath": ".//button[contains(span, 'Next')]",
+    "modal_container_css": "div.jobs-easy-apply-modal",
+    "review_button_xpath": "//button[contains(., 'Review')]",
+    "next_button_xpath": "//button[contains(., 'Next') or contains(., 'Continue')]",
+    "submit_button_xpath": "//button[contains(., 'Submit application') or contains(., 'Submit')]",
     "submit_button_text": "Submit application",
     "done_button_text": "Done",
+    "discard_button_xpath": "//button[contains(., 'Discard')]",
     "follow_company": {
       "checkbox_input_xpath": ".//input[@id='follow-company-checkbox' and @type='checkbox']",
       "checkbox_label_xpath": ".//label[@for='follow-company-checkbox']"

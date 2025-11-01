@@ -1,4 +1,3 @@
-use std::path::Path;
 use tauri::Emitter;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -8,15 +7,30 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command(async)]
-fn list_files(path: &str) -> Vec<String> {
-    let path = Path::new(path);
+fn list_files(path: &str) -> Result<Vec<String>, String> {
+    use std::env;
 
-    path.read_dir()
-        .unwrap()
-        .map(|entry| {
-            entry.unwrap().file_name().to_str().unwrap().to_owned()
+    // Resolve path from project root (same logic as read_file_async)
+    let full_path = if path.starts_with("/") || (cfg!(windows) && path.len() > 1 && path.chars().nth(1) == Some(':')) {
+        std::path::PathBuf::from(path)
+    } else {
+        let mut project_root = env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+        if project_root.ends_with("src-tauri") {
+            project_root.pop();
+        }
+        project_root.join(path)
+    };
+
+    let entries = full_path.read_dir()
+        .map_err(|e| format!("Failed to read directory {}: {}", full_path.display(), e))?
+        .filter_map(|entry| {
+            entry.ok().and_then(|e| {
+                e.file_name().to_str().map(|s| s.to_owned())
+            })
         })
-        .collect::<Vec<String>>()
+        .collect::<Vec<String>>();
+
+    Ok(entries)
 }
 
 #[tauri::command]

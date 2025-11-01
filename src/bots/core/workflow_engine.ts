@@ -65,12 +65,7 @@ export class WorkflowEngine {
   }
 
   private emitProgress(event: BotProgressEvent): void {
-    try {
-      // Emit structured event to stdout with prefix for Rust to capture
-      process.stdout.write(`[BOT_EVENT]${JSON.stringify(event)}\n`);
-    } catch (error) {
-      console.log('⚠️ Failed to emit progress event:', error);
-    }
+    // Disabled - too verbose
   }
 
   getBotId(): string {
@@ -100,15 +95,6 @@ export class WorkflowEngine {
       throw new Error(`Function '${stepConfig.func}' not registered`);
     }
 
-    // Emit step start event
-    this.emitProgress({
-      type: 'step_start',
-      timestamp: Date.now(),
-      step: stepName,
-      stepNumber: stepConfig.step,
-      funcName: stepConfig.func
-    });
-
     try {
       const generator = stepFunction(this.context);
       const timeoutPromise = new Promise<string>((resolve) => {
@@ -119,18 +105,6 @@ export class WorkflowEngine {
         this.executeGenerator(generator),
         timeoutPromise
       ]);
-
-      console.log(`Step ${stepConfig.step} [${stepConfig.func}] → ${result}`);
-
-      // Emit transition event
-      this.emitProgress({
-        type: 'transition',
-        timestamp: Date.now(),
-        step: stepName,
-        stepNumber: stepConfig.step,
-        funcName: stepConfig.func,
-        transition: result
-      });
 
       // Use bot's overlay if available, otherwise create fallback
       const activeOverlay = this.context.overlay || this.overlay;

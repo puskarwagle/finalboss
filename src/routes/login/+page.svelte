@@ -220,11 +220,11 @@
                 />
                 <span class="label-text">Remember me</span>
               </label>
-              <label class="label">
+              <div class="label">
                 <span class="label-text-alt text-base-content/60">
                   {rememberMe ? 'Stay logged in until you log out' : 'Session will end when you close the app'}
                 </span>
-              </label>
+              </div>
             </div>
           {/if}
 

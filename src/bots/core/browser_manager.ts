@@ -101,19 +101,84 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
     const runInBackground = process.env.HEADLESS === 'true';
     const disableExtensions = process.env.DISABLE_EXTENSIONS === 'true';
     const safeMode = process.env.SAFE_MODE === 'true';
+    const useRealProfile = process.env.USE_REAL_CHROME === 'true';
 
-    if (runInBackground) options.addArguments('--headless');
-    if (disableExtensions) options.addArguments('--disable-extensions');
+    // STEALTH MODE: Minimal flags to avoid detection
+    if (!runInBackground) {
+      // Only add essential flags for non-headless
+      options.addArguments('--no-sandbox');
+      options.addArguments('--disable-dev-shm-usage');
+    } else {
+      // Headless mode (easier to detect)
+      options.addArguments('--headless');
+      options.addArguments('--no-sandbox');
+      options.addArguments('--disable-dev-shm-usage');
+      options.addArguments('--disable-gpu');
+    }
 
-    options.addArguments('--no-sandbox');
-    options.addArguments('--disable-dev-shm-usage');
-    options.addArguments('--disable-gpu');
-    options.addArguments('--remote-debugging-port=0'); // Use random available port
-    options.addArguments('--disable-web-security');
-    options.addArguments('--disable-features=VizDisplayCompositor');
+    if (disableExtensions) {
+      options.addArguments('--disable-extensions');
+    }
 
+    // CRITICAL: Use real Chrome profile to avoid Cloudflare detection
+    if (useRealProfile) {
+      const realChromeProfile = findDefaultProfileDirectory();
+      if (realChromeProfile) {
+        // IMPORTANT: Use a COPY of the profile to avoid locking issues
+        // Chrome can't use same profile in multiple instances
+        const profileCopyDir = path.join(sessionsDir, 'chrome-profile-copy');
 
-    if (safeMode) {
+        printLog(`🔥 STEALTH MODE: Copying your real Chrome profile...`);
+        printLog(`   From: ${realChromeProfile}`);
+        printLog(`   To: ${profileCopyDir}`);
+
+        // Copy profile if it doesn't exist
+        if (!fs.existsSync(profileCopyDir)) {
+          try {
+            // Copy the Default profile directory
+            const sourceProfile = path.join(realChromeProfile, 'Default');
+            const targetProfile = path.join(profileCopyDir, 'Default');
+
+            if (fs.existsSync(sourceProfile)) {
+              fs.mkdirSync(targetProfile, { recursive: true });
+
+              // Copy only essential files for stealth (cookies, preferences)
+              const essentialFiles = ['Cookies', 'Preferences', 'Local Storage', 'History'];
+              for (const file of essentialFiles) {
+                const sourcePath = path.join(sourceProfile, file);
+                const targetPath = path.join(targetProfile, file);
+
+                if (fs.existsSync(sourcePath)) {
+                  try {
+                    if (fs.lstatSync(sourcePath).isDirectory()) {
+                      fs.cpSync(sourcePath, targetPath, { recursive: true });
+                    } else {
+                      fs.cpSync(sourcePath, targetPath);
+                    }
+                    printLog(`   ✓ Copied ${file}`);
+                  } catch (copyError) {
+                    printLog(`   ⚠️ Could not copy ${file}: ${copyError}`);
+                  }
+                }
+              }
+
+              printLog(`✅ Profile copied successfully`);
+            }
+          } catch (error) {
+            printLog(`⚠️ Profile copy failed: ${error}`);
+            printLog(`⚠️ Using fresh bot session instead`);
+          }
+        } else {
+          printLog(`✅ Using existing profile copy`);
+        }
+
+        options.addArguments(`--user-data-dir=${profileCopyDir}`);
+        options.addArguments('--profile-directory=Default');
+      } else {
+        printLog('⚠️ Could not find real Chrome profile, using bot session instead');
+        options.addArguments(`--user-data-dir=${sessionsDir}`);
+      }
+    } else if (safeMode) {
       printLog('SAFE MODE: Will login with a guest profile, browsing history will not be saved in the browser!');
     } else {
       // Use the session directory for Chrome profile (like botrunner.ts)
@@ -124,6 +189,12 @@ export const setupChromeDriver = async (botName: string = 'seek'): Promise<{ dri
         printLog(`Creating new session: ${sessionsDir}`);
       }
     }
+
+    // STEALTH: Exclude automation switches that Cloudflare detects
+    options.excludeSwitches('enable-automation', 'enable-logging');
+
+    // STEALTH: Add arguments to look like a normal user
+    options.addArguments('--disable-blink-features=AutomationControlled');
 
     // Selenium Manager will automatically download the correct ChromeDriver version
     // for the user's Chrome browser - no manual chromedriver package needed!

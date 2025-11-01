@@ -47,8 +47,8 @@ steps_config:
     step: 4
     func: "showManualLoginPrompt"
     transitions:
-      prompt_displayed_to_user: "open_check_login"
-      error_showing_manual_login: "open_check_login"
+      prompt_displayed_to_user: "open_jobs_page"
+      error_showing_manual_login: "open_jobs_page"
     timeout: 20
     on_timeout_event: "prompt_displayed_to_user"
 
@@ -131,7 +131,8 @@ steps_config:
     step: 14
     func: "attemptEasyApply"
     transitions:
-      proceeding_to_resume_upload: "upload_resume"
+      modal_opened_successfully: "extract_job_details_from_panel"
+      modal_failed_to_open: "application_failed"
       attempting_external_apply: "external_apply"
       no_jobs_page_found: "open_jobs_page"
       no_job_to_process: "continue_processing"
@@ -141,6 +142,15 @@ steps_config:
       easy_apply_process_error: "continue_processing"
     timeout: 30
     on_timeout_event: "easy_apply_process_error"
+
+  extract_job_details_from_panel:
+    step: 25
+    func: "extractJobDetailsFromPanel"
+    transitions:
+      job_details_extracted: "continue_processing"
+      job_details_extraction_failed: "application_failed"
+    timeout: 20
+    on_timeout_event: "job_details_extraction_failed"
 
   upload_resume:
     step: 15

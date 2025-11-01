@@ -107,7 +107,7 @@
         <button class="btn btn-ghost" tabindex="0">
           <span>⋮</span>
         </button>
-        <ul class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52" tabindex="0">
+        <ul class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
           <li><a href="#export">📤 Export Data</a></li>
           <li><a href="#clear">🗑️ Clear Tab</a></li>
           <li><a href="#refresh">🔄 Refresh All</a></li>
@@ -119,16 +119,16 @@
       <div class="jobs-tab">
         <div class="flex gap-4 mb-8 flex-wrap">
           <div class="form-control flex-1 min-w-64">
-            <label class="label">
+            <label class="label" for="search-jobs-input">
               <span class="label-text font-semibold">Search Jobs</span>
             </label>
-            <input type="text" placeholder="Search by title, company, or keywords..." bind:value={searchQuery} class="input input-bordered" />
+            <input id="search-jobs-input" type="text" placeholder="Search by title, company, or keywords..." bind:value={searchQuery} class="input input-bordered" />
           </div>
           <div class="form-control">
-            <label class="label">
+            <label class="label" for="filter-type-select">
               <span class="label-text font-semibold">Filter</span>
             </label>
-            <select bind:value={filterType} class="select select-bordered">
+            <select id="filter-type-select" bind:value={filterType} class="select select-bordered">
               <option value="all">All Jobs</option>
               <option value="today">Posted Today</option>
               <option value="week">This Week</option>
@@ -196,7 +196,7 @@
                   <td>
                     <div class="dropdown dropdown-end">
                       <button class="btn btn-ghost btn-sm" tabindex="0">⋮</button>
-                      <ul class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52" tabindex="0">
+                      <ul class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
                         <li><a href="#view">👁️ View Details</a></li>
                         <li><a href="#apply">✉️ Apply</a></li>
                         <li><a href="#blacklist">❌ Blacklist</a></li>
@@ -292,7 +292,7 @@
                   <td>
                     <div class="dropdown dropdown-end">
                       <button class="btn btn-ghost btn-sm" tabindex="0">⋮</button>
-                      <ul class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52" tabindex="0">
+                      <ul class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
                         <li><a href="#view">👁️ View Details</a></li>
                         <li><a href="#update">🔄 Update Status</a></li>
                         <li><a href="#note">📝 Add Note</a></li>

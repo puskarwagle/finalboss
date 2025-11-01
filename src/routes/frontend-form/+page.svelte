@@ -245,11 +245,12 @@
           <h2 class="card-title text-2xl mb-6">🎯 Job Preferences</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="keywords-input">
                 <span class="label-text font-semibold">Keywords (comma separated)</span>
                 <span class="label-text-alt text-error">Required</span>
               </label>
               <input
+                id="keywords-input"
                 type="text"
                 placeholder="python, backend, api, django"
                 bind:value={formData.keywords}
@@ -259,10 +260,11 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="locations-input">
                 <span class="label-text font-semibold">Locations (comma separated)</span>
               </label>
               <input
+                id="locations-input"
                 type="text"
                 placeholder="Sydney, Melbourne, Remote"
                 bind:value={formData.locations}
@@ -271,10 +273,11 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="min-salary-input">
                 <span class="label-text font-semibold">Minimum Salary (AUD)</span>
               </label>
               <input
+                id="min-salary-input"
                 type="number"
                 placeholder="80000"
                 min="0"
@@ -284,10 +287,11 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="max-salary-input">
                 <span class="label-text font-semibold">Maximum Salary (AUD)</span>
               </label>
               <input
+                id="max-salary-input"
                 type="number"
                 placeholder="150000"
                 min="0"
@@ -297,10 +301,10 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="job-type-select">
                 <span class="label-text font-semibold">Job Types</span>
               </label>
-              <select bind:value={formData.jobType} class="select select-bordered w-full">
+              <select id="job-type-select" bind:value={formData.jobType} class="select select-bordered w-full">
                 <option value="any">Any</option>
                 <option value="full-time">Full time</option>
                 <option value="part-time">Part time</option>
@@ -310,10 +314,10 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="experience-level-select">
                 <span class="label-text font-semibold">Experience Levels</span>
               </label>
-              <select bind:value={formData.experienceLevel} class="select select-bordered w-full">
+              <select id="experience-level-select" bind:value={formData.experienceLevel} class="select select-bordered w-full">
                 <option value="any">Any</option>
                 <option value="entry">Entry Level</option>
                 <option value="mid">Mid Level</option>
@@ -324,10 +328,10 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="industry-select">
                 <span class="label-text font-semibold">Industries</span>
               </label>
-              <select bind:value={formData.industry} class="select select-bordered w-full">
+              <select id="industry-select" bind:value={formData.industry} class="select select-bordered w-full">
                 {#each industries as industry}
                   <option value={industry.value} disabled={industry.value === ''}>{industry.label}</option>
                 {/each}
@@ -335,10 +339,10 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="listed-date-select">
                 <span class="label-text font-semibold">Job Listed On</span>
               </label>
-              <select bind:value={formData.listedDate} class="select select-bordered w-full">
+              <select id="listed-date-select" bind:value={formData.listedDate} class="select select-bordered w-full">
                 <option value="" disabled selected>Select listing date range</option>
                 <option value="any">Any time</option>
                 <option value="today">Today</option>
@@ -350,10 +354,10 @@
             </div>
 
             <div class="form-control">
-              <label class="label">
+              <label class="label" for="remote-preference-select">
                 <span class="label-text font-semibold">Remote Preference</span>
               </label>
-              <select bind:value={formData.remotePreference} class="select select-bordered w-full">
+              <select id="remote-preference-select" bind:value={formData.remotePreference} class="select select-bordered w-full">
                 <option value="any">Any</option>
                 <option value="remote">Remote</option>
                 <option value="hybrid">Hybrid</option>
@@ -397,14 +401,14 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">
+              <div class="form-label">
                 <span class="label-text">Resume Upload</span>
                 <span class="helper-text">PDF format recommended</span>
                 <div class="file-upload-wrapper">
-                  <input 
-                    type="file" 
-                    accept=".pdf,.doc,.docx" 
-                    id="resume-upload" 
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    id="resume-upload"
                     class="file-input"
                     onchange={handleResumeUpload}
                   />
@@ -417,7 +421,7 @@
                     </div>
                   {/if}
                 </div>
-              </label>
+              </div>
             </div>
           </div>
         </div>
@@ -431,9 +435,9 @@
             <div class="form-group">
               <label class="form-label">
                 <span class="label-text">Excluded Companies (comma separated)</span>
-                <input 
-                  type="text" 
-                  placeholder="wipro, infosys, tcs" 
+                <input
+                  type="text"
+                  placeholder="wipro, infosys, tcs"
                   bind:value={formData.excludedCompanies}
                   class="form-input"
                 />

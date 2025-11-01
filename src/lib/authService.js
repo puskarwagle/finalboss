@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { invoke } from '@tauri-apps/api/core';
 
-const API_BASE_URL = 'http://localhost:3000'; // As per API.md
+const API_BASE_URL = 'http://170.64.136.184:3000'; // As per API.md
 const TOKEN_CACHE_FILE = '.cache/api_token.txt';
 
 function createAuthStore() {

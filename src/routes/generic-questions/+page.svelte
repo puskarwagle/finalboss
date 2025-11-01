@@ -206,6 +206,7 @@
                   class="btn btn-ghost btn-xs ml-auto"
                   on:click={() => deleteQuestion(question.id)}
                   disabled={saving}
+                  aria-label="Delete question"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -216,10 +217,11 @@
               <div class="grid grid-cols-1 gap-3">
                 <!-- Keywords Input -->
                 <div class="form-control">
-                  <label class="label py-1">
+                  <label class="label py-1" for={`keywords-${question.id}`}>
                     <span class="label-text font-medium">🔍 For the questions</span>
                   </label>
                   <input
+                    id={`keywords-${question.id}`}
                     type="text"
                     class="input input-bordered w-full"
                     placeholder='right to work, work authorization, visa status'
@@ -230,10 +232,11 @@
 
                 <!-- Answer Input -->
                 <div class="form-control">
-                  <label class="label py-1">
+                  <label class="label py-1" for={`answers-${question.id}`}>
                     <span class="label-text font-medium">✅ Answer with</span>
                   </label>
                   <input
+                    id={`answers-${question.id}`}
                     type="text"
                     class="input input-bordered w-full"
                     placeholder='Australian citizen, Yes, I have work rights'

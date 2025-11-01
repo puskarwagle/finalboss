@@ -9,8 +9,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import yaml from 'js-yaml';
-import { handleResumeSelection } from './handlers/resume_handler.js';
-import { handleCoverLetter } from './handlers/cover_letter_handler.js';
+import { handleResumeSelection } from '../handlers/resume_handler.js';
+import { handleCoverLetter } from '../handlers/cover_letter_handler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

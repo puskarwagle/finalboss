@@ -1,4 +1,4 @@
-import { WebDriver } from 'selenium-webdriver';
+import { Page } from 'playwright';
 
 export interface OverlayConfig {
   title?: string;
@@ -32,14 +32,20 @@ interface OverlayState {
   collapsed?: boolean;
 }
 
-export class UniversalOverlay {
-  private driver: WebDriver;
+/**
+ * UniversalOverlay for Playwright
+ *
+ * Provides persistent overlay functionality for Playwright/Camoufox browsers
+ * Compatible with the workflow engine and BOT_STANDARDS.md
+ */
+export class UniversalOverlayPlaywright {
+  private page: Page;
   private overlayId: string;
   private botName: string;
   private initialized: boolean = false;
 
-  constructor(driver: WebDriver, botName: string = 'Bot', overlayId: string = 'universal-overlay') {
-    this.driver = driver;
+  constructor(page: Page, botName: string = 'Bot', overlayId: string = 'universal-overlay') {
+    this.page = page;
     this.botName = botName;
     this.overlayId = overlayId;
   }
@@ -64,17 +70,17 @@ export class UniversalOverlay {
    * Inject the persistent overlay system that survives page navigations
    */
   private async injectPersistentOverlaySystem(): Promise<void> {
-    await this.driver.executeScript(`
-      (function() {
+    await this.page.evaluate(
+      ({ overlayId, botName }) => {
         // Prevent duplicate initialization
-        if (window.__overlaySystemInitialized) {
+        if ((window as any).__overlaySystemInitialized) {
           console.log('[Overlay] System already initialized');
           return;
         }
-        window.__overlaySystemInitialized = true;
+        (window as any).__overlaySystemInitialized = true;
 
-        const OVERLAY_ID = '${this.overlayId}';
-        const BOT_NAME = '${this.botName}';
+        const OVERLAY_ID = overlayId;
+        const BOT_NAME = botName;
         const STORAGE_KEY = 'universal_overlay_state';
 
         console.log('[Overlay] Initializing persistent overlay system for', BOT_NAME);
@@ -90,7 +96,7 @@ export class UniversalOverlay {
         }
 
         // Save state to sessionStorage
-        function saveState(state) {
+        function saveState(state: any) {
           try {
             sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
           } catch (e) {
@@ -99,7 +105,7 @@ export class UniversalOverlay {
         }
 
         // Create or update overlay
-        function createOverlay(state) {
+        function createOverlay(state: any) {
           if (!state) return;
 
           // Remove existing overlay
@@ -116,34 +122,25 @@ export class UniversalOverlay {
 
           // Base styles
           const baseStyles = {
-            position: 'fixed',
+            position: 'fixed' as const,
             top: position.y + 'px',
             left: position.x + 'px',
             background: '#1a1a1add',
             border: '2px solid #00ffff80',
             borderRadius: collapsed ? '50%' : '16px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-            zIndex: '2147483647', // Maximum z-index
+            zIndex: '2147483647',
             fontFamily: 'system-ui, -apple-system, sans-serif',
             color: '#ffffff',
             transition: 'all 0.3s ease',
             backdropFilter: 'blur(10px)',
-            userSelect: 'none',
+            userSelect: 'none' as const,
             width: collapsed ? '60px' : '400px',
             height: collapsed ? '60px' : 'auto',
-            minHeight: collapsed ? '60px' : '150px'
+            minHeight: collapsed ? '60px' : '150px',
           };
 
           Object.assign(overlay.style, baseStyles);
-
-          // Inject font
-          if (!document.getElementById('overlay-font')) {
-            const fontLink = document.createElement('link');
-            fontLink.id = 'overlay-font';
-            fontLink.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap';
-            fontLink.rel = 'stylesheet';
-            document.head.appendChild(fontLink);
-          }
 
           // Create header
           const header = document.createElement('div');
@@ -153,11 +150,11 @@ export class UniversalOverlay {
             padding: collapsed ? '0' : '12px 16px',
             borderBottom: collapsed ? 'none' : '1px solid #00ffff40',
             display: 'flex',
-            justifyContent: collapsed ? 'center' : 'space-between',
+            justifyContent: collapsed ? 'center' as const : 'space-between' as const,
             alignItems: 'center',
             cursor: 'move',
             width: '100%',
-            height: collapsed ? '100%' : 'auto'
+            height: collapsed ? '100%' : 'auto',
           };
 
           Object.assign(header.style, headerStyles);
@@ -168,7 +165,7 @@ export class UniversalOverlay {
           title.style.fontWeight = 'bold';
           title.style.fontSize = '16px';
           title.style.color = '#00ffff';
-          title.textContent = \`🤖 \${BOT_NAME} Bot\`;
+          title.textContent = `🤖 ${BOT_NAME} Bot`;
 
           // Controls
           const controls = document.createElement('div');
@@ -190,7 +187,7 @@ export class UniversalOverlay {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
           };
           Object.assign(collapseBtn.style, collapseBtnStyles);
 
@@ -228,39 +225,32 @@ export class UniversalOverlay {
             const { appliedJobs = 0, totalJobs = 0, currentStep = '', stepIndex = 0 } = state.data;
             const percentage = totalJobs > 0 ? (appliedJobs / totalJobs) * 100 : 0;
 
-            // Inject keyframes animation if not already present
-            if (!document.getElementById('overlay-pulse-animation')) {
-              const style = document.createElement('style');
-              style.id = 'overlay-pulse-animation';
-              style.textContent = \`
-                @keyframes pulse {
-                  0%, 100% { opacity: 0.3; transform: scale(1); }
-                  50% { opacity: 1; transform: scale(1.2); }
-                }
-              \`;
-              document.head.appendChild(style);
-            }
-
-            content.innerHTML = \`
+            content.innerHTML = `
               <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="color: #00ffff;">Jobs Applied:</span>
-                  <span style="font-weight: bold; font-size: 16px;">\${appliedJobs}/\${totalJobs}</span>
+                  <span style="font-weight: bold; font-size: 16px;">${appliedJobs}/${totalJobs}</span>
                 </div>
                 <div style="background: #333; border-radius: 6px; height: 10px; overflow: hidden;">
-                  <div style="background: linear-gradient(90deg, #00ffff, #00dd88); height: 100%; width: \${percentage}%; transition: width 0.3s ease;"></div>
+                  <div style="background: linear-gradient(90deg, #00ffff, #00dd88); height: 100%; width: ${percentage}%; transition: width 0.3s ease;"></div>
                 </div>
                 <div style="font-size: 12px; opacity: 0.8; color: #00dd88;">
-                  Step \${stepIndex}: \${currentStep}
+                  Step ${stepIndex}: ${currentStep}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
                   <div style="width: 8px; height: 8px; border-radius: 50%; background: #00ffff; animation: pulse 1.5s ease-in-out infinite;"></div>
                   <span style="font-size: 11px; opacity: 0.6;">Working...</span>
                 </div>
               </div>
-            \`;
+              <style>
+                @keyframes pulse {
+                  0%, 100% { opacity: 0.3; transform: scale(1); }
+                  50% { opacity: 1; transform: scale(1.2); }
+                }
+              </style>
+            `;
           } else if (state.type === 'sign_in') {
-            content.innerHTML = \`
+            content.innerHTML = `
               <div style="text-align: center;">
                 <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #ffdd00;">
                   Please sign in to your account manually in this window.
@@ -280,16 +270,16 @@ export class UniversalOverlay {
                   ✅ I have logged in - Continue
                 </button>
               </div>
-            \`;
+            `;
 
             // Re-attach button listener after DOM creation
             setTimeout(() => {
               const button = document.getElementById('signin-continue-btn');
               if (button) {
-                button.onmouseover = () => button.style.background = '#00bb66';
-                button.onmouseout = () => button.style.background = '#00dd88';
+                button.onmouseover = () => (button.style.background = '#00bb66');
+                button.onmouseout = () => (button.style.background = '#00dd88');
                 button.onclick = () => {
-                  window.__overlaySignInComplete = true;
+                  (window as any).__overlaySignInComplete = true;
                   sessionStorage.setItem('overlay_signin_complete', 'true');
                 };
               }
@@ -309,12 +299,12 @@ export class UniversalOverlay {
 
           // Drag functionality
           let isDragging = false;
-          let currentX, currentY, initialX, initialY;
+          let currentX: number, currentY: number, initialX: number, initialY: number;
           let xOffset = position.x;
           let yOffset = position.y;
 
-          header.addEventListener('mousedown', (e) => {
-            if (e.target.tagName === 'BUTTON') return;
+          header.addEventListener('mousedown', (e: MouseEvent) => {
+            if ((e.target as HTMLElement).tagName === 'BUTTON') return;
             e.preventDefault();
             initialX = e.clientX - xOffset;
             initialY = e.clientY - yOffset;
@@ -322,7 +312,7 @@ export class UniversalOverlay {
             overlay.style.opacity = '0.8';
           });
 
-          document.addEventListener('mousemove', (e) => {
+          document.addEventListener('mousemove', (e: MouseEvent) => {
             if (!isDragging) return;
             e.preventDefault();
             currentX = e.clientX - initialX;
@@ -394,48 +384,20 @@ export class UniversalOverlay {
 
           observer.observe(document.body, {
             childList: true,
-            subtree: true
-          });
-
-          // Also use history API hooks
-          const originalPushState = history.pushState;
-          const originalReplaceState = history.replaceState;
-
-          history.pushState = function(...args) {
-            originalPushState.apply(this, args);
-            setTimeout(() => {
-              const state = loadState();
-              if (state) createOverlay(state);
-            }, 500);
-          };
-
-          history.replaceState = function(...args) {
-            originalReplaceState.apply(this, args);
-            setTimeout(() => {
-              const state = loadState();
-              if (state) createOverlay(state);
-            }, 500);
-          };
-
-          // Listen for popstate (back/forward)
-          window.addEventListener('popstate', () => {
-            setTimeout(() => {
-              const state = loadState();
-              if (state) createOverlay(state);
-            }, 500);
+            subtree: true,
           });
 
           console.log('[Overlay] Navigation watcher setup complete');
         }
 
         // Expose update function globally
-        window.__updateOverlay = function(state) {
+        (window as any).__updateOverlay = function (state: any) {
           saveState(state);
           createOverlay(state);
         };
 
         // Expose get state function
-        window.__getOverlayState = function() {
+        (window as any).__getOverlayState = function () {
           return loadState();
         };
 
@@ -449,8 +411,9 @@ export class UniversalOverlay {
         }
 
         console.log('[Overlay] Persistent overlay system ready');
-      })();
-    `);
+      },
+      { overlayId: this.overlayId, botName: this.botName }
+    );
   }
 
   /**
@@ -458,11 +421,11 @@ export class UniversalOverlay {
    */
   private async updateState(state: OverlayState): Promise<void> {
     try {
-      await this.driver.executeScript(`
-        if (typeof window.__updateOverlay === 'function') {
-          window.__updateOverlay(${JSON.stringify(state)});
+      await this.page.evaluate((stateStr) => {
+        if (typeof (window as any).__updateOverlay === 'function') {
+          (window as any).__updateOverlay(JSON.parse(stateStr));
         }
-      `);
+      }, JSON.stringify(state));
     } catch (error) {
       console.error('Error updating overlay state:', error);
     }
@@ -471,7 +434,12 @@ export class UniversalOverlay {
   /**
    * Show job progress overlay
    */
-  async showJobProgress(appliedJobs: number, totalJobs: number, currentStep: string, stepIndex: number): Promise<void> {
+  async showJobProgress(
+    appliedJobs: number,
+    totalJobs: number,
+    currentStep: string,
+    stepIndex: number
+  ): Promise<void> {
     await this.initialize();
 
     const state: OverlayState = {
@@ -481,8 +449,8 @@ export class UniversalOverlay {
         appliedJobs,
         totalJobs,
         currentStep,
-        stepIndex
-      }
+        stepIndex,
+      },
     };
 
     await this.updateState(state);
@@ -491,9 +459,12 @@ export class UniversalOverlay {
   /**
    * Update job progress
    */
-  async updateJobProgress(appliedJobs: number, totalJobs: number, currentStep: string, stepIndex: number): Promise<void> {
-    await this.initialize();
-
+  async updateJobProgress(
+    appliedJobs: number,
+    totalJobs: number,
+    currentStep: string,
+    stepIndex: number
+  ): Promise<void> {
     const state: OverlayState = {
       botName: this.botName,
       type: 'job_progress',
@@ -501,8 +472,8 @@ export class UniversalOverlay {
         appliedJobs,
         totalJobs,
         currentStep,
-        stepIndex
-      }
+        stepIndex,
+      },
     };
 
     await this.updateState(state);
@@ -519,17 +490,17 @@ export class UniversalOverlay {
       type: 'sign_in',
       data: {
         title: 'Please Sign In',
-        message: 'Please sign in manually and click continue'
-      }
+        message: 'Please sign in manually and click continue',
+      },
     };
 
     await this.updateState(state);
 
     // Reset completion flag
-    await this.driver.executeScript(`
-      window.__overlaySignInComplete = false;
+    await this.page.evaluate(() => {
+      (window as any).__overlaySignInComplete = false;
       sessionStorage.removeItem('overlay_signin_complete');
-    `);
+    });
 
     console.log('🔐 Please sign in manually and click "Continue" when done');
 
@@ -537,10 +508,12 @@ export class UniversalOverlay {
     return new Promise<void>((resolve) => {
       const checkInterval = setInterval(async () => {
         try {
-          const completed = await this.driver.executeScript(`
-            return window.__overlaySignInComplete === true ||
-                   sessionStorage.getItem('overlay_signin_complete') === 'true';
-          `);
+          const completed = await this.page.evaluate(() => {
+            return (
+              (window as any).__overlaySignInComplete === true ||
+              sessionStorage.getItem('overlay_signin_complete') === 'true'
+            );
+          });
 
           if (completed) {
             clearInterval(checkInterval);
@@ -574,9 +547,9 @@ export class UniversalOverlay {
       data: {
         title: config.title,
         message: config.content,
-        html: config.html
+        html: config.html,
       },
-      position: config.position
+      position: config.position,
     };
 
     await this.updateState(state);
@@ -587,9 +560,11 @@ export class UniversalOverlay {
    */
   async updateOverlay(updates: Partial<OverlayConfig>): Promise<void> {
     try {
-      const currentState = await this.driver.executeScript<OverlayState>(`
-        return window.__getOverlayState ? window.__getOverlayState() : null;
-      `);
+      const currentState = await this.page.evaluate(() => {
+        return (window as any).__getOverlayState
+          ? (window as any).__getOverlayState()
+          : null;
+      });
 
       if (currentState) {
         if (updates.title) currentState.data.title = updates.title;
@@ -609,11 +584,11 @@ export class UniversalOverlay {
    */
   async hideOverlay(): Promise<void> {
     try {
-      await this.driver.executeScript(`
-        const overlay = document.getElementById('${this.overlayId}');
+      await this.page.evaluate((overlayId) => {
+        const overlay = document.getElementById(overlayId);
         if (overlay) overlay.remove();
         sessionStorage.removeItem('universal_overlay_state');
-      `);
+      }, this.overlayId);
     } catch (error) {
       console.error('Error hiding overlay:', error);
     }
@@ -629,15 +604,23 @@ export class UniversalOverlay {
   /**
    * Show notification
    */
-  async showNotification(message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info'): Promise<void> {
+  async showNotification(
+    message: string,
+    type: 'info' | 'success' | 'warning' | 'error' = 'info'
+  ): Promise<void> {
     await this.initialize();
 
-    const icons: Record<string, string> = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
+    const icons: Record<string, string> = {
+      info: 'ℹ️',
+      success: '✅',
+      warning: '⚠️',
+      error: '❌',
+    };
     const colors: Record<string, string> = {
       info: '#00ffff',
       success: '#00ff88',
       warning: '#ffaa00',
-      error: '#ff4444'
+      error: '#ff4444',
     };
 
     const state: OverlayState = {
@@ -645,9 +628,9 @@ export class UniversalOverlay {
       type: 'custom',
       data: {
         title: `${icons[type]} ${type.charAt(0).toUpperCase() + type.slice(1)}`,
-        html: `<div style="color: ${colors[type]}; font-size: 14px;">${message}</div>`
+        html: `<div style="color: ${colors[type]}; font-size: 14px;">${message}</div>`,
       },
-      position: { x: 20, y: 100 }
+      position: { x: 20, y: 100 },
     };
 
     await this.updateState(state);

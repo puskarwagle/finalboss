@@ -15,6 +15,11 @@
       name: 'linkedin_bot',
       description: 'Automate job searching on LinkedIn with Easy Apply and smart filtering',
       image: '/linkedin-logo.png'
+    },
+    {
+      name: 'indeed_bot',
+      description: 'Automate job searching on Indeed with Camoufox stealth browser and smart application features',
+      image: '/indeed-logo.png'
     }
   ];
 

@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 
-const CORPUS_RAG_API = 'http://localhost:3000';
+const CORPUS_RAG_API = 'http://170.64.136.184:3000';
 
 export async function POST({ request }) {
 	try {
