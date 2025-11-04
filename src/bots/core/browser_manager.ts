@@ -45,6 +45,42 @@ const printLog = (message: string) => {
   console.log(message);
 };
 
+// Kill all Chrome processes spawned by this bot
+export const killAllChromeProcesses = async (): Promise<void> => {
+  printLog("🔥 Emergency: Killing all Chrome processes...");
+
+  try {
+    const platform = process.platform;
+
+    if (platform === 'linux' || platform === 'darwin') {
+      // Unix-based systems
+      const { execSync } = await import('child_process');
+
+      // Kill all chrome processes owned by current user
+      try {
+        execSync('pkill -9 chrome', { stdio: 'ignore' });
+        execSync('pkill -9 chromium', { stdio: 'ignore' });
+        printLog("✅ Chrome processes killed");
+      } catch (e) {
+        // Process might not exist, that's ok
+        printLog("⚠️ No Chrome processes to kill or insufficient permissions");
+      }
+    } else if (platform === 'win32') {
+      // Windows
+      const { execSync } = await import('child_process');
+
+      try {
+        execSync('taskkill /F /IM chrome.exe /T', { stdio: 'ignore' });
+        printLog("✅ Chrome processes killed");
+      } catch (e) {
+        printLog("⚠️ No Chrome processes to kill or insufficient permissions");
+      }
+    }
+  } catch (error) {
+    printLog(`❌ Failed to kill Chrome processes: ${error}`);
+  }
+};
+
 // Monitor browser windows and detect manual closure
 export const monitorBrowserClose = (driver: WebDriver, onBrowserClosed?: () => void): (() => void) => {
   const checkInterval = setInterval(async () => {

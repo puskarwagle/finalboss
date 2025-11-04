@@ -1,5 +1,6 @@
 import { bot_registry, BotRegistry } from './core/registry.js';
 import { WorkflowEngine, type WorkflowContext } from './core/workflow_engine.js';
+import { killAllChromeProcesses } from './core/browser_manager.js';
 import * as path from 'path';
 
 // Ensure stdout is not buffered for real-time event streaming
@@ -30,6 +31,33 @@ export class BotStarter {
   // Main entry point - like Python's bot_runner.py
   async run_bot(options: BotRunOptions): Promise<void> {
     const { bot_name, config, headless = false, keep_open = true } = options;
+
+    // Setup emergency cleanup handler
+    const emergencyCleanup = async (signal: string) => {
+      print_log(`\n⚠️ Received ${signal} - performing emergency cleanup...`);
+      try {
+        await killAllChromeProcesses();
+        print_log("✅ Emergency cleanup completed");
+      } catch (error) {
+        print_log(`❌ Emergency cleanup failed: ${error}`);
+      }
+      process.exit(1);
+    };
+
+    // Handle Ctrl+C and other termination signals
+    process.on('SIGINT', () => emergencyCleanup('SIGINT (Ctrl+C)'));
+    process.on('SIGTERM', () => emergencyCleanup('SIGTERM'));
+
+    // Handle uncaught errors
+    process.on('uncaughtException', async (error) => {
+      print_log(`❌ Uncaught exception: ${error}`);
+      await emergencyCleanup('uncaughtException');
+    });
+
+    process.on('unhandledRejection', async (reason) => {
+      print_log(`❌ Unhandled rejection: ${reason}`);
+      await emergencyCleanup('unhandledRejection');
+    });
 
     try {
       print_log(`🚀 Starting bot runner for: ${bot_name}`);

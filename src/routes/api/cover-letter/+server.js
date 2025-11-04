@@ -8,7 +8,7 @@ export async function POST({ request }) {
     const body = await request.json();
 
     // Extract data from request
-    const { jobDescription, userId } = body;
+    const { jobDescription, userId, jobId } = body;
 
     // Get auth token from request header
     const authHeader = request.headers.get('authorization');
@@ -34,8 +34,12 @@ export async function POST({ request }) {
       ? fs.readFileSync(resumePath, 'utf8')
       : "Experienced software developer";
 
+    // Generate a job_id if not provided (required by corpus-rag API)
+    const generatedJobId = jobId || `job_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
     // Prepare request for corpus-rag API
     const requestBody = {
+      job_id: generatedJobId,  // Required field
       job_details: jobDescription,
       resume_text: resumeText,
       useAi: "deepseek-chat",

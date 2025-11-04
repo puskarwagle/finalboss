@@ -52,6 +52,16 @@ export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void,
   ctx.config = config;
   ctx.seek_url = build_search_url(BASE_URL, config.formData.keywords || "", config.formData.locations || "");
 
+  // Initialize retry counters to prevent infinite loops
+  ctx.retry_counts = {
+    page_load_retries: 0,
+    refresh_retries: 0,
+    collect_cards_retries: 0,
+    MAX_PAGE_LOAD_RETRIES: 3,
+    MAX_REFRESH_RETRIES: 2,
+    MAX_COLLECT_CARDS_RETRIES: 5
+  };
+
   printLog(`Search URL: ${ctx.seek_url}`);
   yield "ctx_ready";
 }
@@ -59,6 +69,27 @@ export async function* step0(ctx: WorkflowContext): AsyncGenerator<string, void,
 // Step 1: Open Homepage
 export async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   try {
+    // CRITICAL: Prevent multiple browser instances
+    if (ctx.driver) {
+      printLog("⚠️ Browser already exists, reusing existing instance");
+      // Just navigate to the URL instead of creating new browser
+      await ctx.driver.get(ctx.seek_url || `${BASE_URL}/jobs`);
+      await ctx.driver.sleep(5000);
+
+      const currentUrl = await ctx.driver.getCurrentUrl();
+      const title = await ctx.driver.getTitle();
+
+      printLog(`Current URL: ${currentUrl}`);
+      printLog(`Page title: ${title}`);
+
+      if (currentUrl && title && !title.includes('error')) {
+        yield "homepage_opened";
+      } else {
+        yield "page_navigation_failed";
+      }
+      return;
+    }
+
     const { driver, sessionExists, sessionsDir } = await setupChromeDriver('seek');
     ctx.driver = driver;
     ctx.sessionExists = sessionExists;
@@ -100,7 +131,22 @@ export async function* openHomepage(ctx: WorkflowContext): AsyncGenerator<string
 export async function* waitForPageLoad(ctx: WorkflowContext): AsyncGenerator<string, void, unknown> {
   await ctx.driver.sleep(2000);
   const title = await ctx.driver.getTitle();
-  yield title.toLowerCase().includes('seek') ? "page_loaded" : "page_load_retry";
+
+  if (title.toLowerCase().includes('seek')) {
+    // Reset retry counter on success
+    ctx.retry_counts.page_load_retries = 0;
+    yield "page_loaded";
+  } else {
+    ctx.retry_counts.page_load_retries = (ctx.retry_counts.page_load_retries || 0) + 1;
+
+    if (ctx.retry_counts.page_load_retries >= ctx.retry_counts.MAX_PAGE_LOAD_RETRIES) {
+      printLog(`❌ Max page load retries (${ctx.retry_counts.MAX_PAGE_LOAD_RETRIES}) reached. Giving up.`);
+      yield "page_load_failed_permanently";
+    } else {
+      printLog(`⚠️ Page load retry ${ctx.retry_counts.page_load_retries}/${ctx.retry_counts.MAX_PAGE_LOAD_RETRIES}`);
+      yield "page_load_retry";
+    }
+  }
 }
 
 // Step 2.5: Refresh Page
@@ -112,7 +158,15 @@ export async function* refreshPage(ctx: WorkflowContext): AsyncGenerator<string,
       return;
     }
 
-    printLog("Refreshing page...");
+    ctx.retry_counts.refresh_retries = (ctx.retry_counts.refresh_retries || 0) + 1;
+
+    if (ctx.retry_counts.refresh_retries > ctx.retry_counts.MAX_REFRESH_RETRIES) {
+      printLog(`❌ Max refresh retries (${ctx.retry_counts.MAX_REFRESH_RETRIES}) reached. Giving up.`);
+      yield "refresh_failed_permanently";
+      return;
+    }
+
+    printLog(`Refreshing page... (attempt ${ctx.retry_counts.refresh_retries}/${ctx.retry_counts.MAX_REFRESH_RETRIES})`);
     await ctx.driver.navigate().refresh();
 
     // Wait longer for slow networks
@@ -126,9 +180,11 @@ export async function* refreshPage(ctx: WorkflowContext): AsyncGenerator<string,
     printLog(`After refresh - URL: ${currentUrl}, Title: ${title}`);
 
     if (currentUrl && title && !title.includes('error')) {
+      // Reset retry counter on success
+      ctx.retry_counts.refresh_retries = 0;
       yield "page_refreshed";
     } else {
-      printLog("Refresh failed - will retry opening homepage");
+      printLog("Refresh failed - will retry");
       yield "page_reload_failed";
     }
   } catch (error) {
@@ -191,12 +247,25 @@ export async function* collectJobCards(ctx: WorkflowContext): AsyncGenerator<str
         ctx.total_jobs = cards.length;
         ctx.applied_jobs = 0;
 
+        // Reset retry counter on success
+        ctx.retry_counts.collect_cards_retries = 0;
+        printLog(`✅ Found ${cards.length} job cards`);
         yield "cards_collected";
         return;
       }
     } catch { continue; }
   }
-  yield "cards_collect_retry";
+
+  ctx.retry_counts.collect_cards_retries = (ctx.retry_counts.collect_cards_retries || 0) + 1;
+
+  if (ctx.retry_counts.collect_cards_retries >= ctx.retry_counts.MAX_COLLECT_CARDS_RETRIES) {
+    printLog(`❌ Max collect cards retries (${ctx.retry_counts.MAX_COLLECT_CARDS_RETRIES}) reached. No job cards found.`);
+    yield "no_cards_found_permanently";
+  } else {
+    printLog(`⚠️ No job cards found, retry ${ctx.retry_counts.collect_cards_retries}/${ctx.retry_counts.MAX_COLLECT_CARDS_RETRIES}`);
+    await ctx.driver.sleep(2000); // Add delay before retry
+    yield "cards_collect_retry";
+  }
 }
 
 // Step 7: Click Job Card

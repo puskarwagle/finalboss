@@ -18,7 +18,7 @@ steps_config:
     transitions:
       homepage_opened: "wait_for_load"
       page_navigation_failed: "refresh_page"
-    timeout: 30
+    timeout: 60
     on_timeout_event: "page_navigation_failed"
 
   wait_for_load:
@@ -27,7 +27,8 @@ steps_config:
     transitions:
       page_loaded: "detect_page_state"
       page_load_retry: "refresh_page"
-    timeout: 20
+      page_load_failed_permanently: "done"
+    timeout: 40
     on_timeout_event: "page_load_retry"
 
   refresh_page:
@@ -35,9 +36,10 @@ steps_config:
     func: "refreshPage"
     transitions:
       page_refreshed: "wait_for_load"
-      no_page_to_refresh: "open_homepage"
-      page_reload_failed: "open_homepage"
-    timeout: 30
+      no_page_to_refresh: "done"
+      page_reload_failed: "refresh_page"
+      refresh_failed_permanently: "done"
+    timeout: 60
     on_timeout_event: "page_reload_failed"
 
   detect_page_state:
@@ -83,7 +85,8 @@ steps_config:
     transitions:
       cards_collected: "click_job_card"
       cards_collect_retry: "collect_job_cards"
-    timeout: 30
+      no_cards_found_permanently: "done"
+    timeout: 45
     on_timeout_event: "cards_collect_retry"
 
   click_job_card:
