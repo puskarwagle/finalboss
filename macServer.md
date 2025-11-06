@@ -70,24 +70,24 @@
 
 | Question | Answer | Impact |
 |----------|--------|--------|
-| Does your MacBook have Touch ID? | ❓ **PLEASE CONFIRM** | If YES → has T2 chip → may need special drivers |
-| If T2 chip present, OK with potential issues? | ❓ | Keyboard/touchpad may not work, need external USB |
-| Have external USB keyboard/mouse available? | ❓ | Required if T2 causes issues |
+| Does your MacBook have Touch ID? | YES !! **PLEASE CONFIRM** | If YES → has T2 chip → may need special drivers |
+| If T2 chip present, OK with potential issues? | I have keyboard and mouse  | Keyboard/touchpad may not work, need external USB |
+| Have external USB keyboard/mouse available? | yes | Required if T2 causes issues |
 
 ### 🟡 Pre-Installation Preparation
 | Question | Answer |
 |----------|--------|
-| Have you backed up any important data from macOS? | ❓ |
-| Do you have the WiFi network name (SSID)? | ❓ |
-| Do you have the WiFi password? | ❓ |
-| Do you have another computer to SSH from? | ❓ |
-| What OS is on your other computer? | ❓ (for SSH key generation instructions) |
+| Have you backed up any important data from macOS? | yes |
+| Do you have the WiFi network name (SSID)? | NOKIA-7E3E |
+| Do you have the WiFi password? | 92a5d23be6 |
+| Do you have another computer to SSH from? | YES I DO |
+| What OS is on your other computer? | mac (for SSH key generation instructions) |
 
 ### 🟡 Network Configuration
 | Question | Answer | Notes |
 |----------|--------|-------|
-| Static IP or DHCP? | ❓ **Recommend: Static IP** | Easier for SSH access |
-| If static, what IP should we use? | ❓ | e.g., 192.168.1.100 |
+| Static IP or DHCP? | static **Recommend: Static IP** | Easier for SSH access |
+| If static, what IP should we use? |  | e.g., 192.168.1.100 |
 | Router/gateway IP? | ❓ | e.g., 192.168.1.1 |
 | DNS servers to use? | ❓ **Recommend: 1.1.1.1, 8.8.8.8** | Cloudflare & Google |
 
@@ -96,12 +96,12 @@
 |----------|----------------------|------------|
 | SSH port | 22 (standard) | Custom port (e.g., 2222) for security through obscurity? |
 | Allow password auth initially? | YES (disable after key setup) | NO (keys only from start)? |
-| Install fail2ban? | YES (recommended for internet access) | Skip if you prefer manual management? |
-| SSH timeout? | 10 minutes | Different preference? |
+| Install fail2ban? | YES (recommended for internet access)
+| SSH timeout? | 10 minutes | Different preference? | i will set this up myself 
 
 ### 🟡 Additional Packages
 **Optional but useful packages - which do you want?**
-
+yes to all these packages. 
 | Package | Purpose | Install? |
 |---------|---------|----------|
 | `tmux` | Terminal multiplexer (multiple sessions) | ❓ Recommended |
@@ -124,31 +124,31 @@
 
 | Question | Answer | Why it matters |
 |----------|--------|----------------|
-| WiFi works in macOS recovery mode? | ❓ | Indicates hardware functional |
-| Do you know your WiFi card model? | ❓ | Check: Apple Menu → About This Mac → System Report → Network → WiFi |
-| Willing to use USB WiFi adapter if needed? | ❓ | Backup plan if builtin doesn't work |
+| WiFi works in macOS recovery mode? | im not sure | Indicates hardware functional |
+| Do you know your WiFi card model? | im not sure about this | Check: Apple Menu → About This Mac → System Report → Network → WiFi |
+| Willing to use USB WiFi adapter if needed? | yes | Backup plan if builtin doesn't work |
 
 ### 🟢 Internet Exposure Plan
 **You mentioned internet access - security implications**
 
 | Question | Answer | Notes |
 |----------|--------|-------|
-| Will you use dynamic DNS? | ❓ | For consistent domain name if IP changes |
-| Port forwarding on router? | ❓ | Will you set this up yourself? |
-| VPN for access instead? | ❓ | More secure than direct exposure |
-| Cloudflare Tunnel? | ❓ | Alternative to port forwarding |
+| Will you use dynamic DNS? | yes | For consistent domain name if IP changes |
+| Port forwarding on router? | no | Will you set this up yourself? |
+| VPN for access instead? | no | More secure than direct exposure |
+| Cloudflare Tunnel? | yes | Alternative to port forwarding |
 
 ### 🟢 Disk Encryption
 | Question | Answer | Notes |
 |----------|--------|-------|
-| Full disk encryption (LUKS)? | ❓ **Your choice** | Pro: Secure if stolen. Con: Must enter password on boot (can't fully autostart) |
+| Full disk encryption (LUKS)? | No **Your choice** | Pro: Secure if stolen. Con: Must enter password on boot (can't fully autostart) |
 
 ### 🟢 Monitoring & Alerts
 | Question | Answer |
 |----------|--------|
-| Want email alerts for system issues? | ❓ |
-| Want uptime monitoring? | ❓ |
-| Install netdata web dashboard? | ❓ (access via http://ip:19999) |
+| Want email alerts for system issues? | yes |
+| Want uptime monitoring? | yes |
+| Install netdata web dashboard? | yes (access via http://ip:19999) |
 
 ---
 
@@ -265,8 +265,8 @@ Ongoing maintenance:
 ## Next Steps
 
 **Please answer the ❓ questions above, especially:**
-1. 🔴 **Do you have Touch ID?** (T2 chip check)
-2. 🟡 **WiFi network name and password**
+1. 🔴 **Do you have Touch ID?** yes i have it. 
+2. 🟡 **WiFi network name and password** 
 3. 🟡 **Static IP preference** (recommended)
 4. 🟡 **What OS is your other computer?** (for SSH key instructions)
 5. ⚠️ **CONFIRM: You've backed up any important data**
