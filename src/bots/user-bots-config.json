@@ -1,0 +1,26 @@
+{
+  "formData": {
+    "keywords": "Java",
+    "locations": "",
+    "minSalary": "",
+    "maxSalary": "",
+    "jobType": "any",
+    "experienceLevel": "any",
+    "industry": "",
+    "listedDate": "",
+    "remotePreference": "any",
+    "rightToWork": "citizen",
+    "rewriteResume": false,
+    "excludedCompanies": "",
+    "excludedKeywords": "",
+    "skillWeight": "0.4",
+    "locationWeight": "0.2",
+    "salaryWeight": "0.3",
+    "companyWeight": "0.1",
+    "enableDeepSeek": false,
+    "deepSeekApiKey": "",
+    "acceptTerms": true
+  },
+  "industries": [],
+  "workRightOptions": []
+}
